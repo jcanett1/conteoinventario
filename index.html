@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Conteo de Inventario</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+  <style id="app-style">
+    .bg-navy {
+      background-color: #0a192f;
+    }
+    .text-navy {
+      color: #0a192f;
+    }
+    .border-navy {
+      border-color: #0a192f;
+    }
+    .hover-bg-navy:hover {
+      background-color: #0a192f;
+      color: white;
+    }
+    .transition-all {
+      transition: all 0.3s ease;
+    }
+    .custom-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .table-hover tr:hover {
+      background-color: #f9fafb;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .loader {
+      border-top-color: #0a192f;
+      animation: spinner 1.5s linear infinite;
+    }
+    @keyframes spinner {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-navy shadow-md">
+    <div class="container mx-auto px-4 py-5">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-warehouse text-white text-3xl mr-3"></i>
+          <h1 class="text-2xl font-bold text-white">Sistema de Conteo de Inventario</h1>
+        </div>
+        <div>
+          <button id="reset-data-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all">
+            <i class="fas fa-trash-alt mr-2"></i>Reiniciar Datos
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <!-- Left Column - Form -->
+      <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro Manual de Inventario</h2>
+        
+        <form id="inventory-form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Rack Selection -->
+            <div>
+              <label for="rack" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+              <select id="rack" name="rack" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccione un Rack</option>
+                <option value="A">Rack A</option>
+                <option value="B">Rack B</option>
+                <option value="C">Rack C</option>
+                <option value="D">Rack D</option>
+                <option value="E">Rack E</option>
+                <option value="F">Rack F</option>
+                <option value="G">Rack G</option>
+              </select>
+            </div>
+            
+            <!-- Location Selection -->
+            <div>
+              <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+              <select id="location" name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccione ubicación</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- User Assignment -->
+          <div>
+            <label for="user" class="block text-sm font-medium text-gray-700 mb-1">Usuario Asignado</label>
+            <input type="text" id="user" name="user" list="user-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese usuario">
+            <datalist id="user-list">
+              <option value="Lupta (Kiteo)">
+              <option value="Alan Ramos (Producción)">
+              <option value="Carlos Méndez (Almacén)">
+              <option value="Maria González (Inventario)">
+            </datalist>
+          </div>
+          
+          <!-- Part Information -->
+          <div>
+            <label for="part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+            <input type="text" id="part-number" name="part-number" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+          </div>
+          
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <input type="text" id="description" name="description" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese descripción del producto">
+          </div>
+          
+          <div>
+            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+            <input type="number" id="quantity" name="quantity" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad contada">
+          </div>
+          
+          <!-- Submit Button -->
+          <div class="pt-2">
+            <button type="submit" id="submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all flex items-center justify-center">
+              <span id="submit-text">Registrar Conteo</span>
+              <span id="submit-loader" class="hidden ml-2">
+                <div class="loader h-5 w-5 rounded-full border-2 border-white border-t-4"></div>
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Right Column - Bulk Import -->
+      <div class="md:col-span-6">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Importación por Archivo</h2>
+          
+          <div class="space-y-4">
+            <p class="text-gray-600">Importe datos masivos desde un archivo CSV o Excel.</p>
+            
+            <div class="flex items-center justify-center w-full">
+              <label for="file-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                  <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                  <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click para seleccionar</span> o arrastre un archivo</p>
+                  <p class="text-xs text-gray-500">CSV o Excel (máx. 10MB)</p>
+                </div>
+                <input id="file-upload" type="file" class="hidden" accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              </label>
+            </div>
+            
+            <div id="file-info" class="hidden">
+              <div class="flex items-center justify-between bg-blue-50 p-3 rounded-md">
+                <div class="flex items-center">
+                  <i class="fas fa-file-excel text-blue-500 mr-2"></i>
+                  <span id="file-name" class="text-sm font-medium"></span>
+                </div>
+                <button id="remove-file" class="text-red-500 hover:text-red-700">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              
+              <button id="process-file" class="mt-3 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center">
+                <i class="fas fa-upload mr-2"></i>
+                <span>Procesar Archivo</span>
+              </button>
+            </div>
+            
+            <div id="import-progress" class="hidden">
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+              </div>
+              <p id="progress-text" class="text-sm text-gray-600 mt-2 text-center">Procesando...</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Dashboard - Summary by Rack -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Resumen por Rack</h2>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-hover">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ítems</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Total</th>
+                </tr>
+              </thead>
+              <tbody id="rack-summary" class="bg-white divide-y divide-gray-200">
+                <!-- Rack summary data will be inserted here via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- User Assignment Summary -->
+    <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+      <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Conteo por Usuario</h2>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 table-hover">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ítems Contados</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Total</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Conteo</th>
+            </tr>
+          </thead>
+          <tbody id="user-summary" class="bg-white divide-y divide-gray-200">
+            <!-- User summary data will be inserted here via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Inventory Records -->
+    <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+      <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 table-hover">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-records" class="bg-white divide-y divide-gray-200">
+            <!-- Inventory records will be inserted here via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-navy text-white py-4 mt-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>&copy; 2025 Sistema de Conteo de Inventario | Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script id="app-script">
+    // Initialize app and load data from localStorage when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Define rack to location count mapping
+      const rackLocations = {
+        'A': 48,
+        'B': 48,
+        'C': 48,
+        'D': 42,
+        'E': 42,
+        'F': 21,
+        'G': 32
+      };
+
+      // Add event listener for rack selection to populate locations
+      const rackSelect = document.getElementById('rack');
+      const locationSelect = document.getElementById('location');
+
+      rackSelect.addEventListener('change', function() {
+        // Clear existing options
+        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        
+        const selectedRack = rackSelect.value;
+        
+        if (selectedRack && rackLocations[selectedRack]) {
+          // Add location options based on selected rack
+          const maxLocations = rackLocations[selectedRack];
+          
+          for (let i = 1; i <= maxLocations; i++) {
+            const option = document.createElement('option');
+            option.value = `${selectedRack}-${i}`;
+            option.textContent = `${selectedRack}-${i}`;
+            locationSelect.appendChild(option);
+          }
+        }
+      });
+
+      // Initialize inventory data from localStorage
+      let inventoryData = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      
+      // Update UI with the current data
+      updateUI();
+      
+      // Form submission handler
+      const inventoryForm = document.getElementById('inventory-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const submitText = document.getElementById('submit-text');
+      const submitLoader = document.getElementById('submit-loader');
+      
+      inventoryForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        // Show loading state
+        submitText.textContent = 'Procesando...';
+        submitLoader.classList.remove('hidden');
+        submitBtn.disabled = true;
+        
+        // Get form values
+        const rack = document.getElementById('rack').value;
+        const location = document.getElementById('location').value;
+        const user = document.getElementById('user').value;
+        const partNumber = document.getElementById('part-number').value;
+        const description = document.getElementById('description').value;
+        const quantity = parseInt(document.getElementById('quantity').value);
+        const timestamp = new Date().toISOString();
+        
+        // Create new inventory record
+        const newRecord = {
+          id: Date.now(),
+          timestamp,
+          rack,
+          location,
+          partNumber,
+          description,
+          quantity,
+          user
+        };
+        
+        // Simulate API call
+        setTimeout(() => {
+          // Add to inventory data
+          inventoryData.push(newRecord);
+          
+          // Save to localStorage
+          localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+          
+          // Reset form
+          inventoryForm.reset();
+          
+          // Reset button state
+          submitText.textContent = 'Registrar Conteo';
+          submitLoader.classList.add('hidden');
+          submitBtn.disabled = false;
+          
+          // Show success message
+          Swal.fire({
+            icon: 'success',
+            title: 'Éxito',
+            text: 'Conteo registrado correctamente',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          
+          // Update UI with new data
+          updateUI();
+        }, 800);
+      });
+      
+      // File upload handling
+      const fileUpload = document.getElementById('file-upload');
+      const fileInfo = document.getElementById('file-info');
+      const fileName = document.getElementById('file-name');
+      const removeFile = document.getElementById('remove-file');
+      const processFile = document.getElementById('process-file');
+      const importProgress = document.getElementById('import-progress');
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      
+      fileUpload.addEventListener('change', function(event) {
+        if (event.target.files.length > 0) {
+          const file = event.target.files[0];
+          fileName.textContent = file.name;
+          fileInfo.classList.remove('hidden');
+        }
+      });
+      
+      removeFile.addEventListener('click', function() {
+        fileUpload.value = '';
+        fileInfo.classList.add('hidden');
+      });
+      
+      processFile.addEventListener('click', function() {
+        if (!fileUpload.files.length) return;
+        
+        const file = fileUpload.files[0];
+        fileInfo.classList.add('hidden');
+        importProgress.classList.remove('hidden');
+        
+        // Simulate progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          progressBar.style.width = `${progress}%`;
+          progressText.textContent = `Procesando... ${progress}%`;
+          
+          if (progress >= 100) {
+            clearInterval(interval);
+            progressText.textContent = 'Completado';
+            
+            setTimeout(() => {
+              importProgress.classList.add('hidden');
+              fileUpload.value = '';
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Importación Completa',
+                text: 'Este es un prototipo. La importación real se implementará posteriormente.',
+                confirmButtonColor: '#0a192f'
+              });
+            }, 500);
+          }
+        }, 200);
+      });
+      
+      // Reset data button handler
+      const resetDataBtn = document.getElementById('reset-data-btn');
+      
+      resetDataBtn.addEventListener('click', function() {
+        Swal.fire({
+          title: '¿Está seguro?',
+          text: 'Esta acción eliminará todos los datos de inventario registrados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Clear inventory data
+            inventoryData = [];
+            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+            
+            // Update UI
+            updateUI();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Datos Eliminados',
+              text: 'Todos los datos de inventario han sido eliminados',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          }
+        });
+      });
+      
+      // Function to update UI with current data
+      function updateUI() {
+        updateRackSummary();
+        updateUserSummary();
+        updateInventoryRecords();
+      }
+      
+      // Update rack summary table
+      function updateRackSummary() {
+        const rackSummary = document.getElementById('rack-summary');
+        const racks = ['A', 'B', 'C', 'D', 'E', 'F'];
+        
+        let rackSummaryHTML = '';
+        
+        racks.forEach(rack => {
+          const rackItems = inventoryData.filter(item => item.rack === rack);
+          const totalItems = rackItems.length;
+          const totalQuantity = rackItems.reduce((sum, item) => sum + item.quantity, 0);
+          
+          rackSummaryHTML += `
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Rack ${rack}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${totalItems}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${totalQuantity}</div>
+              </td>
+            </tr>
+          `;
+        });
+        
+        if (inventoryData.length === 0) {
+          rackSummaryHTML = `
+            <tr>
+              <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                No hay datos disponibles
+              </td>
+            </tr>
+          `;
+        }
+        
+        rackSummary.innerHTML = rackSummaryHTML;
+      }
+      
+      // Update user summary table
+      function updateUserSummary() {
+        const userSummary = document.getElementById('user-summary');
+        
+        // Get unique users
+        const users = [...new Set(inventoryData.map(item => item.user))];
+        
+        let userSummaryHTML = '';
+        
+        users.forEach(user => {
+          // Get all racks this user has counted
+          const userRacks = [...new Set(inventoryData.filter(item => item.user === user).map(item => item.rack))];
+          
+          userRacks.forEach(rack => {
+            const rackItems = inventoryData.filter(item => item.user === user && item.rack === rack);
+            const totalItems = rackItems.length;
+            const totalQuantity = rackItems.reduce((sum, item) => sum + item.quantity, 0);
+            
+            // Get the latest count timestamp
+            const latestTimestamp = rackItems.reduce((latest, item) => {
+              return new Date(item.timestamp) > new Date(latest) ? item.timestamp : latest;
+            }, rackItems[0].timestamp);
+            
+            userSummaryHTML += `
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">${user}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">Rack ${rack}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalItems}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalQuantity}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-500">${moment(latestTimestamp).format('DD/MM/YYYY HH:mm')}</div>
+                </td>
+              </tr>
+            `;
+          });
+        });
+        
+        if (inventoryData.length === 0) {
+          userSummaryHTML = `
+            <tr>
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                No hay datos disponibles
+              </td>
+            </tr>
+          `;
+        }
+        
+        userSummary.innerHTML = userSummaryHTML;
+      }
+      
+      // Update inventory records table
+      function updateInventoryRecords() {
+        const inventoryRecords = document.getElementById('inventory-records');
+        
+        let recordsHTML = '';
+        
+        // Sort by timestamp (most recent first)
+        const sortedRecords = [...inventoryData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        sortedRecords.forEach(record => {
+          recordsHTML += `
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">${moment(record.timestamp).format('DD/MM/YYYY HH:mm')}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Rack ${record.rack}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${record.location || '-'}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${record.partNumber}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">${record.description}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${record.quantity}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${record.user}</div>
+              </td>
+            </tr>
+          `;
+        });
+        
+        if (inventoryData.length === 0) {
+          recordsHTML = `
+            <tr>
+              <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                No hay registros disponibles
+              </td>
+            </tr>
+          `;
+        }
+        
+        inventoryRecords.innerHTML = recordsHTML;
+      }
+    });
+  </script>
+</body>
+</html>
