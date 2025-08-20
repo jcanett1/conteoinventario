@@ -267,24 +267,26 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script id="app-script">
-    // Initialize app and load data from Supabase when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize Supabase client
-      const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
 
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      
-      // Define rack to location count mapping
-      const rackLocations = {
-        'A': 48,
-        'B': 48,
-        'C': 48,
-        'D': 42,
-        'E': 42,
-        'F': 21,
-        'G': 32
-      };
+<script>
+// Initialize app and load data from Supabase when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Supabase client
+  const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+  
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Define rack to location count mapping
+  const rackLocations = {
+    'A': 48,
+    'B': 48,
+    'C': 48,
+    'D': 42,
+    'E': 42,
+    'F': 21,
+    'G': 32
+  };
 
   // Add event listener for rack selection to populate locations
   const rackSelect = document.getElementById('rack');
@@ -312,7 +314,31 @@
   // Initialize inventory data
   let inventoryData = [];
   
- async function insertInventoryRecord(record) {
+  // FUNCIONES DE SUPABASE - DEFINIRLAS PRIMERO
+  async function getAllInventoryRecords() {
+    try {
+      const { data, error } = await supabase
+        .from('conteoinventario')
+        .select('*')
+        .order('fecha_creacion', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Error getting records from Supabase:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de conexión',
+        text: 'No se pudieron cargar los datos de la base de datos'
+      });
+      return [];
+    }
+  }
+
+  async function insertInventoryRecord(record) {
     try {
       // Mapear los nombres de campos a los de tu tabla Supabase
       const supabaseRecord = {
@@ -331,11 +357,12 @@
       
       if (error) throw error;
       
-      // Agregar el nuevo registro a los datos locales
-      const newRecord = { ...record, id: data[0].id };
-      inventoryData.unshift(newRecord);
-      
-      return newRecord;
+      // Devolver el registro con el ID generado por Supabase
+      return { 
+        id: data[0].id, 
+        ...record,
+        timestamp: data[0].fecha_creacion // Usar la fecha de Supabase
+      };
     } catch (error) {
       console.error('Error inserting record to Supabase:', error);
       throw error;
@@ -350,7 +377,8 @@
         usuario_asignado: updatedRecord.user,
         numero_parte: updatedRecord.partNumber,
         descripcion: updatedRecord.description,
-        cantidad: updatedRecord.quantity
+        cantidad: updatedRecord.quantity,
+        fecha_actualizacion: new Date().toISOString()
       };
       
       const { error } = await supabase
@@ -359,12 +387,6 @@
         .eq('id', updatedRecord.id);
       
       if (error) throw error;
-      
-      // Actualizar en datos locales
-      const index = inventoryData.findIndex(r => r.id === updatedRecord.id);
-      if (index !== -1) {
-        inventoryData[index] = updatedRecord;
-      }
       
       return updatedRecord;
     } catch (error) {
@@ -383,20 +405,14 @@
           .eq('id', id);
         
         if (error) throw error;
-        
-        // Eliminar de datos locales
-        inventoryData = inventoryData.filter(r => r.id !== id);
       } else {
         // Eliminar todos los registros
         const { error } = await supabase
           .from('conteoinventario')
           .delete()
-          .neq('id', 0); // Esto elimina todos los registros
+          .neq('id', 0);
         
         if (error) throw error;
-        
-        // Limpiar datos locales
-        inventoryData = [];
       }
       
       return { success: true };
@@ -409,14 +425,16 @@
   // Function to load data
   async function loadInventoryData() {
     try {
+      console.log('Cargando datos de Supabase...');
       inventoryData = await getAllInventoryRecords();
+      console.log('Datos cargados:', inventoryData);
       updateUI();
     } catch (error) {
       console.error('Error loading inventory data:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Error al cargar los datos del inventario'
+        text: 'Error al cargar los datos del inventario: ' + error.message
       });
     }
   }
@@ -442,21 +460,32 @@
     const partNumber = document.getElementById('part-number').value;
     const description = document.getElementById('description').value;
     const quantity = parseInt(document.getElementById('quantity').value);
-    const timestamp = new Date().toISOString();
+    
+    // Validar campos requeridos
+    if (!rack || !location || !user || !partNumber || !description || !quantity) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Por favor complete todos los campos requeridos'
+      });
+      submitText.textContent = 'Registrar Conteo';
+      submitLoader.classList.add('hidden');
+      submitBtn.disabled = false;
+      return;
+    }
     
     // Create new inventory record
     const newRecord = {
-      timestamp,
       rack,
       location,
+      user,
       partNumber,
       description,
-      quantity,
-      user
+      quantity
     };
     
     try {
-      await insertInventoryRecord(newRecord);
+      const insertedRecord = await insertInventoryRecord(newRecord);
       
       // Reset form
       inventoryForm.reset();
@@ -465,19 +494,19 @@
       Swal.fire({
         icon: 'success',
         title: 'Éxito',
-        text: 'Conteo registrado correctamente',
+        text: 'Conteo registrado correctamente en la base de datos',
         timer: 2000,
         showConfirmButton: false
       });
       
-      // Refresh data
+      // Refresh data from Supabase
       await loadInventoryData();
     } catch (error) {
       console.error('Error saving inventory record:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Error al guardar el registro de inventario'
+        text: 'Error al guardar el registro de inventario: ' + error.message
       });
     } finally {
       // Reset button state
@@ -487,61 +516,7 @@
     }
   });
   
-  // File upload handling
-  const fileUpload = document.getElementById('file-upload');
-  const fileInfo = document.getElementById('file-info');
-  const fileName = document.getElementById('file-name');
-  const removeFile = document.getElementById('remove-file');
-  const processFile = document.getElementById('process-file');
-  const importProgress = document.getElementById('import-progress');
-  const progressBar = document.getElementById('progress-bar');
-  const progressText = document.getElementById('progress-text');
-  
-  fileUpload.addEventListener('change', function(event) {
-    if (event.target.files.length > 0) {
-      const file = event.target.files[0];
-      fileName.textContent = file.name;
-      fileInfo.classList.remove('hidden');
-    }
-  });
-  
-  removeFile.addEventListener('click', function() {
-    fileUpload.value = '';
-    fileInfo.classList.add('hidden');
-  });
-  
-  processFile.addEventListener('click', function() {
-    if (!fileUpload.files.length) return;
-    
-    const file = fileUpload.files[0];
-    fileInfo.classList.add('hidden');
-    importProgress.classList.remove('hidden');
-    
-    // Simulate progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      progressBar.style.width = `${progress}%`;
-      progressText.textContent = `Procesando... ${progress}%`;
-      
-      if (progress >= 100) {
-        clearInterval(interval);
-        progressText.textContent = 'Completado';
-        
-        setTimeout(() => {
-          importProgress.classList.add('hidden');
-          fileUpload.value = '';
-          
-          Swal.fire({
-            icon: 'success',
-            title: 'Importación Completa',
-            text: 'Este es un prototipo. La importación real se implementará posteriormente.',
-            confirmButtonColor: '#0a192f'
-          });
-        }, 500);
-      }
-    }, 200);
-  });
+  // ... (el resto de tu código para file upload, reset button, etc.)
   
   // Reset data button handler
   const resetDataBtn = document.getElementById('reset-data-btn');
@@ -549,10 +524,10 @@
   resetDataBtn.addEventListener('click', function() {
     Swal.fire({
       title: '¿Está seguro?',
-      text: 'Esta acción eliminará todos los datos de inventario registrados.',
+      text: 'Esta acción eliminará TODOS los datos de inventario de la base de datos.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'Sí, eliminar todo',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
@@ -561,13 +536,16 @@
         try {
           await deleteInventoryRecords();
           
+          // Limpiar datos locales
+          inventoryData = [];
+          
           // Update UI
           updateUI();
           
           Swal.fire({
             icon: 'success',
             title: 'Datos Eliminados',
-            text: 'Todos los datos de inventario han sido eliminados',
+            text: 'Todos los datos de inventario han sido eliminados de la base de datos',
             timer: 2000,
             showConfirmButton: false
           });
@@ -576,7 +554,7 @@
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Error al eliminar los registros de inventario'
+            text: 'Error al eliminar los registros de inventario: ' + error.message
           });
         }
       }
@@ -593,14 +571,14 @@
   // Update rack summary table
   function updateRackSummary() {
     const rackSummary = document.getElementById('rack-summary');
-    const racks = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const racks = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
     
     let rackSummaryHTML = '';
     
     racks.forEach(rack => {
       const rackItems = inventoryData.filter(item => item.rack === rack);
       const totalItems = rackItems.length;
-      const totalQuantity = rackItems.reduce((sum, item) => sum + item.quantity, 0);
+      const totalQuantity = rackItems.reduce((sum, item) => sum + (item.cantidad || item.quantity), 0);
       
       rackSummaryHTML += `
         <tr>
@@ -635,23 +613,28 @@
     const userSummary = document.getElementById('user-summary');
     
     // Get unique users
-    const users = [...new Set(inventoryData.map(item => item.user))];
+    const users = [...new Set(inventoryData.map(item => item.usuario_asignado || item.user))];
     
     let userSummaryHTML = '';
     
     users.forEach(user => {
       // Get all racks this user has counted
-      const userRacks = [...new Set(inventoryData.filter(item => item.user === user).map(item => item.rack))];
+      const userRacks = [...new Set(inventoryData
+        .filter(item => (item.usuario_asignado || item.user) === user)
+        .map(item => item.rack))];
       
       userRacks.forEach(rack => {
-        const rackItems = inventoryData.filter(item => item.user === user && item.rack === rack);
+        const rackItems = inventoryData.filter(item => 
+          (item.usuario_asignado || item.user) === user && item.rack === rack
+        );
         const totalItems = rackItems.length;
-        const totalQuantity = rackItems.reduce((sum, item) => sum + item.quantity, 0);
+        const totalQuantity = rackItems.reduce((sum, item) => sum + (item.cantidad || item.quantity), 0);
         
         // Get the latest count timestamp
         const latestTimestamp = rackItems.reduce((latest, item) => {
-          return new Date(item.timestamp) > new Date(latest) ? item.timestamp : latest;
-        }, rackItems[0]?.timestamp || new Date().toISOString());
+          const itemTime = item.fecha_creacion || item.timestamp;
+          return new Date(itemTime) > new Date(latest) ? itemTime : latest;
+        }, rackItems[0]?.fecha_creacion || rackItems[0]?.timestamp || new Date().toISOString());
         
         userSummaryHTML += `
           <tr>
@@ -695,31 +678,39 @@
     let recordsHTML = '';
     
     // Sort by timestamp (most recent first)
-    const sortedRecords = [...inventoryData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const sortedRecords = [...inventoryData].sort((a, b) => {
+      const dateA = new Date(a.fecha_creacion || a.timestamp);
+      const dateB = new Date(b.fecha_creacion || b.timestamp);
+      return dateB - dateA;
+    });
     
     sortedRecords.forEach(record => {
+      const fecha = record.fecha_creacion || record.timestamp;
+      const usuario = record.usuario_asignado || record.user;
+      const cantidad = record.cantidad || record.quantity;
+      
       recordsHTML += `
         <tr>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-500">${moment(record.timestamp).format('DD/MM/YYYY HH:mm')}</div>
+            <div class="text-sm text-gray-500">${moment(fecha).format('DD/MM/YYYY HH:mm')}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm font-medium text-gray-900">Rack ${record.rack}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">${record.location || '-'}</div>
+            <div class="text-sm font-medium text-gray-900">${record.ubicacion || record.location || '-'}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${record.partNumber}</div>
+            <div class="text-sm text-gray-900">${record.numero_parte || record.partNumber}</div>
           </td>
           <td class="px-6 py-4">
-            <div class="text-sm text-gray-900">${record.description}</div>
+            <div class="text-sm text-gray-900">${record.descripcion || record.description}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${record.quantity}</div>
+            <div class="text-sm text-gray-900">${cantidad}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${record.user}</div>
+            <div class="text-sm text-gray-900">${usuario}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
             <button onclick="editRecord('${record.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
@@ -763,23 +754,23 @@
           </div>
           <div>
             <label class="block text-sm">Ubicación</label>
-            <input id="edit-location" class="swal2-input" value="${record.location}">
+            <input id="edit-location" class="swal2-input" value="${record.ubicacion || record.location}">
           </div>
           <div>
             <label class="block text-sm">Número de Parte</label>
-            <input id="edit-part" class="swal2-input" value="${record.partNumber}">
+            <input id="edit-part" class="swal2-input" value="${record.numero_parte || record.partNumber}">
           </div>
           <div>
             <label class="block text-sm">Descripción</label>
-            <input id="edit-description" class="swal2-input" value="${record.description}">
+            <input id="edit-description" class="swal2-input" value="${record.descripcion || record.description}">
           </div>
           <div>
             <label class="block text-sm">Cantidad</label>
-            <input id="edit-quantity" type="number" class="swal2-input" value="${record.quantity}">
+            <input id="edit-quantity" type="number" class="swal2-input" value="${record.cantidad || record.quantity}">
           </div>
           <div>
             <label class="block text-sm">Usuario</label>
-            <input id="edit-user" class="swal2-input" value="${record.user}">
+            <input id="edit-user" class="swal2-input" value="${record.usuario_asignado || record.user}">
           </div>
         </div>`,
       focusConfirm: false,
@@ -792,8 +783,7 @@
           partNumber: document.getElementById('edit-part').value,
           description: document.getElementById('edit-description').value,
           quantity: parseInt(document.getElementById('edit-quantity').value),
-          user: document.getElementById('edit-user').value,
-          timestamp: record.timestamp // preserve original timestamp
+          user: document.getElementById('edit-user').value
         };
       }
     });
@@ -817,7 +807,7 @@
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'Error al actualizar el registro'
+          text: 'Error al actualizar el registro: ' + error.message
         });
       }
     }
@@ -853,7 +843,7 @@
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'Error al eliminar el registro'
+          text: 'Error al eliminar el registro: ' + error.message
         });
       }
     }
@@ -862,6 +852,6 @@
   // Load initial data
   loadInventoryData();
 });
-  </script>
+</script>
 </body>
 </html>
