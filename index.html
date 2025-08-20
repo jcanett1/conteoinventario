@@ -260,6 +260,8 @@
   </footer>
 
   <!-- JavaScript Libraries -->
+  <!-- Agrega esto ANTES de tu script -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -270,6 +272,8 @@
       // Initialize Supabase client
       const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Define rack to location count mapping
       const rackLocations = {
@@ -308,44 +312,63 @@
   // Initialize inventory data
   let inventoryData = [];
   
-  // Funciones de almacenamiento local - DEFINIRLAS PRIMERO
-  async function getAllInventoryRecords() {
+ async function insertInventoryRecord(record) {
     try {
-      const data = localStorage.getItem('inventoryData');
-      return data ? JSON.parse(data) : [];
+      // Mapear los nombres de campos a los de tu tabla Supabase
+      const supabaseRecord = {
+        rack: record.rack,
+        ubicacion: record.location,
+        usuario_asignado: record.user,
+        numero_parte: record.partNumber,
+        descripcion: record.description,
+        cantidad: record.quantity
+      };
+      
+      const { data, error } = await supabase
+        .from('conteoinventario')
+        .insert([supabaseRecord])
+        .select();
+      
+      if (error) throw error;
+      
+      // Agregar el nuevo registro a los datos locales
+      const newRecord = { ...record, id: data[0].id };
+      inventoryData.unshift(newRecord);
+      
+      return newRecord;
     } catch (error) {
-      console.error('Error getting records:', error);
-      return [];
-    }
-  }
-
-  async function insertInventoryRecord(record) {
-    try {
-      const records = await getAllInventoryRecords();
-      record.id = Date.now().toString();
-      records.push(record);
-      localStorage.setItem('inventoryData', JSON.stringify(records));
-      inventoryData = records;
-      return record;
-    } catch (error) {
-      console.error('Error inserting record:', error);
+      console.error('Error inserting record to Supabase:', error);
       throw error;
     }
   }
 
   async function updateInventoryRecord(updatedRecord) {
     try {
-      const records = await getAllInventoryRecords();
-      const index = records.findIndex(r => r.id === updatedRecord.id);
+      const supabaseRecord = {
+        rack: updatedRecord.rack,
+        ubicacion: updatedRecord.location,
+        usuario_asignado: updatedRecord.user,
+        numero_parte: updatedRecord.partNumber,
+        descripcion: updatedRecord.description,
+        cantidad: updatedRecord.quantity
+      };
+      
+      const { error } = await supabase
+        .from('conteoinventario')
+        .update(supabaseRecord)
+        .eq('id', updatedRecord.id);
+      
+      if (error) throw error;
+      
+      // Actualizar en datos locales
+      const index = inventoryData.findIndex(r => r.id === updatedRecord.id);
       if (index !== -1) {
-        records[index] = updatedRecord;
-        localStorage.setItem('inventoryData', JSON.stringify(records));
-        inventoryData = records;
-        return updatedRecord;
+        inventoryData[index] = updatedRecord;
       }
-      throw new Error('Registro no encontrado');
+      
+      return updatedRecord;
     } catch (error) {
-      console.error('Error updating record:', error);
+      console.error('Error updating record in Supabase:', error);
       throw error;
     }
   }
@@ -353,17 +376,32 @@
   async function deleteInventoryRecords(id = null) {
     try {
       if (id) {
-        const records = await getAllInventoryRecords();
-        const filtered = records.filter(r => r.id !== id);
-        localStorage.setItem('inventoryData', JSON.stringify(filtered));
-        inventoryData = filtered;
+        // Eliminar registro específico
+        const { error } = await supabase
+          .from('conteoinventario')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        // Eliminar de datos locales
+        inventoryData = inventoryData.filter(r => r.id !== id);
       } else {
-        localStorage.removeItem('inventoryData');
+        // Eliminar todos los registros
+        const { error } = await supabase
+          .from('conteoinventario')
+          .delete()
+          .neq('id', 0); // Esto elimina todos los registros
+        
+        if (error) throw error;
+        
+        // Limpiar datos locales
         inventoryData = [];
       }
+      
       return { success: true };
     } catch (error) {
-      console.error('Error deleting records:', error);
+      console.error('Error deleting records from Supabase:', error);
       throw error;
     }
   }
