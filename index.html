@@ -265,8 +265,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script id="app-script">
-    // Initialize app and load data from localStorage when page loads
+    // Initialize app and load data from Supabase when page loads
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize Supabase client
+      const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+      
       // Define rack to location count mapping
       const rackLocations = {
         'A': 48,
@@ -301,11 +305,33 @@
         }
       });
 
-      // Initialize inventory data from localStorage
-      let inventoryData = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      // Initialize inventory data from Supabase
+      let inventoryData = [];
       
-      // Update UI with the current data
-      updateUI();
+      // Load data when page loads
+      loadInventoryData();
+      
+      // Function to load data from Supabase
+      async function loadInventoryData() {
+        try {
+          // Show loading state
+          // ... add loading indicator if needed ...
+          
+          // Call the GetAllInventoryRecords Loop
+          const records = await Loops.invoke('GetAllInventoryRecords');
+          inventoryData = records || [];
+          
+          // Update UI with the fetched data
+          updateUI();
+        } catch (error) {
+          console.error('Error loading inventory data:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al cargar los datos del inventario'
+          });
+        }
+      }
       
       // Form submission handler
       const inventoryForm = document.getElementById('inventory-form');
@@ -313,7 +339,7 @@
       const submitText = document.getElementById('submit-text');
       const submitLoader = document.getElementById('submit-loader');
       
-      inventoryForm.addEventListener('submit', function(event) {
+      inventoryForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         
         // Show loading state
@@ -332,7 +358,6 @@
         
         // Create new inventory record
         const newRecord = {
-          id: Date.now(),
           timestamp,
           rack,
           location,
@@ -342,21 +367,12 @@
           user
         };
         
-        // Simulate API call
-        setTimeout(() => {
-          // Add to inventory data
-          inventoryData.push(newRecord);
-          
-          // Save to localStorage
-          localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        try {
+          // Insert record using the InsertInventoryRecord Loop
+          await Loops.invoke('InsertInventoryRecord', { record: newRecord });
           
           // Reset form
           inventoryForm.reset();
-          
-          // Reset button state
-          submitText.textContent = 'Registrar Conteo';
-          submitLoader.classList.add('hidden');
-          submitBtn.disabled = false;
           
           // Show success message
           Swal.fire({
@@ -367,9 +383,21 @@
             showConfirmButton: false
           });
           
-          // Update UI with new data
-          updateUI();
-        }, 800);
+          // Refresh data
+          await loadInventoryData();
+        } catch (error) {
+          console.error('Error saving inventory record:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al guardar el registro de inventario'
+          });
+        } finally {
+          // Reset button state
+          submitText.textContent = 'Registrar Conteo';
+          submitLoader.classList.add('hidden');
+          submitBtn.disabled = false;
+        }
       });
       
       // File upload handling
@@ -441,22 +469,33 @@
           cancelButtonText: 'Cancelar',
           confirmButtonColor: '#d33',
           cancelButtonColor: '#3085d6',
-        }).then((result) => {
+        }).then(async (result) => {
           if (result.isConfirmed) {
-            // Clear inventory data
-            inventoryData = [];
-            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
-            
-            // Update UI
-            updateUI();
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Datos Eliminados',
-              text: 'Todos los datos de inventario han sido eliminados',
-              timer: 2000,
-              showConfirmButton: false
-            });
+            try {
+              // Delete all inventory records using the DeleteInventoryRecords Loop
+              await Loops.invoke('DeleteInventoryRecords');
+              
+              // Clear local data
+              inventoryData = [];
+              
+              // Update UI
+              updateUI();
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Datos Eliminados',
+                text: 'Todos los datos de inventario han sido eliminados',
+                timer: 2000,
+                showConfirmButton: false
+              });
+            } catch (error) {
+              console.error('Error deleting inventory records:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al eliminar los registros de inventario'
+              });
+            }
           }
         });
       });
@@ -599,6 +638,14 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">${record.user}</div>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button onclick="editRecord('${record.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteRecord('${record.id}')" class="text-red-600 hover:text-red-900">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
             </tr>
           `;
         });
@@ -606,7 +653,7 @@
         if (inventoryData.length === 0) {
           recordsHTML = `
             <tr>
-              <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+              <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
                 No hay registros disponibles
               </td>
             </tr>
@@ -615,6 +662,121 @@
         
         inventoryRecords.innerHTML = recordsHTML;
       }
+      
+      // Add these functions to handle edit and delete for individual records
+      window.editRecord = async function(id) {
+        // Get the record to edit
+        const record = inventoryData.find(item => item.id === id);
+        if (!record) return;
+        
+        // Show edit form using SweetAlert
+        const { value: formValues } = await Swal.fire({
+          title: 'Editar Registro',
+          html:
+            `<div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm">Rack</label>
+                <input id="edit-rack" class="swal2-input" value="${record.rack}">
+              </div>
+              <div>
+                <label class="block text-sm">Ubicación</label>
+                <input id="edit-location" class="swal2-input" value="${record.location}">
+              </div>
+              <div>
+                <label class="block text-sm">Número de Parte</label>
+                <input id="edit-part" class="swal2-input" value="${record.partNumber}">
+              </div>
+              <div>
+                <label class="block text-sm">Descripción</label>
+                <input id="edit-description" class="swal2-input" value="${record.description}">
+              </div>
+              <div>
+                <label class="block text-sm">Cantidad</label>
+                <input id="edit-quantity" type="number" class="swal2-input" value="${record.quantity}">
+              </div>
+              <div>
+                <label class="block text-sm">Usuario</label>
+                <input id="edit-user" class="swal2-input" value="${record.user}">
+              </div>
+            </div>`,
+          focusConfirm: false,
+          showCancelButton: true,
+          preConfirm: () => {
+            return {
+              id: record.id,
+              rack: document.getElementById('edit-rack').value,
+              location: document.getElementById('edit-location').value,
+              partNumber: document.getElementById('edit-part').value,
+              description: document.getElementById('edit-description').value,
+              quantity: parseInt(document.getElementById('edit-quantity').value),
+              user: document.getElementById('edit-user').value,
+              timestamp: record.timestamp // preserve original timestamp
+            };
+          }
+        });
+        
+        if (formValues) {
+          try {
+            // Update record using UpdateInventoryRecord Loop
+            await Loops.invoke('UpdateInventoryRecord', { record: formValues });
+            
+            // Refresh data
+            await loadInventoryData();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Actualizado',
+              text: 'Registro actualizado correctamente',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } catch (error) {
+            console.error('Error updating record:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error al actualizar el registro'
+            });
+          }
+        }
+      };
+      
+      window.deleteRecord = async function(id) {
+        const result = await Swal.fire({
+          title: '¿Eliminar registro?',
+          text: 'Esta acción no se puede deshacer',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#d33'
+        });
+        
+        if (result.isConfirmed) {
+          try {
+            // Delete single record using a variation of DeleteInventoryRecords Loop
+            await Loops.invoke('DeleteInventoryRecords', { id });
+            
+            // Refresh data
+            await loadInventoryData();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Eliminado',
+              text: 'Registro eliminado correctamente',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } catch (error) {
+            console.error('Error deleting record:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error al eliminar el registro'
+            });
+          }
+        }
+      };
     });
   </script>
 </body>
