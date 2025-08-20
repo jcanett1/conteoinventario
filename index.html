@@ -305,33 +305,26 @@
         }
       });
 
-      // Initialize inventory data from Supabase
-      let inventoryData = [];
-      
-      // Load data when page loads
-      loadInventoryData();
-      
-      // Function to load data from Supabase
-      async function loadInventoryData() {
-        try {
-          // Show loading state
-          // ... add loading indicator if needed ...
-          
-          // Call the GetAllInventoryRecords Loop
-          const records = await Loops.invoke('GetAllInventoryRecords');
-          inventoryData = records || [];
-          
-          // Update UI with the fetched data
-          updateUI();
-        } catch (error) {
-          console.error('Error loading inventory data:', error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error al cargar los datos del inventario'
-          });
-        }
-      }
+      // Initialize inventory data
+  let inventoryData = [];
+  
+  // Load data when page loads
+  loadInventoryData();
+  
+  // Function to load data
+  async function loadInventoryData() {
+    try {
+      inventoryData = await getAllInventoryRecords();
+      updateUI();
+    } catch (error) {
+      console.error('Error loading inventory data:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al cargar los datos del inventario'
+      });
+    }
+  }
       
       // Form submission handler
       const inventoryForm = document.getElementById('inventory-form');
@@ -367,38 +360,37 @@
           user
         };
         
-        try {
-          // Insert record using the InsertInventoryRecord Loop
-          await Loops.invoke('InsertInventoryRecord', { record: newRecord });
-          
-          // Reset form
-          inventoryForm.reset();
-          
-          // Show success message
-          Swal.fire({
-            icon: 'success',
-            title: 'Éxito',
-            text: 'Conteo registrado correctamente',
-            timer: 2000,
-            showConfirmButton: false
-          });
-          
-          // Refresh data
-          await loadInventoryData();
-        } catch (error) {
-          console.error('Error saving inventory record:', error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error al guardar el registro de inventario'
-          });
-        } finally {
-          // Reset button state
-          submitText.textContent = 'Registrar Conteo';
-          submitLoader.classList.add('hidden');
-          submitBtn.disabled = false;
-        }
+       try {
+      await insertInventoryRecord(newRecord);
+      
+      // Reset form
+      inventoryForm.reset();
+      
+      // Show success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: 'Conteo registrado correctamente',
+        timer: 2000,
+        showConfirmButton: false
       });
+      
+      // Refresh data
+      await loadInventoryData();
+    } catch (error) {
+      console.error('Error saving inventory record:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al guardar el registro de inventario'
+      });
+    } finally {
+      // Reset button state
+      submitText.textContent = 'Registrar Conteo';
+      submitLoader.classList.add('hidden');
+      submitBtn.disabled = false;
+    }
+  });
       
       // File upload handling
       const fileUpload = document.getElementById('file-upload');
