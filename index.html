@@ -7,6 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style id="app-style">
     .bg-navy {
@@ -467,29 +468,31 @@
     }
 
     async function updateInventoryRecord(updatedRecord) {
-      try {
-        const supabaseRecord = {
-          rack: updatedRecord.rack,
-          ubicacion: updatedRecord.location,
-          usuario_asignado: updatedRecord.user,
-          numero_parte: updatedRecord.partNumber,
-          descripcion: updatedRecord.description,
-          cantidad: updatedRecord.quantity,
-          fecha_actualizacion: new Date().toISOString()
-        };
+  try {
+    const supabaseRecord = {
+      rack: updatedRecord.rack,
+      ubicacion: updatedRecord.location,
+      usuario_asignado: updatedRecord.user,
+      numero_parte: updatedRecord.partNumber,
+      descripcion: updatedRecord.description,
+      cantidad: updatedRecord.quantity,
+      fecha_actualizacion: new Date().toISOString()
+    };
 
-        const { error } = await supabase
-          .from('conteoinventario')
-          .update(supabaseRecord)
-          .eq('id', updatedRecord.id);
+    console.log('Actualizando registro:', supabaseRecord); // Verifica los datos antes de actualizar
 
-        if (error) throw error;
-        return updatedRecord;
-      } catch (error) {
-        console.error('Error updating record:', error);
-        throw error;
-      }
-    }
+    const { error } = await supabase
+      .from('conteoinventario')
+      .update(supabaseRecord)
+      .eq('id', updatedRecord.id);
+
+    if (error) throw error;
+    return updatedRecord;
+  } catch (error) {
+    console.error('Error al actualizar el registro:', error);
+    throw error;
+  }
+}
 
     async function deleteInventoryRecords(id = null) {
       try {
@@ -674,52 +677,52 @@
     }
 
     function updateInventoryRecords() {
-      const inventoryRecords = document.getElementById('inventory-records');
+  const inventoryRecords = document.getElementById('inventory-records');
+  let html = '';
 
-      let html = '';
+  if (inventoryData.length === 0) {
+    html = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>';
+  } else {
+    console.log('Datos de inventario:', inventoryData); // Verifica los datos
+    inventoryData.forEach(record => {
+      html += `
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${moment(record.fecha_creacion).format('DD/MM/YYYY HH:mm')}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">Rack ${record.rack}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${record.ubicacion}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${record.numero_parte}</div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="text-sm text-gray-900">${record.descripcion || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${record.cantidad}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${record.usuario_asignado}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button onclick="editRecord(${record.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteRecord(${record.id})" class="text-red-600 hover:text-red-900">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  }
 
-      if (inventoryData.length === 0) {
-        html = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>';
-      } else {
-        inventoryData.forEach(record => {
-          html += `
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-500">${moment(record.fecha_creacion).format('DD/MM/YYYY HH:mm')}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Rack ${record.rack}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">${record.ubicacion}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${record.numero_parte}</div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${record.descripcion}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${record.cantidad}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${record.usuario_asignado}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button onclick="editRecord('${record.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="deleteRecord('${record.id}')" class="text-red-600 hover:text-red-900">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          `;
-        });
-      }
-
-      inventoryRecords.innerHTML = html;
-    }
+  inventoryRecords.innerHTML = html;
+}
 
     function updateUserRegistry() {
       const userRegistry = document.getElementById('user-registry');
