@@ -1282,14 +1282,14 @@ document.getElementById('assignment-form').addEventListener('submit', async func
   const rack = document.getElementById('rack-assignment').value.trim();
   const location = document.getElementById('location-assignment').value.trim();
   const partNumber = document.getElementById('part-number-assignment').value.trim();
+  const esAsignacion = document.querySelector('input[name="es_asignacion"]:checked').value === 'true';
 
-  // Depuración: Muestra los valores en la consola
   console.log('Usuario:', user);
   console.log('Rack:', rack);
   console.log('Ubicación:', location);
   console.log('Número de parte:', partNumber);
+  console.log('¿Es asignación pendiente?:', esAsignacion);
 
-  // Valida que los campos no estén vacíos
   if (!user || !rack || !location || !partNumber) {
     Swal.fire({
       icon: 'error',
@@ -1299,12 +1299,10 @@ document.getElementById('assignment-form').addEventListener('submit', async func
     return;
   }
 
-  // Obtén la descripción del número de parte
   const description = await getPartDescription(partNumber);
   console.log('Descripción:', description);
 
   try {
-    // Inserta el registro en Supabase
     const { error } = await supabase
       .from('conteoinventario')
       .insert([
@@ -1314,14 +1312,14 @@ document.getElementById('assignment-form').addEventListener('submit', async func
           usuario_asignado: user,
           numero_parte: partNumber,
           descripcion: description,
-          cantidad: 0, // Inicialmente 0
-          cantidad_contada: false // Pendiente
+          cantidad: 0,
+          cantidad_contada: false,
+          es_asignacion: esAsignacion
         }
       ]);
 
     if (error) throw error;
 
-    // Éxito
     Swal.fire({
       icon: 'success',
       title: 'Asignación registrada',
@@ -1329,7 +1327,6 @@ document.getElementById('assignment-form').addEventListener('submit', async func
       confirmButtonColor: '#0a192f'
     });
 
-    // Recarga las asignaciones pendientes
     await loadAssignments();
     this.reset();
   } catch (error) {
@@ -1341,6 +1338,7 @@ document.getElementById('assignment-form').addEventListener('submit', async func
     });
   }
 });
+
 
       // CARGAR DATOS INICIALES
       loadInventoryData();
