@@ -734,8 +734,11 @@
             <button onclick="editRecord(${record.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
               <i class="fas fa-edit"></i>
             </button>
-            <button onclick="deleteRecord(${record.id})" class="text-red-600 hover:text-red-900">
+            <button onclick="deleteRecord(${record.id})" class="text-red-600 hover:text-red-900 mr-3">
               <i class="fas fa-trash"></i>
+            </button>
+            <button onclick="reconteoRecord(${record.id})" class="text-yellow-600 hover:text-yellow-900">
+              <i class="fas fa-redo"></i>
             </button>
           </td>
         </tr>
@@ -788,6 +791,65 @@
       userRegistry.innerHTML = html;
     }
 
+
+
+
+window.reconteoRecord = async function(id) {
+  const record = inventoryData.find(item => item.id === id);
+  if (!record) return;
+
+  const result = await Swal.fire({
+    title: '¿Recontar este registro?',
+    text: `El registro será marcado como pendiente y aparecerá en "Asignaciones Pendientes" para que ${record.usuario_asignado} vuelva a ingresar la cantidad contada.`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, recontar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      // Actualizar el registro en Supabase para marcarlo como pendiente
+      const { error } = await supabase
+        .from('conteoinventario')
+        .update({
+          cantidad: 0, // Reiniciar la cantidad
+          cantidad_contada: false, // Marcar como pendiente
+          fecha_actualizacion: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Recargar los datos
+      await loadAssignments();
+      await loadInventoryData();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Reconteo registrado',
+        text: 'El registro ha sido marcado como pendiente y aparecerá en "Asignaciones Pendientes".',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error al registrar reconteo:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo registrar el reconteo'
+      });
+    }
+  }
+};
+
+
+
+
+
+    
     // FUNCIONES GLOBALES PARA EDICIÓN Y ELIMINACIÓN
    window.editRecord = async function(id) {
   const record = inventoryData.find(item => item.id === id);
@@ -947,14 +1009,13 @@
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
-      .eq('cantidad', 0) // Solo asignaciones pendientes (cantidad = 0)
-      .eq('es_asignacion', true) // Solo las que son asignaciones, no registros manuales
+      .or('cantidad_contada.is.false,cantidad_contada.is.null') // Solo registros pendientes
       .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
-    console.log('Asignaciones cargadas:', data); // Para debug
-    updateAssignmentList(data); // Muestra los datos en la tabla
+    console.log('Asignaciones cargadas:', data);
+    updateAssignmentList(data);
   } catch (error) {
     console.error('Error al cargar asignaciones:', error);
     Swal.fire({
@@ -975,7 +1036,7 @@
       assignmentHTML += `
         <tr data-assignment-id="${assignment.id}">
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">${assignment.rack}</div>
+            <div class="text-sm font-medium text-gray-900">Rack ${assignment.rack}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">${assignment.ubicacion}</div>
@@ -994,7 +1055,7 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <button
-              onclick="registerCount('${assignment.id}')"
+              onclick="registerCount(${assignment.id})"
               class="bg-navy text-white py-1 px-3 rounded-md hover:bg-opacity-90 transition-all">
               Registrar Conteo
             </button>
