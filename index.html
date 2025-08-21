@@ -764,73 +764,74 @@
     }
 
     // FUNCIONES GLOBALES PARA EDICIÓN Y ELIMINACIÓN
-    window.editRecord = async function(id) {
-      const record = inventoryData.find(item => item.id === id);
-      if (!record) return;
-      const { value: formValues } = await Swal.fire({
-        title: 'Editar Registro',
-        html: `
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
-              <input id="edit-rack" class="swal2-input" value="${record.rack}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-              <input id="edit-location" class="swal2-input" value="${record.ubicacion}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-              <input id="edit-user" class="swal2-input" value="${record.usuario_asignado}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input id="edit-part" class="swal2-input" value="${record.numero_parte}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <input id="edit-description" class="swal2-input" value="${record.descripcion}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-              <input id="edit-quantity" type="number" class="swal2-input" value="${record.cantidad}">
-            </div>
-          </div>
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Actualizar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => ({
-          id: record.id,
-          rack: document.getElementById('edit-rack').value,
-          location: document.getElementById('edit-location').value,
-          user: document.getElementById('edit-user').value,
-          partNumber: document.getElementById('edit-part').value,
-          description: document.getElementById('edit-description').value,
-          quantity: parseInt(document.getElementById('edit-quantity').value)
-        })
+   window.editRecord = async function(id) {
+  const record = inventoryData.find(item => item.id === id);
+  if (!record) return;
+
+  const { value: formValues } = await Swal.fire({
+    title: 'Editar Registro',
+    html: `
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+          <input id="edit-rack" class="swal2-input" value="${record.rack}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+          <input id="edit-location" class="swal2-input" value="${record.ubicacion}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+          <input id="edit-user" class="swal2-input" value="${record.usuario_asignado}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+          <input id="edit-part" class="swal2-input" value="${record.numero_parte}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <input id="edit-description" class="swal2-input" value="${record.descripcion}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+          <input id="edit-quantity" type="number" class="swal2-input" value="${record.cantidad}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Actualizar',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => ({
+      id: record.id,
+      rack: document.getElementById('edit-rack').value,
+      location: document.getElementById('edit-location').value,
+      user: document.getElementById('edit-user').value,
+      partNumber: document.getElementById('edit-part').value,
+      description: document.getElementById('edit-description').value,
+      quantity: parseInt(document.getElementById('edit-quantity').value)
+    })
+  });
+
+  if (formValues) {
+    try {
+      await updateInventoryRecord(formValues);
+      await loadInventoryData();
+      Swal.fire({
+        icon: 'success',
+        title: 'Actualizado',
+        text: 'Registro actualizado correctamente',
+        timer: 2000,
+        showConfirmButton: false
       });
-      if (formValues) {
-        try {
-          await updateInventoryRecord(formValues);
-          await loadInventoryData();
-          Swal.fire({
-            icon: 'success',
-            title: 'Actualizado',
-            text: 'Registro actualizado correctamente',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        } catch (error) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo actualizar el registro'
-          });
-        }
-      }
-    };
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el registro'
+      });
+    }
+  }
 
     window.deleteRecord = async function(id) {
       const result = await Swal.fire({
