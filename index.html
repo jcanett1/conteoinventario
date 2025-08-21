@@ -897,16 +897,19 @@
     }
 
     // FUNCIÓN PARA CARGAS DE ASIGNACIONES
+  // FUNCIÓN PARA CARGAS DE ASIGNACIONES
   async function loadAssignments() {
   try {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
-      .eq('cantidad_contada', false) // Solo asignaciones pendientes
+      .eq('cantidad', 0) // Solo asignaciones pendientes (cantidad = 0)
+      .eq('es_asignacion', true) // Solo las que son asignaciones, no registros manuales
       .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
+    console.log('Asignaciones cargadas:', data); // Para debug
     updateAssignmentList(data); // Muestra los datos en la tabla
   } catch (error) {
     console.error('Error al cargar asignaciones:', error);
