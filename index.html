@@ -65,7 +65,6 @@
       </div>
     </div>
   </header>
-
   <!-- Add tab navigation -->
   <div class="container mx-auto px-4 mt-4">
     <div class="flex border-b border-gray-200">
@@ -80,7 +79,6 @@
       </button>
     </div>
   </div>
-
   <!-- Main Content with two tab containers -->
   <main class="container mx-auto px-4 py-6">
     <!-- Tab 1: Administración -->
@@ -89,7 +87,7 @@
         <!-- Left Column - User Assignment Form -->
         <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Asignación de Usuario para Conteo</h2>
-          
+
           <form id="assignment-form" class="space-y-4">
             <div>
               <label for="user-assignment" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
@@ -101,7 +99,7 @@
                 <option value="Maria González (Inventario)">
               </datalist>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Rack Selection -->
               <div>
@@ -117,7 +115,7 @@
                   <option value="G">Rack G</option>
                 </select>
               </div>
-              
+
               <!-- Location Selection -->
               <div>
                 <label for="location-assignment" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
@@ -126,13 +124,16 @@
                 </select>
               </div>
             </div>
-            
+
             <!-- Part Number -->
             <div>
               <label for="part-number-assignment" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input type="text" id="part-number-assignment" name="part-number-assignment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+              <input type="text" id="part-number-assignment" name="part-number-assignment" list="part-number-list-assignment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+              <datalist id="part-number-list-assignment">
+                <!-- Se llenará con JavaScript -->
+              </datalist>
             </div>
-            
+
             <!-- Submit Button -->
             <div class="pt-2">
               <button type="submit" id="assignment-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
@@ -141,11 +142,11 @@
             </div>
           </form>
         </div>
-        
+
         <!-- Right Column - User Registration -->
         <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro de Usuarios para Conteo</h2>
-          
+
           <form id="user-register-form" class="mb-6 flex items-end space-x-2">
             <div class="flex-1">
               <label for="new-user-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -159,7 +160,7 @@
               Registrar Usuario
             </button>
           </form>
-          
+
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 table-hover">
               <thead class="bg-gray-50">
@@ -191,14 +192,14 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Tab 2: Conteo de Inventario -->
     <div id="content-inventory" class="hidden">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <!-- Form Column -->
         <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro Manual de Inventario</h2>
-          
+
           <form id="inventory-form" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Rack Selection -->
@@ -215,7 +216,7 @@
                   <option value="G">Rack G</option>
                 </select>
               </div>
-              
+
               <!-- Location Selection -->
               <div>
                 <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
@@ -224,7 +225,7 @@
                 </select>
               </div>
             </div>
-            
+
             <!-- User Assignment -->
             <div>
               <label for="user" class="block text-sm font-medium text-gray-700 mb-1">Usuario Asignado</label>
@@ -236,23 +237,26 @@
                 <option value="Maria González (Inventario)">
               </datalist>
             </div>
-            
-            <!-- Part Information -->
+
+            <!-- Part Number -->
             <div>
               <label for="part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input type="text" id="part-number" name="part-number" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+              <input type="text" id="part-number" name="part-number" list="part-number-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+              <datalist id="part-number-list">
+                <!-- Se llenará con JavaScript -->
+              </datalist>
             </div>
-            
+
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
               <input type="text" id="description" name="description" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese descripción del producto">
             </div>
-            
+
             <div>
               <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
               <input type="number" id="quantity" name="quantity" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad contada">
             </div>
-            
+
             <!-- Submit Button -->
             <div class="pt-2">
               <button type="submit" id="submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all flex items-center justify-center">
@@ -264,12 +268,12 @@
             </div>
           </form>
         </div>
-        
+
         <!-- Summary Column -->
         <div class="md:col-span-6">
           <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Resumen por Rack</h2>
-            
+
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 table-hover">
                 <thead class="bg-gray-50">
@@ -290,11 +294,11 @@
           </div>
         </div>
       </div>
-      
+
       <!-- User Assignment Summary -->
       <div class="bg-white rounded-lg shadow-md p-6 mt-6">
         <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Conteo por Usuario</h2>
-        
+
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 table-hover">
             <thead class="bg-gray-50">
@@ -315,11 +319,11 @@
           </table>
         </div>
       </div>
-      
+
       <!-- Inventory Records -->
       <div class="bg-white rounded-lg shadow-md p-6 mt-6">
         <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
-        
+
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 table-hover">
             <thead class="bg-gray-50">
@@ -344,12 +348,11 @@
         </div>
       </div>
     </div>
-
     <!-- Tab 3: Vista de Asignaciones -->
     <div id="content-view" class="hidden">
       <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Asignaciones Pendientes</h2>
-        
+
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 table-hover">
             <thead class="bg-gray-50">
@@ -376,27 +379,22 @@
       </div>
     </div>
   </main>
-
   <!-- Footer -->
   <footer class="bg-navy text-white py-4 mt-8">
     <div class="container mx-auto px-4 text-center">
       <p>&copy; 2025 Sistema de Conteo de Inventario | Todos los derechos reservados</p>
     </div>
   </footer>
-
   <!-- JavaScript Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <script id="app-script">
     // CONFIGURACIÓN SUPABASE
     const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
-
     // Inicializar Supabase
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     // Variables globales
     let inventoryData = [];
     let userData = [];
@@ -412,7 +410,7 @@
           .from('conteoinventario')
           .select('*')
           .order('fecha_creacion', { ascending: false });
-        
+
         if (error) {
           console.error('Error de Supabase:', error);
           throw error;
@@ -436,18 +434,18 @@
           descripcion: record.description,
           cantidad: record.quantity
         };
-        
+
         console.log('Insertando registro:', supabaseRecord);
         const { data, error } = await supabase
           .from('conteoinventario')
           .insert([supabaseRecord])
           .select();
-        
+
         if (error) throw error;
-        
+
         console.log('Registro insertado:', data[0]);
-        return { 
-          id: data[0].id, 
+        return {
+          id: data[0].id,
           ...record,
           fecha_creacion: data[0].fecha_creacion
         };
@@ -468,12 +466,12 @@
           cantidad: updatedRecord.quantity,
           fecha_actualizacion: new Date().toISOString()
         };
-        
+
         const { error } = await supabase
           .from('conteoinventario')
           .update(supabaseRecord)
           .eq('id', updatedRecord.id);
-        
+
         if (error) throw error;
         return updatedRecord;
       } catch (error) {
@@ -511,7 +509,7 @@
           .from('usuarioconteo')
           .select('*')
           .order('nombre', { ascending: true });
-        
+
         if (error) throw error;
         return data || [];
       } catch (error) {
@@ -526,12 +524,53 @@
           .from('usuarioconteo')
           .insert([userData])
           .select();
-        
+
         if (error) throw error;
         return data[0];
       } catch (error) {
         console.error('Error inserting user:', error);
         throw error;
+      }
+    }
+
+    // FUNCIONES PARA NÚMEROS DE PARTE Y DESCRIPCIÓN
+    async function getPartDescription(partNumber) {
+      try {
+        const { data, error } = await supabase
+          .from('numerosinventario')
+          .select('descripcion')
+          .eq('numero_parte', partNumber)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+          throw error;
+        }
+        return data?.descripcion || '';
+      } catch (error) {
+        console.error('Error al buscar la descripción:', error);
+        return '';
+      }
+    }
+
+    async function loadPartNumbers(datalistId) {
+      try {
+        const { data, error } = await supabase
+          .from('numerosinventario')
+          .select('numero_parte, descripcion');
+
+        if (error) throw error;
+
+        const datalist = document.getElementById(datalistId);
+        datalist.innerHTML = '';
+
+        data.forEach(item => {
+          const option = document.createElement('option');
+          option.value = item.numero_parte;
+          option.textContent = `${item.numero_parte} - ${item.descripcion}`;
+          datalist.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error al cargar números de parte:', error);
       }
     }
 
@@ -545,9 +584,9 @@
     function updateRackSummary() {
       const rackSummary = document.getElementById('rack-summary');
       const racks = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-      
+
       let html = '';
-      
+
       if (inventoryData.length === 0) {
         html = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
       } else {
@@ -555,7 +594,7 @@
           const rackItems = inventoryData.filter(item => item.rack === rack);
           const totalItems = rackItems.length;
           const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
-          
+
           html += `
             <tr>
               <td class="px-6 py-4 whitespace-nowrap">
@@ -571,32 +610,32 @@
           `;
         });
       }
-      
+
       rackSummary.innerHTML = html;
     }
 
     function updateUserSummary() {
       const userSummary = document.getElementById('user-summary');
-      
+
       let html = '';
-      
+
       if (inventoryData.length === 0) {
         html = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
       } else {
         const users = [...new Set(inventoryData.map(item => item.usuario_asignado))];
-        
+
         users.forEach(user => {
           const userRacks = [...new Set(inventoryData.filter(item => item.usuario_asignado === user).map(item => item.rack))];
-          
+
           userRacks.forEach(rack => {
             const rackItems = inventoryData.filter(item => item.usuario_asignado === user && item.rack === rack);
             const totalItems = rackItems.length;
             const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
-            
+
             const latestTimestamp = rackItems.reduce((latest, item) => {
               return new Date(item.fecha_creacion) > new Date(latest) ? item.fecha_creacion : latest;
             }, rackItems[0].fecha_creacion);
-            
+
             html += `
               <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -619,15 +658,15 @@
           });
         });
       }
-      
+
       userSummary.innerHTML = html;
     }
 
     function updateInventoryRecords() {
       const inventoryRecords = document.getElementById('inventory-records');
-      
+
       let html = '';
-      
+
       if (inventoryData.length === 0) {
         html = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>';
       } else {
@@ -667,15 +706,15 @@
           `;
         });
       }
-      
+
       inventoryRecords.innerHTML = html;
     }
 
     function updateUserRegistry() {
       const userRegistry = document.getElementById('user-registry');
-      
+
       let html = '';
-      
+
       if (userData.length === 0) {
         html = `
           <tr>
@@ -709,7 +748,7 @@
           `;
         });
       }
-      
+
       userRegistry.innerHTML = html;
     }
 
@@ -717,7 +756,6 @@
     window.editRecord = async function(id) {
       const record = inventoryData.find(item => item.id === id);
       if (!record) return;
-
       const { value: formValues } = await Swal.fire({
         title: 'Editar Registro',
         html: `
@@ -762,7 +800,6 @@
           quantity: parseInt(document.getElementById('edit-quantity').value)
         })
       });
-
       if (formValues) {
         try {
           await updateInventoryRecord(formValues);
@@ -795,7 +832,6 @@
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
       });
-
       if (result.isConfirmed) {
         try {
           await deleteInventoryRecords(id);
@@ -837,7 +873,7 @@
       // Actualizar ambas listas de usuarios
       const userList = document.getElementById('user-list');
       const userListInventory = document.getElementById('user-list-inventory');
-      
+
       // Limpiar opciones existentes (excepto las por defecto)
       userList.innerHTML = `
         <option value="Lupta (Kiteo)">
@@ -845,20 +881,20 @@
         <option value="Carlos Méndez (Almacén)">
         <option value="Maria González (Inventario)">
       `;
-      
+
       userListInventory.innerHTML = `
         <option value="Lupta (Kiteo)">
         <option value="Alan Ramos (Producción)">
         <option value="Carlos Méndez (Almacén)">
         <option value="Maria González (Inventario)">
       `;
-      
+
       // Agregar usuarios de la base de datos
       userData.forEach(user => {
         const option1 = document.createElement('option');
         option1.value = `${user.nombre} (${user.puesto})`;
         userList.appendChild(option1);
-        
+
         const option2 = document.createElement('option');
         option2.value = `${user.nombre} (${user.puesto})`;
         userListInventory.appendChild(option2);
@@ -874,7 +910,7 @@
           {id: 2, rack: 'B', location: 'B-5', partNumber: 'XYZ789', description: 'Conectores de plástico', user: 'Lupta (Kiteo)'},
           {id: 3, rack: 'C', location: 'C-22', partNumber: 'DEF456', description: 'Tuercas de seguridad', user: 'Alan Ramos (Producción)'}
         ];
-        
+
         updateAssignmentList(assignments);
       } catch (error) {
         console.error('Error loading assignments:', error);
@@ -888,10 +924,10 @@
 
     function updateAssignmentList(assignments) {
       const assignmentList = document.getElementById('assignment-list');
-      
+
       if (assignments && assignments.length > 0) {
         let assignmentHTML = '';
-        
+
         assignments.forEach(assignment => {
           assignmentHTML += `
             <tr data-assignment-id="${assignment.id}">
@@ -914,8 +950,8 @@
                 <input type="number" min="1" placeholder="Cantidad" class="count-input px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <button 
-                  onclick="startCountingAssignment(${assignment.id})" 
+                <button
+                  onclick="startCountingAssignment(${assignment.id})"
                   class="bg-navy text-white py-1 px-3 rounded-md hover:bg-opacity-90 transition-all">
                   Registrar Conteo
                 </button>
@@ -923,7 +959,7 @@
             </tr>
           `;
         });
-        
+
         assignmentList.innerHTML = assignmentHTML;
       } else {
         assignmentList.innerHTML = `
@@ -939,7 +975,7 @@
     window.startCountingAssignment = async function(id) {
       const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
       if (!row) return;
-      
+
       const rack = row.cells[0].querySelector('div').textContent.replace('Rack ', '');
       const location = row.cells[1].querySelector('div').textContent;
       const partNumber = row.cells[2].querySelector('div').textContent;
@@ -947,7 +983,7 @@
       const user = row.cells[4].querySelector('div').textContent;
       const countInput = row.querySelector('.count-input');
       const quantity = parseInt(countInput.value);
-      
+
       if (!quantity || quantity <= 0) {
         Swal.fire({
           icon: 'error',
@@ -956,7 +992,7 @@
         });
         return;
       }
-      
+
       const newRecord = {
         rack,
         location,
@@ -965,18 +1001,18 @@
         quantity,
         user
       };
-      
+
       try {
         row.classList.add('bg-gray-100');
         const button = row.querySelector('button');
         const originalText = button.textContent;
         button.disabled = true;
         button.textContent = 'Procesando...';
-        
+
         await insertInventoryRecord(newRecord);
         countInput.value = '';
         await loadInventoryData();
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -1005,11 +1041,10 @@
       function setupLocationSelects(rackSelectId, locationSelectId) {
         const rackSelect = document.getElementById(rackSelectId);
         const locationSelect = document.getElementById(locationSelectId);
-
         rackSelect.addEventListener('change', function() {
           locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
           const selectedRack = this.value;
-          
+
           if (selectedRack && rackLocations[selectedRack]) {
             for (let i = 1; i <= rackLocations[selectedRack]; i++) {
               const option = document.createElement('option');
@@ -1020,7 +1055,6 @@
           }
         });
       }
-
       // Configurar ambos pares de selects
       setupLocationSelects('rack', 'location');
       setupLocationSelects('rack-assignment', 'location-assignment');
@@ -1032,35 +1066,35 @@
       const contentAdmin = document.getElementById('content-admin');
       const contentInventory = document.getElementById('content-inventory');
       const contentView = document.getElementById('content-view');
-      
+
       function showTab(activeTab, activeContent, otherTabs, otherContents) {
         // Actualizar estilos de pestañas
         activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
         activeTab.classList.remove('text-gray-500');
-        
+
         otherTabs.forEach(tab => {
           tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
           tab.classList.add('text-gray-500');
         });
-        
+
         // Mostrar/ocultar contenido
         activeContent.classList.remove('hidden');
         activeContent.classList.add('block');
-        
+
         otherContents.forEach(content => {
           content.classList.add('hidden');
           content.classList.remove('block');
         });
       }
-      
+
       tabAdmin.addEventListener('click', function() {
         showTab(tabAdmin, contentAdmin, [tabInventory, tabView], [contentInventory, contentView]);
       });
-      
+
       tabInventory.addEventListener('click', function() {
         showTab(tabInventory, contentInventory, [tabAdmin, tabView], [contentAdmin, contentView]);
       });
-      
+
       tabView.addEventListener('click', function() {
         showTab(tabView, contentView, [tabAdmin, tabInventory], [contentAdmin, contentInventory]);
         loadAssignments(); // Cargar asignaciones cuando se hace clic en la pestaña
@@ -1069,16 +1103,15 @@
       // FORMULARIO DE INVENTARIO
       document.getElementById('inventory-form').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const submitBtn = document.getElementById('submit-btn');
         const submitText = document.getElementById('submit-text');
         const submitLoader = document.getElementById('submit-loader');
-        
+
         // Mostrar loading
         submitText.textContent = 'Procesando...';
         submitLoader.classList.remove('hidden');
         submitBtn.disabled = true;
-
         const formData = {
           rack: document.getElementById('rack').value,
           location: document.getElementById('location').value,
@@ -1087,7 +1120,6 @@
           description: document.getElementById('description').value,
           quantity: parseInt(document.getElementById('quantity').value)
         };
-
         try {
           await insertInventoryRecord(formData);
           await loadInventoryData();
@@ -1115,21 +1147,21 @@
       // FORMULARIO DE REGISTRO DE USUARIOS
       document.getElementById('user-register-form').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const userName = document.getElementById('new-user-name').value;
         const userArea = document.getElementById('new-user-area').value;
-        
+
         if (userName && userArea) {
           try {
             const newUser = {
               nombre: userName,
               puesto: userArea
             };
-            
+
             await insertUser(newUser);
             await loadUserData();
             this.reset();
-            
+
             Swal.fire({
               icon: 'success',
               title: 'Usuario Registrado',
@@ -1150,12 +1182,12 @@
       // FORMULARIO DE ASIGNACIONES
       document.getElementById('assignment-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const user = document.getElementById('user-assignment').value;
         const rack = document.getElementById('rack-assignment').value;
         const location = document.getElementById('location-assignment').value;
         const partNumber = document.getElementById('part-number-assignment').value;
-        
+
         // En implementación real, guardar en base de datos
         Swal.fire({
           icon: 'success',
@@ -1163,7 +1195,7 @@
           text: `Se ha asignado a ${user} para contar el rack ${rack}, ubicación ${location}, parte ${partNumber}`,
           confirmButtonColor: '#0a192f'
         });
-        
+
         this.reset();
       });
 
@@ -1204,6 +1236,43 @@
       // CARGAR DATOS INICIALES
       loadInventoryData();
       loadUserData();
+
+      // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
+      loadPartNumbers('part-number-list');
+      loadPartNumbers('part-number-list-assignment');
+
+      // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
+      document.getElementById('part-number').addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        if (partNumber) {
+          const description = await getPartDescription(partNumber);
+          if (!description) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Número de parte no encontrado',
+              text: 'El número de parte ingresado no existe en la base de datos.',
+            });
+            document.getElementById('description').value = '';
+          } else {
+            document.getElementById('description').value = description;
+          }
+        }
+      });
+
+      // AUTOCOMPLETAR DESCRIPCIÓN EN FORMULARIO DE ASIGNACIÓN
+      document.getElementById('part-number-assignment').addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        if (partNumber) {
+          const description = await getPartDescription(partNumber);
+          if (!description) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Número de parte no encontrado',
+              text: 'El número de parte ingresado no existe en la base de datos.',
+            });
+          }
+        }
+      });
     });
   </script>
 </body>
