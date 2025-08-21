@@ -534,45 +534,45 @@
     }
 
     // FUNCIONES PARA NÚMEROS DE PARTE Y DESCRIPCIÓN
-    async function getPartDescription(partNumber) {
-      try {
-        const { data, error } = await supabase
-          .from('numerosinventario')
-          .select('descripcion')
-          .eq('numero_parte', partNumber)
-          .single();
+  async function getPartDescription(partNumber) {
+  try {
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('descripcion')
+      .eq('inventario_id', partNumber) // Cambia 'numero_parte' por 'inventario_id'
+      .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
-          throw error;
-        }
-        return data?.descripcion || '';
-      } catch (error) {
-        console.error('Error al buscar la descripción:', error);
-        return '';
-      }
+    if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+      throw error;
     }
+    return data?.descripcion || '';
+  } catch (error) {
+    console.error('Error al buscar la descripción:', error);
+    return '';
+  }
+}
 
     async function loadPartNumbers(datalistId) {
-      try {
-        const { data, error } = await supabase
-          .from('numerosinventario')
-          .select('numero_parte, descripcion');
+  try {
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('inventario_id, descripcion'); // Cambia 'numero_parte' por 'inventario_id'
 
-        if (error) throw error;
+    if (error) throw error;
 
-        const datalist = document.getElementById(datalistId);
-        datalist.innerHTML = '';
+    const datalist = document.getElementById(datalistId);
+    datalist.innerHTML = '';
 
-        data.forEach(item => {
-          const option = document.createElement('option');
-          option.value = item.numero_parte;
-          option.textContent = `${item.numero_parte} - ${item.descripcion}`;
-          datalist.appendChild(option);
-        });
-      } catch (error) {
-        console.error('Error al cargar números de parte:', error);
-      }
-    }
+    data.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.inventario_id; // Cambia 'numero_parte' por 'inventario_id'
+      option.textContent = `${item.inventario_id} - ${item.descripcion}`;
+      datalist.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar números de parte:', error);
+  }
+}
 
     // FUNCIONES DE LA UI
     function updateUI() {
@@ -1242,22 +1242,22 @@
       loadPartNumbers('part-number-list-assignment');
 
       // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
-      document.getElementById('part-number').addEventListener('blur', async function() {
-        const partNumber = this.value.trim();
-        if (partNumber) {
-          const description = await getPartDescription(partNumber);
-          if (!description) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'Número de parte no encontrado',
-              text: 'El número de parte ingresado no existe en la base de datos.',
-            });
-            document.getElementById('description').value = '';
-          } else {
-            document.getElementById('description').value = description;
-          }
-        }
+document.getElementById('part-number').addEventListener('blur', async function() {
+  const partNumber = this.value.trim();
+  if (partNumber) {
+    const description = await getPartDescription(partNumber);
+    if (!description) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Número de parte no encontrado',
+        text: 'El número de parte ingresado no existe en la base de datos.',
       });
+      document.getElementById('description').value = '';
+    } else {
+      document.getElementById('description').value = description;
+    }
+  }
+});
 
       // AUTOCOMPLETAR DESCRIPCIÓN EN FORMULARIO DE ASIGNACIÓN
       document.getElementById('part-number-assignment').addEventListener('blur', async function() {
