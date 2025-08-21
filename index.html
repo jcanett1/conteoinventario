@@ -817,6 +817,7 @@ window.reconteoRecord = async function(id) {
         .update({
           cantidad: 0, // Reiniciar la cantidad
           cantidad_contada: false, // Marcar como pendiente
+          es_reconteo: true, // Marcar como reconteo (nuevo campo)
           fecha_actualizacion: new Date().toISOString()
         })
         .eq('id', id);
@@ -1009,12 +1010,12 @@ window.reconteoRecord = async function(id) {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
-      .or('cantidad_contada.is.false,cantidad_contada.is.null') // Solo registros pendientes
-      .order('fecha_creacion', { ascending: false });
+      .eq('es_reconteo', true) // Solo registros marcados para reconteo
+      .order('fecha_actualizacion', { ascending: false });
 
     if (error) throw error;
 
-    console.log('Asignaciones cargadas:', data);
+    console.log('Asignaciones para reconteo:', data);
     updateAssignmentList(data);
   } catch (error) {
     console.error('Error al cargar asignaciones:', error);
@@ -1069,7 +1070,7 @@ window.reconteoRecord = async function(id) {
     assignmentList.innerHTML = `
       <tr>
         <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
-          No hay asignaciones pendientes
+          No hay asignaciones pendientes para reconteo
         </td>
       </tr>
     `;
@@ -1078,8 +1079,8 @@ window.reconteoRecord = async function(id) {
 
 
 
-window.registerCount = async function(assignmentId) {
-  const row = document.querySelector(`tr[data-assignment-id="${assignmentId}"]`);
+window.registerCount = async function(id) {
+  const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
   if (!row) return;
 
   const countInput = row.querySelector('.count-input');
@@ -1099,19 +1100,20 @@ window.registerCount = async function(assignmentId) {
     button.disabled = true;
     button.textContent = 'Procesando...';
 
-    // Actualiza el registro en Supabase
+    // Actualizar el registro en Supabase
     const { error } = await supabase
       .from('conteoinventario')
       .update({
         cantidad: quantity,
-        cantidad_contada: true, // Marca como contado
+        cantidad_contada: true, // Marcar como contado
+        es_reconteo: false, // Desmarcar como reconteo
         fecha_actualizacion: new Date().toISOString()
       })
-      .eq('id', assignmentId);
+      .eq('id', id);
 
     if (error) throw error;
 
-    // Recarga los datos
+    // Recargar los datos
     await loadAssignments();
     await loadInventoryData();
 
