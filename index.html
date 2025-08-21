@@ -469,6 +469,21 @@
 
     async function updateInventoryRecord(updatedRecord) {
   try {
+    // Obtener el registro actual para comparar la cantidad
+    const { data: currentRecord, error: fetchError } = await supabase
+      .from('conteoinventario')
+      .select('cantidad, modificaciones')
+      .eq('id', updatedRecord.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Incrementar el conteo de modificaciones si la cantidad cambió
+    let modificaciones = currentRecord.modificaciones || 0;
+    if (currentRecord.cantidad !== updatedRecord.quantity) {
+      modificaciones += 1;
+    }
+
     const supabaseRecord = {
       rack: updatedRecord.rack,
       ubicacion: updatedRecord.location,
@@ -476,10 +491,9 @@
       numero_parte: updatedRecord.partNumber,
       descripcion: updatedRecord.description,
       cantidad: updatedRecord.quantity,
+      modificaciones: modificaciones, // Actualizar el conteo de modificaciones
       fecha_actualizacion: new Date().toISOString()
     };
-
-    console.log('Actualizando registro:', supabaseRecord); // Verifica los datos antes de actualizar
 
     const { error } = await supabase
       .from('conteoinventario')
@@ -676,15 +690,22 @@
       userSummary.innerHTML = html;
     }
 
-    function updateInventoryRecords() {
+   function updateInventoryRecords() {
   const inventoryRecords = document.getElementById('inventory-records');
   let html = '';
 
   if (inventoryData.length === 0) {
     html = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>';
   } else {
-    console.log('Datos de inventario:', inventoryData); // Verifica los datos
     inventoryData.forEach(record => {
+      // Determinar el texto de modificaciones
+      let modificacionesText = '';
+      if (record.modificaciones > 0) {
+        modificacionesText = record.modificaciones === 1
+          ? 'Modificado 1 vez'
+          : `Modificado ${record.modificaciones} veces`;
+      }
+
       html += `
         <tr>
           <td class="px-6 py-4 whitespace-nowrap">
@@ -704,6 +725,7 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">${record.cantidad}</div>
+            ${modificacionesText ? `<div class="text-xs text-gray-500">${modificacionesText}</div>` : ''}
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">${record.usuario_asignado}</div>
@@ -793,7 +815,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-          <input id="edit-description" class="swal2-input" value="${record.descripcion}">
+          <input id="edit-description" class="swal2-input" value="${record.descripcion || ''}">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
@@ -828,6 +850,7 @@
         showConfirmButton: false
       });
     } catch (error) {
+      console.error('Error al actualizar el registro:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
