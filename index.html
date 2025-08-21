@@ -902,19 +902,17 @@
     }
 
     // FUNCIÓN PARA CARGAS DE ASIGNACIONES
-   async function loadAssignments() {
+  async function loadAssignments() {
   try {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
+      .eq('cantidad_contada', false) // Solo asignaciones pendientes
       .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
-    // Filtrar solo los registros que no tienen cantidad registrada (asignaciones pendientes)
-    const pendingAssignments = data.filter(item => !item.cantidad_contada);
-
-    updateAssignmentList(pendingAssignments);
+    updateAssignmentList(data); // Muestra los datos en la tabla
   } catch (error) {
     console.error('Error al cargar asignaciones:', error);
     Swal.fire({
@@ -925,7 +923,7 @@
   }
 }
 
-   function updateAssignmentList(assignments) {
+ function updateAssignmentList(assignments) {
   const assignmentList = document.getElementById('assignment-list');
 
   if (assignments && assignments.length > 0) {
@@ -935,7 +933,7 @@
       assignmentHTML += `
         <tr data-assignment-id="${assignment.id}">
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">Rack ${assignment.rack}</div>
+            <div class="text-sm font-medium text-gray-900">${assignment.rack}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">${assignment.ubicacion}</div>
@@ -998,7 +996,7 @@ window.registerCount = async function(assignmentId) {
     button.disabled = true;
     button.textContent = 'Procesando...';
 
-    // Actualiza el registro en Supabase con la cantidad contada
+    // Actualiza el registro en Supabase
     const { error } = await supabase
       .from('conteoinventario')
       .update({
@@ -1011,8 +1009,8 @@ window.registerCount = async function(assignmentId) {
     if (error) throw error;
 
     // Recarga los datos
-    await loadInventoryData();
     await loadAssignments();
+    await loadInventoryData();
 
     Swal.fire({
       icon: 'success',
@@ -1034,7 +1032,6 @@ window.registerCount = async function(assignmentId) {
     button.textContent = 'Registrar Conteo';
   }
 };
-
 
 
 
@@ -1285,13 +1282,14 @@ window.registerCount = async function(assignmentId) {
       });
 
       // BOTÓN DE REINICIO
-    document.getElementById('assignment-form').addEventListener('submit', async function(e) {
+  document.getElementById('assignment-form').addEventListener('submit', async function(e) {
   e.preventDefault();
 
   const user = document.getElementById('user-assignment').value;
   const rack = document.getElementById('rack-assignment').value;
   const location = document.getElementById('location-assignment').value;
   const partNumber = document.getElementById('part-number-assignment').value;
+  const description = await getPartDescription(partNumber);
 
   try {
     const { error } = await supabase
@@ -1302,8 +1300,9 @@ window.registerCount = async function(assignmentId) {
           ubicacion: location,
           usuario_asignado: user,
           numero_parte: partNumber,
-          descripcion: await getPartDescription(partNumber),
-          cantidad_contada: false // Marca como pendiente
+          descripcion: description,
+          cantidad: 0, // Inicialmente 0
+          cantidad_contada: false // Pendiente
         }
       ]);
 
@@ -1316,7 +1315,7 @@ window.registerCount = async function(assignmentId) {
       confirmButtonColor: '#0a192f'
     });
 
-    // Recarga las asignaciones
+    // Recarga las asignaciones pendientes
     await loadAssignments();
     this.reset();
   } catch (error) {
