@@ -817,6 +817,7 @@ window.reconteoRecord = async function(id) {
         .update({
           cantidad: 0, // Reiniciar la cantidad
           cantidad_contada: false, // Marcar como pendiente
+          es_asignacion: true, // Marcar como asignación pendiente
           es_reconteo: true, // Marcar como reconteo (nuevo campo)
           fecha_actualizacion: new Date().toISOString()
         })
@@ -1010,6 +1011,7 @@ window.reconteoRecord = async function(id) {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
+      .eq('es_asignacion', true) // Solo registros donde es_asignacion = true
       .eq('es_reconteo', true) // Solo registros marcados para reconteo
       .order('fecha_actualizacion', { ascending: false });
 
@@ -1106,6 +1108,7 @@ window.registerCount = async function(id) {
       .update({
         cantidad: quantity,
         cantidad_contada: true, // Marcar como contado
+        es_asignacion: false, // Desmarcar como asignación pendiente
         es_reconteo: false, // Desmarcar como reconteo
         fecha_actualizacion: new Date().toISOString()
       })
