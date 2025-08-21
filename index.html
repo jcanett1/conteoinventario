@@ -832,38 +832,40 @@
       });
     }
   }
+};
 
-    window.deleteRecord = async function(id) {
-      const result = await Swal.fire({
-        title: '¿Eliminar registro?',
-        text: 'Esta acción no se puede deshacer',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
+ window.deleteRecord = async function(id) {
+  const result = await Swal.fire({
+    title: '¿Eliminar registro?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await deleteInventoryRecords(id);
+      await loadInventoryData();
+      Swal.fire({
+        icon: 'success',
+        title: 'Eliminado',
+        text: 'Registro eliminado correctamente',
+        timer: 2000,
+        showConfirmButton: false
       });
-      if (result.isConfirmed) {
-        try {
-          await deleteInventoryRecords(id);
-          await loadInventoryData();
-          Swal.fire({
-            icon: 'success',
-            title: 'Eliminado',
-            text: 'Registro eliminado correctamente',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        } catch (error) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo eliminar el registro'
-          });
-        }
-      }
-    };
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar el registro'
+      });
+    }
+  }
+};
 
     // FUNCIONES PRINCIPALES DE CARGA DE DATOS
     async function loadInventoryData() {
