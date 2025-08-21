@@ -902,76 +902,161 @@
     }
 
     // FUNCIÓN PARA CARGAS DE ASIGNACIONES
-    async function loadAssignments() {
-      try {
-        // Datos de ejemplo para asignaciones (en implementación real vendría de una tabla)
-        const assignments = [
-          {id: 1, rack: 'A', location: 'A-12', partNumber: 'ABC123', description: 'Tornillos de sujeción', user: 'Lupta (Kiteo)'},
-          {id: 2, rack: 'B', location: 'B-5', partNumber: 'XYZ789', description: 'Conectores de plástico', user: 'Lupta (Kiteo)'},
-          {id: 3, rack: 'C', location: 'C-22', partNumber: 'DEF456', description: 'Tuercas de seguridad', user: 'Alan Ramos (Producción)'}
-        ];
+   async function loadAssignments() {
+  try {
+    const { data, error } = await supabase
+      .from('conteoinventario')
+      .select('*')
+      .order('fecha_creacion', { ascending: false });
 
-        updateAssignmentList(assignments);
-      } catch (error) {
-        console.error('Error loading assignments:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Error al cargar las asignaciones'
-        });
-      }
-    }
+    if (error) throw error;
 
-    function updateAssignmentList(assignments) {
-      const assignmentList = document.getElementById('assignment-list');
+    // Filtrar solo los registros que no tienen cantidad registrada (asignaciones pendientes)
+    const pendingAssignments = data.filter(item => !item.cantidad_contada);
 
-      if (assignments && assignments.length > 0) {
-        let assignmentHTML = '';
+    updateAssignmentList(pendingAssignments);
+  } catch (error) {
+    console.error('Error al cargar asignaciones:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudieron cargar las asignaciones'
+    });
+  }
+}
 
-        assignments.forEach(assignment => {
-          assignmentHTML += `
-            <tr data-assignment-id="${assignment.id}">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Rack ${assignment.rack}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${assignment.location}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${assignment.partNumber}</div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${assignment.description || '-'}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${assignment.user}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <input type="number" min="1" placeholder="Cantidad" class="count-input px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <button
-                  onclick="startCountingAssignment(${assignment.id})"
-                  class="bg-navy text-white py-1 px-3 rounded-md hover:bg-opacity-90 transition-all">
-                  Registrar Conteo
-                </button>
-              </td>
-            </tr>
-          `;
-        });
+   function updateAssignmentList(assignments) {
+  const assignmentList = document.getElementById('assignment-list');
 
-        assignmentList.innerHTML = assignmentHTML;
-      } else {
-        assignmentList.innerHTML = `
-          <tr>
-            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
-              No hay asignaciones disponibles
-            </td>
-          </tr>
-        `;
-      }
-    }
+  if (assignments && assignments.length > 0) {
+    let assignmentHTML = '';
 
+    assignments.forEach(assignment => {
+      assignmentHTML += `
+        <tr data-assignment-id="${assignment.id}">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">Rack ${assignment.rack}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${assignment.ubicacion}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${assignment.numero_parte}</div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="text-sm text-gray-900">${assignment.descripcion || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${assignment.usuario_asignado}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <input type="number" min="1" placeholder="Cantidad" class="count-input px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <button
+              onclick="registerCount('${assignment.id}')"
+              class="bg-navy text-white py-1 px-3 rounded-md hover:bg-opacity-90 transition-all">
+              Registrar Conteo
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    assignmentList.innerHTML = assignmentHTML;
+  } else {
+    assignmentList.innerHTML = `
+      <tr>
+        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+          No hay asignaciones pendientes
+        </td>
+      </tr>
+    `;
+  }
+}
+
+
+
+window.registerCount = async function(assignmentId) {
+  const row = document.querySelector(`tr[data-assignment-id="${assignmentId}"]`);
+  if (!row) return;
+
+  const countInput = row.querySelector('.count-input');
+  const quantity = parseInt(countInput.value);
+
+  if (!quantity || quantity <= 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ingresa una cantidad válida mayor a cero'
+    });
+    return;
+  }
+
+  try {
+    const button = row.querySelector('button');
+    button.disabled = true;
+    button.textContent = 'Procesando...';
+
+    // Actualiza el registro en Supabase con la cantidad contada
+    const { error } = await supabase
+      .from('conteoinventario')
+      .update({
+        cantidad: quantity,
+        cantidad_contada: true, // Marca como contado
+        fecha_actualizacion: new Date().toISOString()
+      })
+      .eq('id', assignmentId);
+
+    if (error) throw error;
+
+    // Recarga los datos
+    await loadInventoryData();
+    await loadAssignments();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Conteo registrado',
+      text: 'La cantidad ha sido registrada correctamente',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    console.error('Error al registrar conteo:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo registrar el conteo'
+    });
+  } finally {
+    const button = row.querySelector('button');
+    button.disabled = false;
+    button.textContent = 'Registrar Conteo';
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     window.startCountingAssignment = async function(id) {
       const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
       if (!row) return;
@@ -1200,38 +1285,48 @@
       });
 
       // BOTÓN DE REINICIO
-      document.getElementById('reset-data-btn').addEventListener('click', function() {
-        Swal.fire({
-          title: '¿Está seguro?',
-          text: 'Esta acción eliminará TODOS los registros de inventario de la base de datos',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Sí, eliminar todo',
-          cancelButtonText: 'Cancelar'
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            try {
-              await deleteInventoryRecords();
-              await loadInventoryData();
-              Swal.fire({
-                icon: 'success',
-                title: 'Datos Eliminados',
-                text: 'Todos los registros han sido eliminados',
-                timer: 2000,
-                showConfirmButton: false
-              });
-            } catch (error) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudieron eliminar los registros'
-              });
-            }
-          }
-        });
-      });
+    document.getElementById('assignment-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const user = document.getElementById('user-assignment').value;
+  const rack = document.getElementById('rack-assignment').value;
+  const location = document.getElementById('location-assignment').value;
+  const partNumber = document.getElementById('part-number-assignment').value;
+
+  try {
+    const { error } = await supabase
+      .from('conteoinventario')
+      .insert([
+        {
+          rack: rack,
+          ubicacion: location,
+          usuario_asignado: user,
+          numero_parte: partNumber,
+          descripcion: await getPartDescription(partNumber),
+          cantidad_contada: false // Marca como pendiente
+        }
+      ]);
+
+    if (error) throw error;
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Asignación registrada',
+      text: `Se asignó a ${user} para contar el rack ${rack}, ubicación ${location}, parte ${partNumber}`,
+      confirmButtonColor: '#0a192f'
+    });
+
+    // Recarga las asignaciones
+    await loadAssignments();
+    this.reset();
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo registrar la asignación'
+    });
+  }
+});
 
       // CARGAR DATOS INICIALES
       loadInventoryData();
