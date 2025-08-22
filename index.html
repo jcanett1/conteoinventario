@@ -1111,7 +1111,7 @@ window.registerCount = async function(id) {
       .update({
         cantidad: quantity,
         cantidad_contada: true, // Marcar como contado
-        es_asignacion: true, // Desmarcar como asignación pendiente
+        es_asignacion: false, // Desmarcar como asignación pendiente
         es_reconteo: false, // Desmarcar como reconteo
         fecha_actualizacion: new Date().toISOString()
       })
