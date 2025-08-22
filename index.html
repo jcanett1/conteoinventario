@@ -1603,7 +1603,7 @@ document.getElementById('assignment-form').addEventListener('submit', async func
       loadPartNumbers('part-number-list');
       loadPartNumbers('part-number-list-assignment');
 
-      // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
+     // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
 document.getElementById('part-number').addEventListener('blur', async function() {
   const partNumber = this.value.trim();
   if (partNumber) {
@@ -1645,7 +1645,6 @@ document.getElementById('part-number-assignment').addEventListener('blur', async
         title: 'Número de parte no encontrado',
         text: 'El número de parte ingresado no existe en la base de datos.',
       });
-      // Añadir esta línea para limpiar el campo de descripción
       document.getElementById('description').value = '';
     }
   }
