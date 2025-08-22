@@ -1027,6 +1027,55 @@ window.reconteoRecord = async function(id) {
   }
 }
 
+
+async function loadAssignationsOnly() {
+  try {
+    const { data, error } = await supabase
+      .from('conteoinventario')
+      .select('*')
+      .eq('es_asignacion', true)  // Solo asignaciones
+      .order('fecha_actualizacion', { ascending: false });
+
+    if (error) throw error;
+    console.log('Solo asignaciones (es_asignacion = true):', data);
+    return data;
+  } catch (error) {
+    console.error('Error al cargar asignaciones:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudieron cargar las asignaciones'
+    });
+    return [];
+  }
+}
+
+
+async function loadReconteosOnly() {
+  try {
+    const { data, error } = await supabase
+      .from('conteoinventario')
+      .select('*')
+      .eq('es_reconteo', true)  // Solo reconteos
+      .order('fecha_actualizacion', { ascending: false });
+
+    if (error) throw error;
+    console.log('Solo reconteos (es_reconteo = true):', data);
+    return data;
+  } catch (error) {
+    console.error('Error al cargar reconteos:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudieron cargar los reconteos'
+    });
+    return [];
+  }
+}
+
+
+
+    
  function updateAssignmentList(assignments) {
   const assignmentList = document.getElementById('assignment-list');
 
