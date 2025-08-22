@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style id="app-style">
     .bg-navy {
@@ -332,6 +333,18 @@
         </div>
       </div>
 
+
+<div class="flex space-x-2 mb-4">
+  <button id="export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-all">
+    <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
+  </button>
+  <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all">
+    <i class="fas fa-file-pdf mr-2"></i>Exportar a PDF
+  </button>
+</div>
+
+
+    
       <!-- Inventory Records -->
       <div class="bg-white rounded-lg shadow-md p-6 mt-6">
         <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
@@ -791,6 +804,104 @@
       userRegistry.innerHTML = html;
     }
 
+window.exportToExcel = function() {
+  // Obtener los datos de la tabla
+  const table = document.getElementById('inventory-records');
+  const rows = table.querySelectorAll('tr');
+  const data = [];
+
+  // Encabezados
+  data.push([
+    'Fecha/Hora',
+    'Rack',
+    'Ubicación',
+    'Número de Parte',
+    'Descripción',
+    'Cantidad',
+    'Usuario'
+  ]);
+
+  // Filas de datos
+  rows.forEach((row, index) => {
+    if (index === 0) return; // Saltar el encabezado si existe
+    const cells = row.querySelectorAll('td');
+    if (cells.length > 0) {
+      data.push([
+        cells[0]?.textContent.trim(),
+        cells[1]?.textContent.trim(),
+        cells[2]?.textContent.trim(),
+        cells[3]?.textContent.trim(),
+        cells[4]?.textContent.trim(),
+        cells[5]?.textContent.trim(),
+        cells[6]?.textContent.trim()
+      ]);
+    }
+  });
+
+  // Crear el libro de Excel
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Registros de Inventario');
+
+  // Descargar el archivo
+  XLSX.writeFile(wb, `Registros_Inventario_${moment().format('YYYYMMDD_HHmmss')}.xlsx`);
+};
+
+    window.exportToPDF = function() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Título
+  doc.setFontSize(16);
+  doc.text('Registros de Inventario', 105, 10, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text(`Fecha: ${moment().format('DD/MM/YYYY HH:mm:ss')}`, 105, 18, { align: 'center' });
+
+  // Obtener los datos de la tabla
+  const table = document.getElementById('inventory-records');
+  const rows = table.querySelectorAll('tr');
+  const data = [];
+
+  // Encabezados
+  const headers = [
+    'Fecha/Hora',
+    'Rack',
+    'Ubicación',
+    'Número de Parte',
+    'Descripción',
+    'Cantidad',
+    'Usuario'
+  ];
+
+  // Filas de datos
+  rows.forEach((row, index) => {
+    if (index === 0) return; // Saltar el encabezado si existe
+    const cells = row.querySelectorAll('td');
+    if (cells.length > 0) {
+      data.push([
+        cells[0]?.textContent.trim(),
+        cells[1]?.textContent.trim(),
+        cells[2]?.textContent.trim(),
+        cells[3]?.textContent.trim(),
+        cells[4]?.textContent.trim(),
+        cells[5]?.textContent.trim(),
+        cells[6]?.textContent.trim()
+      ]);
+    }
+  });
+
+  // Agregar la tabla al PDF
+  doc.autoTable({
+    head: [headers],
+    body: data,
+    startY: 25,
+    styles: { fontSize: 8, cellPadding: 1 },
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+  });
+
+  // Descargar el PDF
+  doc.save(`Registros_Inventario_${moment().format('YYYYMMDD_HHmmss')}.pdf`);
+};
 
 
 
@@ -1465,6 +1576,8 @@ document.getElementById('part-number').addEventListener('blur', async function()
 });
 
       // AUTOCOMPLETAR DESCRIPCIÓN EN FORMULARIO DE ASIGNACIÓN
+      document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+      ocument.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
       document.getElementById('part-number-assignment').addEventListener('blur', async function() {
         const partNumber = this.value.trim();
         if (partNumber) {
