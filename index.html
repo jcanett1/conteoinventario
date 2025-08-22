@@ -1011,8 +1011,8 @@ window.reconteoRecord = async function(id) {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
-      .eq('es_reconteo', true) 
-      .eq('es_asignacion', true)  // Como booleano
+      .eq('es_reconteo', false) 
+      .eq('es_asignacion', false)  // Como booleano
       .order('fecha_actualizacion', { ascending: false });
     if (error) throw error;
     console.log('Asignaciones para reconteo:', data);
