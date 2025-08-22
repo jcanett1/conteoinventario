@@ -1603,24 +1603,30 @@ document.getElementById('assignment-form').addEventListener('submit', async func
       loadPartNumbers('part-number-list');
       loadPartNumbers('part-number-list-assignment');
 
-     // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
-document.getElementById('part-number').addEventListener('blur', async function() {
-  const partNumber = this.value.trim();
-  if (partNumber) {
-    const description = await getPartDescription(partNumber);
-    if (!description) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Número de parte no encontrado',
-        text: 'El número de parte ingresado no existe en la base de datos.',
-      });
-      document.getElementById('description').value = '';
-    } else {
-      document.getElementById('description').value = description;
-    }
-  }
-});
-} // <-- AQUÍ FALTABA ESTA LLAVE DE CIERRE
+     // INICIALIZACIÓN DEL DOCUMENTO
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configurar selects de ubicaciones para ambos formularios
+      function setupLocationSelects(rackSelectId, locationSelectId) {
+        const rackSelect = document.getElementById(rackSelectId);
+        const locationSelect = document.getElementById(locationSelectId);
+        rackSelect.addEventListener('change', function() {
+          locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+          const selectedRack = this.value;
+
+          if (selectedRack && rackLocations[selectedRack]) {
+            for (let i = 1; i <= rackLocations[selectedRack]; i++) {
+              const option = document.createElement('option');
+              option.value = `${selectedRack}-${i}`;
+              option.textContent = `${selectedRack}-${i}`;
+              locationSelect.appendChild(option);
+            }
+          }
+        });
+      } // <-- AQUÍ FALTABA ESTA LLAVE DE CIERRE
+      
+      // Configurar ambos pares de selects
+      setupLocationSelects('rack', 'location');
+      setupLocationSelects('rack-assignment', 'location-assignment');
 
 // Event Listeners para filtros
 document.getElementById('filter-user').addEventListener('input', filterInventoryRecords);
