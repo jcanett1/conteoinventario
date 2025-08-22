@@ -754,7 +754,6 @@ function filterInventoryRecords() {
    function updateInventoryRecords() {
   const inventoryRecords = document.getElementById('inventory-records');
   let html = '';
-
   if (inventoryData.length === 0) {
     html = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>';
   } else {
@@ -766,7 +765,6 @@ function filterInventoryRecords() {
           ? 'Modificado 1 vez'
           : `Modificado ${record.modificaciones} veces`;
       }
-
       html += `
         <tr>
           <td class="px-6 py-4 whitespace-nowrap">
@@ -806,7 +804,6 @@ function filterInventoryRecords() {
       `;
     });
   }
-
   inventoryRecords.innerHTML = html;
   filterInventoryRecords(); // Aplicar filtro después de actualizar
 }
