@@ -1006,16 +1006,16 @@ window.reconteoRecord = async function(id) {
     }
 
       // FUNCIÓN PARA CARGAS DE ASIGNACIONES
-  async function loadAssignments() {
+ async function loadAssignments() {
   try {
     const { data, error } = await supabase
       .from('conteoinventario')
       .select('*')
-      .eq('es_reconteo', false) 
-      .eq('es_asignacion', false)  // Como booleano
+      .or('es_asignacion.eq.true,es_reconteo.eq.true') // Condición OR
       .order('fecha_actualizacion', { ascending: false });
+
     if (error) throw error;
-    console.log('Asignaciones para reconteo:', data);
+    console.log('Asignaciones y reconteos:', data);
     updateAssignmentList(data);
   } catch (error) {
     console.error('Error al cargar asignaciones:', error);
@@ -1028,50 +1028,6 @@ window.reconteoRecord = async function(id) {
 }
 
 
-async function loadAssignationsOnly() {
-  try {
-    const { data, error } = await supabase
-      .from('conteoinventario')
-      .select('*')
-      .eq('es_asignacion', true)  // Solo asignaciones
-      .order('fecha_actualizacion', { ascending: false });
-
-    if (error) throw error;
-    console.log('Solo asignaciones (es_asignacion = true):', data);
-    return data;
-  } catch (error) {
-    console.error('Error al cargar asignaciones:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudieron cargar las asignaciones'
-    });
-    return [];
-  }
-}
-
-
-async function loadReconteosOnly() {
-  try {
-    const { data, error } = await supabase
-      .from('conteoinventario')
-      .select('*')
-      .eq('es_reconteo', true)  // Solo reconteos
-      .order('fecha_actualizacion', { ascending: false });
-
-    if (error) throw error;
-    console.log('Solo reconteos (es_reconteo = true):', data);
-    return data;
-  } catch (error) {
-    console.error('Error al cargar reconteos:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudieron cargar los reconteos'
-    });
-    return [];
-  }
-}
 
 
 
