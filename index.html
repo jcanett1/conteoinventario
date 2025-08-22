@@ -1645,6 +1645,8 @@ document.getElementById('part-number-assignment').addEventListener('blur', async
         title: 'Número de parte no encontrado',
         text: 'El número de parte ingresado no existe en la base de datos.',
       });
+      // Añadir esta línea para limpiar el campo de descripción
+      document.getElementById('description').value = '';
     }
   }
 });
