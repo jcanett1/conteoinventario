@@ -726,7 +726,7 @@
         }
     });
 
-       // Cambiar entre tabs
+      // Cambiar entre tabs
 function switchTab(tabName, buttonElement = null) {
     // Actualizar botones de tab
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -748,7 +748,6 @@ function switchTab(tabName, buttonElement = null) {
          activeButton.classList.add('active');
     }
 
-
     // Actualizar paneles
     document.querySelectorAll('.form-panel').forEach(panel => {
         panel.classList.remove('active');
@@ -758,8 +757,22 @@ function switchTab(tabName, buttonElement = null) {
         targetPanel.classList.add('active');
     }
 
-    // Limpiar alertas
-    clearAlerts();
+    // Limpiar solo las alertas normales, no el mensaje persistente de admin
+    // Modificación aquí: Solo limpiar alertas que no sean el mensaje de admin
+    const alertContainer = document.getElementById('alert-container');
+    const adminMessage = document.getElementById('admin-success-message');
+    
+    // Recorrer los hijos del contenedor de alertas
+    Array.from(alertContainer.children).forEach(child => {
+        // Si el hijo no es el mensaje de admin persistente, eliminarlo
+        if (child.id !== 'admin-success-message') {
+            alertContainer.removeChild(child);
+        }
+    });
+    // O, de forma más simple, si el mensaje de admin existe, no limpies nada:
+    // if (!adminMessage) {
+    //     clearAlerts();
+    // }
 }
 
         // Llenar datos de prueba
