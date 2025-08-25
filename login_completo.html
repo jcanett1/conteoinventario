@@ -898,69 +898,87 @@ document.getElementById('login-form').addEventListener('submit', async function(
 
         console.log('✅ Autenticación exitosa');
 
-        // Verificar usuario en la tabla users
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
+       // Verificar usuario en la tabla users
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', email)
+                .single();
 
-        if (userError || !userData) {
-            console.error('Error obteniendo datos del usuario:', userError);
-            await supabase.auth.signOut();
-            throw new Error('Usuario no encontrado en el sistema');
-        }
+            if (userError || !userData) {
+                console.error('Error obteniendo datos del usuario:', userError);
+                await supabase.auth.signOut();
+                throw new Error('Usuario no encontrado en el sistema');
+            }
 
-        console.log('✅ Usuario encontrado:', userData);
+            console.log('✅ Usuario encontrado:', userData);
 
-        // --- NUEVO: Verificar rol y mostrar/ocultar registro ---
-        if (userData.role === 'admin') {
-            console.log('✅ Usuario es administrador, mostrando opciones de registro.');
-            document.body.classList.add('is-admin'); // Mostrar elementos .admin-only
-            // Actualizar texto del encabezado para admins
-            document.querySelector('.form-header p').textContent = 'Inicia sesión o administra usuarios';
-            showAlert('¡Login exitoso como administrador! Opciones de registro habilitadas.', 'success');
-             // Redirigir al index o permitir usar el panel de registro
-             // Opción 1: Redirigir (comentar las siguientes 3 líneas si se elige esta opción)
-             /*
-             setTimeout(() => {
-                 window.location.href = 'index.html';
-             }, 1500);
-             return; // Salir para evitar el mensaje de redirección general
-             */
-             // Opción 2: Permanecer en la página de login con registro habilitado
-             // (Descomentar las siguientes 3 líneas si se elige esta opción)
-             /*
-             setTimeout(() => {
-                 clearAlerts(); // Limpiar alerta después de mostrarla
-             }, 2000);
-             */
-            // NO redirigir automáticamente. Limpiar el mensaje de alerta después de un tiempo
-    // para permitir al usuario ver las opciones de registro.
-    setTimeout(() => {
-        clearAlerts(); // Limpiar la alerta, pero permanecer en la página
-    }, 3000); // Limpiar el mensaje después de 3 segundos
+            // --- MODIFICADO: Verificar rol y mostrar/ocultar registro ---
+            if (userData.role === 'admin') {
+                console.log('✅ Usuario es administrador, mostrando opciones de registro.');
+                document.body.classList.add('is-admin'); // Mostrar elementos .admin-only
+                // Actualizar texto del encabezado para admins
+                document.querySelector('.form-header p').textContent = 'Accede como administrador. Puedes iniciar sesión o gestionar usuarios.';
 
-    // Importante: NO llamar a 'return' aquí ni redirigir con setTimeout
-    // para que el usuario pueda usar el panel de registro.
+                // Mostrar mensaje de éxito
+                showAlert('¡Login exitoso como administrador! Opciones de registro habilitadas.', 'success');
 
-     // Salir del manejador para evitar la redirección general al final del try
-     return; // Salir para evitar el mensaje de redirección general de abajo
+                // NO redirigir automáticamente.
+                // Limpiar el mensaje de alerta después de un tiempo para permitir interacción.
+                setTimeout(() => {
+                    clearAlerts(); // Limpiar la alerta, pero permanecer en la página
+                     // Opcional: Mostrar un mensaje más sutil o un botón
+                     const successMessage = document.createElement('div');
+                     successMessage.id = 'admin-success-message';
+                     successMessage.className = 'alert alert-success show mt-4 flex items-center justify-between';
+                     successMessage.innerHTML = `
+                         <span><i class="fas fa-check-circle"></i> ¡Login exitoso como administrador!</span>
+                         <div>
+                             <button id="go-to-app-btn" class="btn btn-primary text-xs py-1 px-2 mr-2">
+                                 <i class="fas fa-arrow-right"></i> Ir al Sistema
+                             </button>
+                             <button id="logout-btn-login" class="btn text-xs py-1 px-2" style="background-color: #6c757d; color: white;">
+                                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                             </button>
+                         </div>
+                     `;
+                     document.getElementById('alert-container').appendChild(successMessage);
 
-        } else {
-    // Si no es admin, proceder normalmente (opcional: podrías redirigir aquí también)
-    console.log('ℹ️ Usuario es visualizador.');
-    document.body.classList.remove('is-admin');
-    // Opcional: Mostrar mensaje específico o redirigir inmediatamente para no admins
-    // showAlert('¡Login exitoso! Redirigiendo...', 'success');
-    // Redirigir inmediatamente o después de un corto tiempo para usuarios no admin
-    setTimeout(() => {
-         window.location.href = 'index.html';
-    }, 1500); // Redirigir a usuarios no admin después de 1.5 segundos
-    return; // Salir para evitar el mensaje de redirección general de abajo
-}
-// --- FIN NUEVO ---
+                     // Agregar listeners a los nuevos botones
+                     document.getElementById('go-to-app-btn')?.addEventListener('click', () => {
+                         window.location.href = 'index.html';
+                     });
+                     document.getElementById('logout-btn-login')?.addEventListener('click', async () => {
+                         try {
+                             await supabase.auth.signOut();
+                             console.log('✅ Sesión cerrada desde la página de login.');
+                             document.body.classList.remove('is-admin');
+                             document.getElementById('login-form').reset(); // Limpiar formulario
+                             document.getElementById('admin-success-message')?.remove(); // Eliminar mensaje
+                             // Asegurarse de que el panel de login esté activo
+                             switchTab('login');
+                             showAlert('Sesión cerrada correctamente.', 'success');
+                         } catch (err) {
+                             console.error('Error al cerrar sesión:', err);
+                             showAlert('Error al cerrar sesión.', 'error');
+                         }
+                     });
+                }, 3000); // Limpiar mensaje de éxito después de 3 segundos
 
+                // Salir del manejador para evitar la redirección general al final del try
+                return;
+
+            } else {
+                // Si no es admin, redirigir a index.html como antes
+                console.log('ℹ️ Usuario es visualizador, redirigiendo...');
+                document.body.classList.remove('is-admin'); // Asegurar que esté oculto para no admins
+                showAlert('¡Login exitoso! Redirigiendo...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                return; // Salir para evitar el mensaje de redirección general de abajo
+            }
+            // --- FIN MODIFICADO ---
         showAlert('¡Login exitoso! Redirigiendo...', 'success');
 
         // Redirigir al dashboard después de un breve delay
