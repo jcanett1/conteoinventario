@@ -696,119 +696,38 @@
 
 // ACTUALIZAR RESUMEN POR RACK (CORREGIDA Y MODIFICADA PARA INCLUIR KITEO)
 function updateRackSummary() {
-    console.log('Actualizando resumen por rack...');
-    
-    // Selecciona el tbody específico de la tabla de Resumen por Rack usando su ID
-    const summaryTableBody = document.getElementById('rack-summary-body');
+      const rackSummary = document.getElementById('rack-summary');
+      const racks = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-    // Verificación de existencia del elemento
-    if (!summaryTableBody) {
-        console.warn('No se encontró el tbody del resumen por rack (tbody#rack-summary-body).');
-        // Intentar con el ID viejo por si acaso, pero advertir
-        const oldSummaryTable = document.getElementById('rack-summary');
-        if (oldSummaryTable) {
-             console.warn('Se encontró el ID viejo #rack-summary. Considera actualizarlo a #rack-summary-body.');
-             // No procesar más para evitar confusiones si hay ID duplicados
-             return; 
-        }
-        return; // Salir si no se encuentra el elemento esperado
+      let html = '';
+
+      if (inventoryData.length === 0) {
+        html = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
+      } else {
+        racks.forEach(rack => {
+          const rackItems = inventoryData.filter(item => item.rack === rack);
+          const totalItems = rackItems.length;
+          const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
+
+          html += `
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Rack ${rack}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${totalItems}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${totalQuantity}</div>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      rackSummary.innerHTML = html;
     }
 
-    // Limpiar contenido existente
-    summaryTableBody.innerHTML = '';
-
-    // 1. Procesar Racks normales (A-G) y AREA_KITEO
-    const racksToProcess = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
-    const rackSummaries = {};
-
-    racksToProcess.forEach(rackKey => {
-        // Filtrar datos de inventario por rack
-        const rackItems = inventoryData.filter(item => item.rack === rackKey);
-        const totalItems = rackItems.length;
-        let totalQuantity = 0;
-        let latestTimestamp = null;
-
-        // Calcular totales si hay items
-        if (totalItems > 0) {
-            totalQuantity = rackItems.reduce((sum, item) => sum + (item.cantidad || 0), 0);
-            // Encontrar la fecha más reciente entre fecha_creacion y fecha_actualizacion
-            latestTimestamp = rackItems.reduce((latest, item) => {
-                // Priorizar fecha_actualizacion, luego fecha_creacion
-                const itemDate = new Date(item.fecha_actualizacion || item.fecha_creacion || 0);
-                const latestDate = new Date(latest);
-                return itemDate > latestDate ? (item.fecha_actualizacion || item.fecha_creacion) : latest;
-            }, (rackItems[0].fecha_actualizacion || rackItems[0].fecha_creacion || null));
-        }
-
-        // Almacenar el resumen para este rack/área
-        rackSummaries[rackKey] = {
-            totalItems,
-            totalQuantity,
-            latestTimestamp
-        };
-    });
-
-    // Bandera para saber si se agregó alguna fila
-    let hasDataToShow = false;
-
-    // 2. Generar HTML para Racks normales (A-G)
-    ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(rack => {
-        const summary = rackSummaries[rack];
-        if (summary.totalItems > 0) { // Solo mostrar si hay datos
-            hasDataToShow = true;
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">Rack ${rack}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${summary.totalItems}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${summary.totalQuantity}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${summary.latestTimestamp ? new Date(summary.latestTimestamp).toLocaleString() : 'N/A'}
-                </td>
-            `;
-            summaryTableBody.appendChild(row);
-        }
-    });
-
-    // 3. Generar HTML para KITEO (si hay datos)
-    const kiteoSummary = rackSummaries['AREA_KITEO'];
-    if (kiteoSummary && kiteoSummary.totalItems > 0) {
-        hasDataToShow = true;
-        const row = document.createElement('tr');
-        // Podrías usar un estilo diferente si quieres distinguirlo visualmente
-        row.classList.add('bg-blue-50'); // Ejemplo de estilo opcional
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">KITEO (Área)</div> <!-- Nombre descriptivo -->
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${kiteoSummary.totalItems}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${kiteoSummary.totalQuantity}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${kiteoSummary.latestTimestamp ? new Date(kiteoSummary.latestTimestamp).toLocaleString() : 'N/A'}
-            </td>
-        `;
-        summaryTableBody.appendChild(row);
-    }
-
-    // 4. Mensaje si no hay datos en ningún lado
-    if (!hasDataToShow) {
-        const noDataRow = document.createElement('tr');
-        noDataRow.innerHTML = `<td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de inventario registrados aún.</td>`;
-        summaryTableBody.appendChild(noDataRow);
-    }
-
-    console.log('Resumen por rack actualizado.');
-}
-// <-- Fin de la función updateRackSummary
 
 function filterInventoryRecords() {
   const userFilter = document.getElementById('filter-user').value.toLowerCase();
