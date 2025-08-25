@@ -436,6 +436,55 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script id="app-script">
+ // CONFIGURACIÓN SUPABASE (Repetida aquí para el script de autenticación)
+    const SUPABASE_URL_AUTH = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+    const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+
+    // Inicializar cliente Supabase solo para autenticación
+    const authSupabase = window.supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+        auth: {
+            persistSession: true, // Muy importante para mantener la sesión
+            autoRefreshToken: true
+        }
+    });
+
+    // Verificar sesión al cargar la página
+    document.addEventListener('DOMContentLoaded', async function () {
+        console.log('🔐 Verificando sesión de usuario...');
+
+        try {
+            // Intenta obtener la sesión actual
+            const { data: { session }, error } = await authSupabase.auth.getSession();
+
+            if (error) {
+                console.error('Error obteniendo sesión:', error.message);
+                // En caso de error crítico de autenticación, redirigir al login
+                window.location.href = 'login.html';
+                return; // Detener la ejecución del resto del script
+            }
+
+            // Si no hay sesión activa
+            if (!session) {
+                console.warn('⚠️ No hay sesión activa. Redirigiendo al login...');
+                window.location.href = 'login.html';
+                return; // Detener la ejecución del resto del script
+            }
+
+            // Si hay sesión, el usuario está autenticado
+            console.log('✅ Usuario autenticado:', session.user.email);
+            // Puedes almacenar la información del usuario si es necesario
+            // window.currentUser = session.user; // Ejemplo
+
+            // --- Aquí comienza la lógica original de tu aplicación ---
+            // (El resto del código DOMContentLoaded que ya tienes sigue aquí)
+
+        } catch (err) {
+            console.error('Error inesperado verificando autenticación:', err);
+            window.location.href = 'login.html';
+            return; // Detener la ejecución del resto del script
+        }
+    });
+
     // CONFIGURACIÓN SUPABASE
     const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
