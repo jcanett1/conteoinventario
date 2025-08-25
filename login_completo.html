@@ -727,6 +727,7 @@
     });
 
       // Cambiar entre tabs
+// Cambiar entre tabs (MODIFICADO)
 function switchTab(tabName, buttonElement = null) {
     // Actualizar botones de tab
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -757,22 +758,9 @@ function switchTab(tabName, buttonElement = null) {
         targetPanel.classList.add('active');
     }
 
-    // Limpiar solo las alertas normales, no el mensaje persistente de admin
-    // Modificación aquí: Solo limpiar alertas que no sean el mensaje de admin
-    const alertContainer = document.getElementById('alert-container');
-    const adminMessage = document.getElementById('admin-success-message');
-    
-    // Recorrer los hijos del contenedor de alertas
-    Array.from(alertContainer.children).forEach(child => {
-        // Si el hijo no es el mensaje de admin persistente, eliminarlo
-        if (child.id !== 'admin-success-message') {
-            alertContainer.removeChild(child);
-        }
-    });
-    // O, de forma más simple, si el mensaje de admin existe, no limpies nada:
-    // if (!adminMessage) {
-    //     clearAlerts();
-    // }
+    // Limpiar solo las alertas normales, manteniendo el mensaje de admin
+    // Ahora simplemente llamamos a clearAlerts, que ya es selectivo.
+    clearAlerts();
 }
 
         // Llenar datos de prueba
@@ -844,41 +832,52 @@ function switchTab(tabName, buttonElement = null) {
             strengthText.textContent = text;
         }
 
-        // Mostrar alertas
-        function showAlert(message, type = 'error') {
-            const container = document.getElementById('alert-container');
-            container.innerHTML = `
-                <div class="alert alert-${type} show">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                    ${message}
-                </div>
-            `;
+        // Mostrar alertas (sin cambios)
+function showAlert(message, type = 'error') {
+    const container = document.getElementById('alert-container');
+    // Crear el elemento de alerta
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert alert-${type} show`;
+    alertElement.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        ${message}
+    `;
 
-            setTimeout(() => {
-                clearAlerts();
-            }, 5000);
+    // Agregar al contenedor
+    container.appendChild(alertElement);
+
+    // Configurar auto-eliminación solo para alertas normales (no para el mensaje de admin persistente)
+    // Verificamos si el mensaje NO es el de admin antes de programar el timeout
+    if (!message.includes('¡Login exitoso como administrador!')) {
+         setTimeout(() => {
+             if (alertElement.parentNode === container) { // Verificar si aún existe
+                 container.removeChild(alertElement);
+             }
+         }, 5000);
+    }
+}
+
+       // Limpiar alertas (MODIFICADO)
+// Esta función ahora solo elimina alertas "normales", no el mensaje persistente de admin.
+function clearAlerts() {
+    const container = document.getElementById('alert-container');
+    // Recorrer los hijos del contenedor en orden inverso para evitar problemas al eliminar
+    for (let i = container.children.length - 1; i >= 0; i--) {
+        const child = container.children[i];
+        // Si el hijo NO es el mensaje de admin persistente, eliminarlo
+        if (child.id !== 'admin-success-message') {
+             container.removeChild(child);
         }
+    }
+    // La versión anterior que simplemente vaciaba el contenedor se elimina:
+    // document.getElementById('alert-container').innerHTML = '';
+}
 
-        // Limpiar alertas
-        function clearAlerts() {
-            document.getElementById('alert-container').innerHTML = '';
-        }
+// --- FIN FUNCIONES DE GESTION DE ALERTAS ---
 
-        // Mostrar/ocultar loading
-        function showLoading(formType, show = true) {
-            const button = document.getElementById(`${formType}-btn`);
-            const loading = document.getElementById(`${formType}-loading`);
 
-            if (show) {
-                button.disabled = true;
-                button.style.display = 'none';
-                loading.classList.add('show');
-            } else {
-                button.disabled = false;
-                button.style.display = 'block';
-                loading.classList.remove('show');
-            }
-        }
+// --- FUNCION DE CAMBIO DE PESTAÑA ---
+
 
        // Manejar login
 document.getElementById('login-form').addEventListener('submit', async function(e) {
