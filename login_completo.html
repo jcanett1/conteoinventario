@@ -873,8 +873,21 @@ function clearAlerts() {
     // document.getElementById('alert-container').innerHTML = '';
 }
 
-// --- FIN FUNCIONES DE GESTION DE ALERTAS ---
+// Mostrar/ocultar loading
+function showLoading(formType, show = true) {
+    const button = document.getElementById(`${formType}-btn`);
+    const loading = document.getElementById(`${formType}-loading`);
 
+    if (show) {
+        button.disabled = true;
+        button.style.display = 'none';
+        loading.classList.add('show');
+    } else {
+        button.disabled = false;
+        button.style.display = 'block';
+        loading.classList.remove('show');
+    }
+}
 
 // --- FUNCION DE CAMBIO DE PESTAÑA ---
 
