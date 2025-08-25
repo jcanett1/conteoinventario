@@ -899,7 +899,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
         console.log('✅ Autenticación exitosa');
 
        // Verificar usuario en la tabla users
-            const { data: userData, error: userError } = await supabase
+            const {  userData, error: userError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('email', email)
@@ -924,46 +924,49 @@ document.getElementById('login-form').addEventListener('submit', async function(
                 showAlert('¡Login exitoso como administrador! Opciones de registro habilitadas.', 'success');
 
                 // NO redirigir automáticamente.
-                // Limpiar el mensaje de alerta después de un tiempo para permitir interacción.
-                setTimeout(() => {
-                    clearAlerts(); // Limpiar la alerta, pero permanecer en la página
-                     // Opcional: Mostrar un mensaje más sutil o un botón
-                     const successMessage = document.createElement('div');
-                     successMessage.id = 'admin-success-message';
-                     successMessage.className = 'alert alert-success show mt-4 flex items-center justify-between';
-                     successMessage.innerHTML = `
-                         <span><i class="fas fa-check-circle"></i> ¡Login exitoso como administrador!</span>
-                         <div>
-                             <button id="go-to-app-btn" class="btn btn-primary text-xs py-1 px-2 mr-2">
-                                 <i class="fas fa-arrow-right"></i> Ir al Sistema
-                             </button>
-                             <button id="logout-btn-login" class="btn text-xs py-1 px-2" style="background-color: #6c757d; color: white;">
-                                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                             </button>
-                         </div>
-                     `;
-                     document.getElementById('alert-container').appendChild(successMessage);
+                // NO usar setTimeout para limpiar alertas automáticamente.
 
-                     // Agregar listeners a los nuevos botones
-                     document.getElementById('go-to-app-btn')?.addEventListener('click', () => {
-                         window.location.href = 'index.html';
-                     });
-                     document.getElementById('logout-btn-login')?.addEventListener('click', async () => {
-                         try {
-                             await supabase.auth.signOut();
-                             console.log('✅ Sesión cerrada desde la página de login.');
-                             document.body.classList.remove('is-admin');
-                             document.getElementById('login-form').reset(); // Limpiar formulario
-                             document.getElementById('admin-success-message')?.remove(); // Eliminar mensaje
-                             // Asegurarse de que el panel de login esté activo
-                             switchTab('login');
-                             showAlert('Sesión cerrada correctamente.', 'success');
-                         } catch (err) {
-                             console.error('Error al cerrar sesión:', err);
-                             showAlert('Error al cerrar sesión.', 'error');
-                         }
-                     });
-                }, 3000); // Limpiar mensaje de éxito después de 3 segundos
+                // --- CAMBIO AQUÍ: Crear y mostrar el mensaje persistente INMEDIATAMENTE ---
+                // Limpiar cualquier mensaje de alerta anterior primero
+                clearAlerts();
+
+                // Crear y mostrar el nuevo mensaje persistente con botones
+                const successMessage = document.createElement('div');
+                successMessage.id = 'admin-success-message';
+                successMessage.className = 'alert alert-success show mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between';
+                successMessage.innerHTML = `
+                    <span class="mb-2 sm:mb-0"><i class="fas fa-check-circle"></i> ¡Login exitoso como administrador!</span>
+                    <div>
+                        <button id="go-to-app-btn" class="btn btn-primary text-xs py-1 px-2 mr-2 mb-2 sm:mb-0">
+                            <i class="fas fa-arrow-right"></i> Ir al Sistema
+                        </button>
+                        <button id="logout-btn-login" class="btn text-xs py-1 px-2" style="background-color: #6c757d; color: white;">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                `;
+                document.getElementById('alert-container').appendChild(successMessage);
+
+                // Agregar listeners a los nuevos botones
+                document.getElementById('go-to-app-btn')?.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+                document.getElementById('logout-btn-login')?.addEventListener('click', async () => {
+                    try {
+                        await supabase.auth.signOut();
+                        console.log('✅ Sesión cerrada desde la página de login.');
+                        document.body.classList.remove('is-admin');
+                        document.getElementById('login-form').reset(); // Limpiar formulario
+                        document.getElementById('admin-success-message')?.remove(); // Eliminar mensaje
+                        // Asegurarse de que el panel de login esté activo
+                        switchTab('login');
+                        showAlert('Sesión cerrada correctamente.', 'success');
+                    } catch (err) {
+                        console.error('Error al cerrar sesión:', err);
+                        showAlert('Error al cerrar sesión.', 'error');
+                    }
+                });
+                // --- FIN DEL CAMBIO ---
 
                 // Salir del manejador para evitar la redirección general al final del try
                 return;
