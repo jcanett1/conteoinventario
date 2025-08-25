@@ -481,6 +481,28 @@
             cursor: pointer;
             color: #999;
         }
+
+          /* Ocultar elementos exclusivos del administrador por defecto */
+        .admin-only {
+            display: none !important; /* !important para sobrescribir otros estilos */
+        }
+
+        /* Mostrar elementos exclusivos del administrador cuando el usuario es admin */
+        .is-admin .admin-only {
+            display: block !important; /* Mostrar como bloque por defecto */
+        }
+         .is-admin .admin-only.form-panel {
+            display: none !important; /* Mantener oculto inicialmente si es un panel */
+        }
+         .is-admin .admin-only.form-panel.active {
+            display: block !important; /* Mostrar solo si está activo */
+        }
+        .is-admin .admin-only.tab-button {
+             display: flex !important; /* Mantener el display flex para los tabs */
+        }
+        .is-admin .form-header p { /* Actualizar el texto del encabezado si es admin */
+             color: #28a745; /* Verde para indicar acceso ampliado */
+        }
     </style>
 </head>
 <body>
@@ -505,9 +527,10 @@
                 <button class="tab-button active" onclick="switchTab('login')">
                     <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
                 </button>
-                <button class="tab-button" onclick="switchTab('register')">
-                    <i class="fas fa-user-plus"></i> Registrarse
-                </button>
+                <!-- Panel de Registro - Solo visible para Admin -->
+<button class="tab-button admin-only" id="register-tab-button" onclick="switchTab('register')">
+    <i class="fas fa-user-plus"></i> Registrarse
+</button>
             </div>
 
             <div id="alert-container"></div>
@@ -552,8 +575,8 @@
                     </div>
                 </div>
 
-                <!-- Panel de Registro -->
-                <div id="register-panel" class="form-panel">
+                <!-- Panel de Registro - Solo visible para Admin -->
+<div id="register-panel" class="form-panel admin-only">
                     <div class="role-info">
                         <i class="fas fa-info-circle"></i>
                         <strong>Roles disponibles:</strong><br>
@@ -650,42 +673,94 @@
             }
         });
 
-        // Verificar si ya hay una sesión activa al cargar la página
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🔍 Verificando sesión existente...');
-            
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (session && !error) {
-                    console.log('✅ Sesión activa encontrada, redirigiendo...');
-                    window.location.href = 'index.html';
-                    return;
+       // Verificar si ya hay una sesión activa al cargar la página
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🔍 Verificando sesión existente...');
+
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (session && !error) {
+                console.log('✅ Sesión activa encontrada, verificando rol...');
+                // Verificar rol del usuario
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('email', session.user.email) // Usar el email del usuario autenticado
+                    .single();
+
+                if (userData && userData.role === 'admin') {
+                    console.log('✅ Usuario administrador, mostrando opciones de registro.');
+                    document.body.classList.add('is-admin'); // Agregar clase al body
+                    // Actualizar texto del encabezado para admins
+                     document.querySelector('.form-header p').textContent = 'Inicia sesión o administra usuarios';
+                     // Si se recarga la página y ya está en el tab de registro, mantenerlo
+                     const urlParams = new URLSearchParams(window.location.search);
+                     const tabParam = urlParams.get('tab');
+                     if (tabParam === 'register') {
+                         switchTab('register'); // Asegurarse de que switchTab esté definida antes o usar la lógica directamente
+                         // Activar el botón y panel de registro directamente
+                         document.getElementById('register-tab-button')?.classList.add('active');
+                         document.getElementById('login-panel')?.classList.remove('active');
+                         document.getElementById('register-panel')?.classList.add('active');
+                     }
+                } else {
+                     console.log('ℹ️ Usuario no administrador, redirigiendo...');
+                     window.location.href = 'index.html'; // Redirigir usuarios no admin
+                     return;
                 }
-                
-                console.log('ℹ️ No hay sesión activa, mostrando login');
-            } catch (error) {
-                console.error('Error verificando sesión:', error);
+                // Si es admin, no redirigir automáticamente, permitir usar el login o registro
+                // Opcionalmente, puedes redirigir si prefieres que admins también vayan a index
+                // y gestionen usuarios desde allí. Quitar el return de abajo si se redirige.
+                // return;
+            } else if(error) {
+                 console.error('Error obteniendo sesión:', error);
             }
-        });
 
-        // Cambiar entre tabs
-        function switchTab(tabName) {
-            // Actualizar botones de tab
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            // Actualizar paneles
-            document.querySelectorAll('.form-panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            document.getElementById(`${tabName}-panel`).classList.add('active');
-
-            // Limpiar alertas
-            clearAlerts();
+            console.log('ℹ️ No hay sesión activa, mostrando login');
+            // Asegurarse de que las opciones de admin estén ocultas si no hay sesión
+            document.body.classList.remove('is-admin');
+        } catch (error) {
+            console.error('Error verificando sesión/rol:', error);
+             document.body.classList.remove('is-admin'); // Asegurar ocultamiento en caso de error
         }
+    });
+
+       // Cambiar entre tabs
+function switchTab(tabName, buttonElement = null) {
+    // Actualizar botones de tab
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Activar el botón correcto
+    let activeButton;
+    if (buttonElement) {
+        activeButton = buttonElement;
+    } else if (event && event.target) {
+        activeButton = event.target;
+    } else {
+         // Buscar el botón por ID si no se proporciona elemento ni evento
+         activeButton = document.querySelector(`[onclick*="switchTab('${tabName}')"]`);
+    }
+
+    if (activeButton) {
+         activeButton.classList.add('active');
+    }
+
+
+    // Actualizar paneles
+    document.querySelectorAll('.form-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    const targetPanel = document.getElementById(`${tabName}-panel`);
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+    }
+
+    // Limpiar alertas
+    clearAlerts();
+}
 
         // Llenar datos de prueba
         function fillTestData(role) {
@@ -792,65 +867,103 @@
             }
         }
 
-        // Manejar login
-        document.getElementById('login-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+       // Manejar login
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-            if (!email || !password) {
-                showAlert('Por favor completa todos los campos');
-                return;
-            }
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
 
-            showLoading('login', true);
-            clearAlerts();
+    if (!email || !password) {
+        showAlert('Por favor completa todos los campos');
+        return;
+    }
 
-            try {
-                console.log('🔐 Intentando login con:', email);
+    showLoading('login', true);
+    clearAlerts();
 
-                // Intentar login con Supabase Auth
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
+    try {
+        console.log('🔐 Intentando login con:', email);
 
-                if (authError) {
-                    console.error('Error de autenticación:', authError);
-                    throw new Error('Credenciales incorrectas');
-                }
-
-                console.log('✅ Autenticación exitosa');
-
-                // Verificar usuario en la tabla users
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
-
-                if (userError || !userData) {
-                    console.error('Error obteniendo datos del usuario:', userError);
-                    await supabase.auth.signOut();
-                    throw new Error('Usuario no encontrado en el sistema');
-                }
-
-                console.log('✅ Usuario encontrado:', userData);
-
-                showAlert('¡Login exitoso! Redirigiendo...', 'success');
-
-                // Redirigir al dashboard después de un breve delay
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-
-            } catch (error) {
-                console.error('Error en login:', error);
-                showAlert(error.message || 'Error al iniciar sesión');
-                showLoading('login', false);
-            }
+        // Intentar login con Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
         });
+
+        if (authError) {
+            console.error('Error de autenticación:', authError);
+            throw new Error('Credenciales incorrectas');
+        }
+
+        console.log('✅ Autenticación exitosa');
+
+        // Verificar usuario en la tabla users
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (userError || !userData) {
+            console.error('Error obteniendo datos del usuario:', userError);
+            await supabase.auth.signOut();
+            throw new Error('Usuario no encontrado en el sistema');
+        }
+
+        console.log('✅ Usuario encontrado:', userData);
+
+        // --- NUEVO: Verificar rol y mostrar/ocultar registro ---
+        if (userData.role === 'admin') {
+            console.log('✅ Usuario es administrador, mostrando opciones de registro.');
+            document.body.classList.add('is-admin'); // Mostrar elementos .admin-only
+            // Actualizar texto del encabezado para admins
+            document.querySelector('.form-header p').textContent = 'Inicia sesión o administra usuarios';
+            showAlert('¡Login exitoso como administrador! Opciones de registro habilitadas.', 'success');
+             // Redirigir al index o permitir usar el panel de registro
+             // Opción 1: Redirigir (comentar las siguientes 3 líneas si se elige esta opción)
+             /*
+             setTimeout(() => {
+                 window.location.href = 'index.html';
+             }, 1500);
+             return; // Salir para evitar el mensaje de redirección general
+             */
+             // Opción 2: Permanecer en la página de login con registro habilitado
+             // (Descomentar las siguientes 3 líneas si se elige esta opción)
+             /*
+             setTimeout(() => {
+                 clearAlerts(); // Limpiar alerta después de mostrarla
+             }, 2000);
+             */
+             // Por ahora, mantendremos la redirección como antes para admins también
+             setTimeout(() => {
+                 window.location.href = 'index.html';
+             }, 1500);
+             return; // Salir para evitar el mensaje de redirección general de abajo
+
+        } else {
+            console.log('ℹ️ Usuario es visualizador.');
+            document.body.classList.remove('is-admin'); // Asegurar que esté oculto para no admins
+            // Opcional: Mostrar un mensaje específico para no admins si no se redirige inmediatamente
+            // showAlert('¡Login exitoso! Redirigiendo...', 'success');
+        }
+        // --- FIN NUEVO ---
+
+        showAlert('¡Login exitoso! Redirigiendo...', 'success');
+
+        // Redirigir al dashboard después de un breve delay
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1500);
+
+    } catch (error) {
+        console.error('Error en login:', error);
+        showAlert(error.message || 'Error al iniciar sesión');
+        showLoading('login', false);
+        // Asegurarse de ocultar elementos admin-only en caso de error de login
+        document.body.classList.remove('is-admin');
+    }
+});
 
         // Manejar registro
         document.getElementById('register-form').addEventListener('submit', async function(e) {
