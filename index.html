@@ -697,38 +697,100 @@
       updateInventoryRecords();
     }
 
-    function updateRackSummary() {
-      const rackSummary = document.getElementById('rack-summary');
-      const racks = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    // ACTUALIZAR RESUMEN POR RACK (MODIFICADA PARA INCLUIR KITEO)
+function updateRackSummary() {
+    console.log('Actualizando resumen por rack...');
+    const summaryTable = document.querySelector('#content-admin table tbody'); // Selecciona el tbody del resumen en la pestaña admin
+    // También podrías seleccionar por ID si le das uno, por ejemplo, tbody#rack-summary-body
 
-      let html = '';
-
-      if (inventoryData.length === 0) {
-        html = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
-      } else {
-        racks.forEach(rack => {
-          const rackItems = inventoryData.filter(item => item.rack === rack);
-          const totalItems = rackItems.length;
-          const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
-
-          html += `
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Rack ${rack}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${totalItems}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${totalQuantity}</div>
-              </td>
-            </tr>
-          `;
-        });
-      }
-
-      rackSummary.innerHTML = html;
+    if (!summaryTable) {
+        console.warn('No se encontró la tabla de resumen por rack.');
+        return;
     }
+
+    // Limpiar contenido existente
+    summaryTable.innerHTML = '';
+
+    // 1. Procesar Racks normales (A-G) y AREA_KITEO
+    const racksToProcess = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
+    const rackSummaries = {};
+
+    racksToProcess.forEach(rackKey => {
+        const rackItems = inventoryData.filter(item => item.rack === rackKey);
+        const totalItems = rackItems.length;
+        let totalQuantity = 0;
+        let latestTimestamp = null;
+
+        if (totalItems > 0) {
+            totalQuantity = rackItems.reduce((sum, item) => sum + (item.cantidad || 0), 0);
+            latestTimestamp = rackItems.reduce((latest, item) => {
+                const itemDate = new Date(item.fecha_creacion);
+                return itemDate > new Date(latest) ? item.fecha_creacion : latest;
+            }, rackItems[0].fecha_creacion);
+        }
+
+        // Almacenar el resumen para este rack/área
+        rackSummaries[rackKey] = {
+            totalItems,
+            totalQuantity,
+            latestTimestamp
+        };
+    });
+
+    // 2. Generar HTML para Racks normales (A-G)
+    ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(rack => {
+        const summary = rackSummaries[rack];
+        if (summary.totalItems > 0) { // Solo mostrar si hay datos
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">Rack ${rack}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${summary.totalItems}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${summary.totalQuantity}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${summary.latestTimestamp ? new Date(summary.latestTimestamp).toLocaleString() : 'N/A'}
+                </td>
+            `;
+            summaryTable.appendChild(row);
+        }
+    });
+
+    // 3. Generar HTML para KITEO (si hay datos)
+    const kiteoSummary = rackSummaries['AREA_KITEO'];
+    if (kiteoSummary && kiteoSummary.totalItems > 0) {
+        const row = document.createElement('tr');
+        // Podrías usar un estilo diferente si quieres distinguirlo visualmente
+        row.classList.add('bg-blue-50'); // Ejemplo de estilo opcional
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">KITEO (Área)</div> <!-- Nombre descriptivo -->
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${kiteoSummary.totalItems}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${kiteoSummary.totalQuantity}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${kiteoSummary.latestTimestamp ? new Date(kiteoSummary.latestTimestamp).toLocaleString() : 'N/A'}
+            </td>
+        `;
+        summaryTable.appendChild(row);
+    }
+
+    // 4. Mensaje si no hay datos en ningún lado
+    if (summaryTable.children.length === 0) {
+        summaryTable.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de inventario registrados aún.</td></tr>`;
+    }
+
+    console.log('Resumen por rack actualizado.');
+}
+// <-- Fin de la función updateRackSummary
 
 
 function filterInventoryRecords() {
