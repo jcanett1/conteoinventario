@@ -288,30 +288,27 @@
         </div>
 
         <!-- Summary Column -->
-        <div class="md:col-span-6">
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Resumen por Rack</h2>
-
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 table-hover">
-                <thead class="bg-gray-50">
-                  <tr>
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+    <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Resumen por Rack</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ítems</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Total</th>
-                  </tr>
-                </thead>
-                <tbody id="rack-summary" class="bg-white divide-y divide-gray-200">
-                  <!-- Rack summary data will be inserted here via JavaScript -->
-                  <tr>
+                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Actualización</th> <!-- Añadido -->
+                </tr>
+            </thead>
+            <tbody id="rack-summary-body"> <!-- AQUÍ se agrega el ID -->
+                <!-- Rack summary data will be inserted here via JavaScript -->
+                <tr>
                     <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Cargando datos...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
       <!-- User Assignment Summary -->
       <div class="bg-white rounded-lg shadow-md p-6 mt-6">
@@ -697,19 +694,16 @@
       updateInventoryRecords();
     }
 
-    // ACTUALIZAR RESUMEN POR RACK (MODIFICADA PARA INCLUIR KITEO)
+  // ACTUALIZAR RESUMEN POR RACK (MODIFICADA PARA SELECCIONAR EL TBODY CORRECTO Y INCLUIR KITEO)
 function updateRackSummary() {
     console.log('Actualizando resumen por rack...');
-    const summaryTable = document.querySelector('#content-admin table tbody'); // Selecciona el tbody del resumen en la pestaña admin
-    // También podrías seleccionar por ID si le das uno, por ejemplo, tbody#rack-summary-body
+    // Selecciona el tbody específico de la tabla de Resumen por Rack usando su ID
+    const summaryTable = document.getElementById('rack-summary-body');
 
     if (!summaryTable) {
-        console.warn('No se encontró la tabla de resumen por rack.');
+        console.warn('No se encontró la tabla de resumen por rack (tbody#rack-summary-body).');
         return;
     }
-
-    // Limpiar contenido existente
-    summaryTable.innerHTML = '';
 
     // 1. Procesar Racks normales (A-G) y AREA_KITEO
     const racksToProcess = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
@@ -723,10 +717,14 @@ function updateRackSummary() {
 
         if (totalItems > 0) {
             totalQuantity = rackItems.reduce((sum, item) => sum + (item.cantidad || 0), 0);
-            latestTimestamp = rackItems.reduce((latest, item) => {
-                const itemDate = new Date(item.fecha_creacion);
-                return itemDate > new Date(latest) ? item.fecha_creacion : latest;
-            }, rackItems[0].fecha_creacion);
+             // Asegurarse de manejar fechas correctamente
+            if (rackItems.length > 0) {
+                latestTimestamp = rackItems.reduce((latest, item) => {
+                    const itemDate = new Date(item.fecha_creacion || item.fecha_actualizacion || 0);
+                    const latestDate = new Date(latest);
+                    return itemDate > latestDate ? (item.fecha_creacion || item.fecha_actualizacion) : latest;
+                }, (rackItems[0].fecha_creacion || rackItems[0].fecha_actualizacion || null));
+            }
         }
 
         // Almacenar el resumen para este rack/área
@@ -736,6 +734,9 @@ function updateRackSummary() {
             latestTimestamp
         };
     });
+
+    // Limpiar contenido existente (excepto mensajes de carga iniciales que ya fueron reemplazados)
+    summaryTable.innerHTML = '';
 
     // 2. Generar HTML para Racks normales (A-G)
     ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(rack => {
@@ -752,7 +753,7 @@ function updateRackSummary() {
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${summary.totalQuantity}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${summary.latestTimestamp ? new Date(summary.latestTimestamp).toLocaleString() : 'N/A'}
                 </td>
             `;
@@ -776,7 +777,7 @@ function updateRackSummary() {
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">${kiteoSummary.totalQuantity}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${kiteoSummary.latestTimestamp ? new Date(kiteoSummary.latestTimestamp).toLocaleString() : 'N/A'}
             </td>
         `;
