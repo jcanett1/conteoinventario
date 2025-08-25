@@ -935,19 +935,31 @@ document.getElementById('login-form').addEventListener('submit', async function(
                  clearAlerts(); // Limpiar alerta después de mostrarla
              }, 2000);
              */
-             // Por ahora, mantendremos la redirección como antes para admins también
-             setTimeout(() => {
-                 window.location.href = 'index.html';
-             }, 1500);
-             return; // Salir para evitar el mensaje de redirección general de abajo
+            // NO redirigir automáticamente. Limpiar el mensaje de alerta después de un tiempo
+    // para permitir al usuario ver las opciones de registro.
+    setTimeout(() => {
+        clearAlerts(); // Limpiar la alerta, pero permanecer en la página
+    }, 3000); // Limpiar el mensaje después de 3 segundos
+
+    // Importante: NO llamar a 'return' aquí ni redirigir con setTimeout
+    // para que el usuario pueda usar el panel de registro.
+
+     // Salir del manejador para evitar la redirección general al final del try
+     return; // Salir para evitar el mensaje de redirección general de abajo
 
         } else {
-            console.log('ℹ️ Usuario es visualizador.');
-            document.body.classList.remove('is-admin'); // Asegurar que esté oculto para no admins
-            // Opcional: Mostrar un mensaje específico para no admins si no se redirige inmediatamente
-            // showAlert('¡Login exitoso! Redirigiendo...', 'success');
-        }
-        // --- FIN NUEVO ---
+    // Si no es admin, proceder normalmente (opcional: podrías redirigir aquí también)
+    console.log('ℹ️ Usuario es visualizador.');
+    document.body.classList.remove('is-admin');
+    // Opcional: Mostrar mensaje específico o redirigir inmediatamente para no admins
+    // showAlert('¡Login exitoso! Redirigiendo...', 'success');
+    // Redirigir inmediatamente o después de un corto tiempo para usuarios no admin
+    setTimeout(() => {
+         window.location.href = 'index.html';
+    }, 1500); // Redirigir a usuarios no admin después de 1.5 segundos
+    return; // Salir para evitar el mensaje de redirección general de abajo
+}
+// --- FIN NUEVO ---
 
         showAlert('¡Login exitoso! Redirigiendo...', 'success');
 
