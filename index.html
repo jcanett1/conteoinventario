@@ -1788,58 +1788,74 @@ document.getElementById('logout-btn')?.addEventListener('click', async function 
       setupLocationSelects('rack-assignment', 'location-assignment');
       setupLocationSelects('inventory-rack', 'inventory-location');
 
-      // CONFIGURACIÓN DE PESTAÑAS
-      const tabAdmin = document.getElementById('tab-admin');
-      const tabInventory = document.getElementById('tab-inventory');
-      const tabView = document.getElementById('tab-view');
-      const contentAdmin = document.getElementById('content-admin');
-      const contentInventory = document.getElementById('content-inventory');
-      const contentView = document.getElementById('content-view');
-      // Configuración de la nueva pestaña
-const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
-const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
+   // CONFIGURACIÓN DE PESTAÑAS
+const tabAdmin = document.getElementById('tab-admin');
+const tabInventory = document.getElementById('tab-inventory');
+const tabView = document.getElementById('tab-view');
+const tabInventoryNumbers = document.getElementById('tab-inventory-numbers'); // Nueva pestaña
+const contentAdmin = document.getElementById('content-admin');
+const contentInventory = document.getElementById('content-inventory');
+const contentView = document.getElementById('content-view');
+const contentInventoryNumbers = document.getElementById('content-inventory-numbers'); // Nuevo contenido
 
-      function showTab(activeTab, activeContent, otherTabs, otherContents) {
-        // Actualizar estilos de pestañas
-        activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
-        activeTab.classList.remove('text-gray-500');
+function showTab(activeTab, activeContent, otherTabs, otherContents) {
+  // Limpiar estilos de todas las pestañas
+  const allTabs = [activeTab, ...otherTabs];
+  allTabs.forEach(tab => {
+    tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
+    tab.classList.add('text-gray-500');
+  });
 
-        otherTabs.forEach(tab => {
-          tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
-          tab.classList.add('text-gray-500');
-        });
+  // Aplicar estilo a la pestaña activa
+  activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
+  activeTab.classList.remove('text-gray-500');
 
-        // Mostrar/ocultar contenido
-        activeContent.classList.remove('hidden');
-        activeContent.classList.add('block');
+  // Mostrar/ocultar contenido
+  const allContents = [activeContent, ...otherContents];
+  allContents.forEach(content => {
+    content.classList.add('hidden');
+    content.classList.remove('block');
+  });
 
-        otherContents.forEach(content => {
-          content.classList.add('hidden');
-          content.classList.remove('block');
-        });
-      }
+  activeContent.classList.remove('hidden');
+  activeContent.classList.add('block');
+}
 
-tabInventoryNumbers.addEventListener('click', function() {
-  showTab(tabInventoryNumbers, contentInventoryNumbers,
-    [tabAdmin, tabInventory, tabView],
-    [contentAdmin, contentInventory, contentView]);
-  loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
-   loadUserData(); // Asegurar que los usuarios estén cargados
+// Eventos de clic para todas las pestañas
+tabAdmin.addEventListener('click', function() {
+  showTab(
+    tabAdmin, contentAdmin,
+    [tabInventory, tabView, tabInventoryNumbers], // Incluir la nueva pestaña
+    [contentInventory, contentView, contentInventoryNumbers] // Incluir el nuevo contenido
+  );
 });
 
-      
-      tabAdmin.addEventListener('click', function() {
-        showTab(tabAdmin, contentAdmin, [tabInventory, tabView], [contentInventory, contentView]);
-      });
+tabInventory.addEventListener('click', function() {
+  showTab(
+    tabInventory, contentInventory,
+    [tabAdmin, tabView, tabInventoryNumbers], // Incluir la nueva pestaña
+    [contentAdmin, contentView, contentInventoryNumbers] // Incluir el nuevo contenido
+  );
+});
 
-      tabInventory.addEventListener('click', function() {
-        showTab(tabInventory, contentInventory, [tabAdmin, tabView], [contentAdmin, contentView]);
-      });
+tabView.addEventListener('click', function() {
+  showTab(
+    tabView, contentView,
+    [tabAdmin, tabInventory, tabInventoryNumbers], // Incluir la nueva pestaña
+    [contentAdmin, contentInventory, contentInventoryNumbers] // Incluir el nuevo contenido
+  );
+  loadAssignments(); // Cargar asignaciones cuando se hace clic en la pestaña
+});
 
-      tabView.addEventListener('click', function() {
-        showTab(tabView, contentView, [tabAdmin, tabInventory], [contentAdmin, contentInventory]);
-        loadAssignments(); // Cargar asignaciones cuando se hace clic en la pestaña
-      });
+tabInventoryNumbers.addEventListener('click', function() {
+  showTab(
+    tabInventoryNumbers, contentInventoryNumbers,
+    [tabAdmin, tabInventory, tabView], // Incluir las otras pestañas
+    [contentAdmin, contentInventory, contentView] // Incluir los otros contenidos
+  );
+  loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
+  loadUserData(); // Asegurar que los usuarios estén cargados
+});
 
       // FORMULARIO DE INVENTARIO
       document.getElementById('inventory-form').addEventListener('submit', async function(e) {
