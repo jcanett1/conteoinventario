@@ -1305,12 +1305,6 @@ function filterInventoryRecords() {
       }
     });
 
-    // Verificar si el Rack AREA_KITEO está presente
-    const hasAreaKiteo = data.some(row => row[1] === 'AREA_KITEO');
-    if (!hasAreaKiteo) {
-      alert('Advertencia: El Rack AREA_KITEO no está en los datos exportados.');
-    }
-
     // Agregar la tabla al PDF
     doc.autoTable({
       head: [headers],
