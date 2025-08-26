@@ -1210,19 +1210,12 @@ function filterInventoryRecords() {
       userRegistry.innerHTML = html;
     }
     
-window.exportToExcel = function() {
-  // Obtener la tabla por su ID
-  const table = document.getElementById('tabla-registros-inventario');
-  if (!table) {
-    alert('Error: No se encontró la tabla de registros de inventario.');
-    return;
-  }
+window.exportToExcel = async function() {
+  // Cargar todos los datos antes de exportar
+  const allData = await loadAllData();
 
-  // Obtener todas las filas de la tabla
-  const rows = table.querySelectorAll('tr');
+  // Crear la estructura de datos para Excel
   const data = [];
-
-  // Agregar los encabezados
   data.push([
     'Fecha/Hora',
     'Rack',
@@ -1233,37 +1226,31 @@ window.exportToExcel = function() {
     'Usuario'
   ]);
 
-  // Recorrer las filas y extraer los datos
-  rows.forEach((row, index) => {
-    if (index === 0) return; // Saltar la fila de encabezados
-
-    const cells = row.querySelectorAll('td');
-    if (cells.length > 0) {
-      data.push([
-        cells[0]?.textContent.trim(), // Fecha/Hora
-        cells[1]?.textContent.trim(), // Rack
-        cells[2]?.textContent.trim(), // Ubicación
-        cells[3]?.textContent.trim(), // Número de Parte
-        cells[4]?.textContent.trim(), // Descripción
-        cells[5]?.textContent.trim(), // Cantidad
-        cells[6]?.textContent.trim()  // Usuario
-      ]);
-    }
+  // Agregar todos los datos
+  allData.forEach(item => {
+    data.push([
+      item.fechaHora,
+      item.rack,
+      item.ubicacion,
+      item.numeroParte,
+      item.descripcion,
+      item.cantidad,
+      item.usuario
+    ]);
   });
 
   // Verificar si el Rack AREA_KITEO está presente
   const hasAreaKiteo = data.some(row => row[1] === 'AREA_KITEO');
   if (!hasAreaKiteo) {
-    alert('Advertencia: El Rack AREA_KITEO no está en los datos exportados.');
+    alert('Advertencia: El Rack AREA_KITEO no está presente en los datos exportados.');
   }
 
-  // Crear el archivo de Excel
+  // Crear el libro de Excel
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Registros de Inventario');
   XLSX.writeFile(wb, `Registros_Inventario_${moment().format('YYYYMMDD_HHmmss')}.xlsx`);
 };
-
     window.exportToPDF = function() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
