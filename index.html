@@ -1211,12 +1211,21 @@ function filterInventoryRecords() {
     }
     
 window.exportToExcel = function() {
-  const table1 = document.getElementById('inventory-records');
-  const table2 = document.getElementById('inventory-records-kiteo');
-  const rows = [...table1.querySelectorAll('tr'), ...table2.querySelectorAll('tr')];
+  // Obtener todas las tablas con la clase especificada
+  const tables = document.querySelectorAll('table.min-w-full.divide-y.divide-gray-200.table-hover');
+  if (tables.length === 0) {
+    alert('Error: No se encontraron tablas con la clase especificada.');
+    return;
+  }
+
+  // Seleccionar la tabla correcta (por ejemplo, la primera)
+  const table = tables[0]; // Cambia el índice si es necesario
+
+  // Obtener todas las filas de la tabla
+  const rows = table.querySelectorAll('tr');
   const data = [];
 
-  // Encabezados
+  // Agregar los encabezados
   data.push([
     'Fecha/Hora',
     'Rack',
@@ -1227,19 +1236,20 @@ window.exportToExcel = function() {
     'Usuario'
   ]);
 
-  // Filas de datos
+  // Recorrer las filas y extraer los datos
   rows.forEach((row, index) => {
-    if (index === 0) return; // Saltar el encabezado de la primera tabla
+    if (index === 0) return; // Saltar la fila de encabezados
+
     const cells = row.querySelectorAll('td');
     if (cells.length > 0) {
       data.push([
-        cells[0]?.textContent.trim(),
-        cells[1]?.textContent.trim(),
-        cells[2]?.textContent.trim(),
-        cells[3]?.textContent.trim(),
-        cells[4]?.textContent.trim(),
-        cells[5]?.textContent.trim(),
-        cells[6]?.textContent.trim()
+        cells[0]?.textContent.trim(), // Fecha/Hora
+        cells[1]?.textContent.trim(), // Rack
+        cells[2]?.textContent.trim(), // Ubicación
+        cells[3]?.textContent.trim(), // Número de Parte
+        cells[4]?.textContent.trim(), // Descripción
+        cells[5]?.textContent.trim(), // Cantidad
+        cells[6]?.textContent.trim()  // Usuario
       ]);
     }
   });
@@ -1250,7 +1260,7 @@ window.exportToExcel = function() {
     alert('Advertencia: El Rack AREA_KITEO no está en los datos exportados.');
   }
 
-  // Crear el libro de Excel
+  // Crear el archivo de Excel
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Registros de Inventario');
