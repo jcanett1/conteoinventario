@@ -1211,13 +1211,19 @@ function filterInventoryRecords() {
     }
     
 window.exportToExcel = function() {
-  const table = document.getElementById('inventory-records');
-  if (!table) {
-    alert('Error: No se encontró la tabla con ID "inventory-records".');
+  // Obtener ambas tablas
+  const table1 = document.getElementById('inventory-records');
+  const table2 = document.getElementById('inventory-records-kiteo');
+
+  if (!table1 || !table2) {
+    alert('Error: No se encontraron las tablas con los IDs "inventory-records" y "inventory-records-kiteo".');
     return;
   }
 
-  const rows = table.querySelectorAll('tr');
+  // Combinar filas de ambas tablas
+  const rows1 = table1.querySelectorAll('tr');
+  const rows2 = table2.querySelectorAll('tr');
+  const rows = [...rows1, ...rows2];
   const data = [];
 
   // Encabezados
@@ -1233,7 +1239,7 @@ window.exportToExcel = function() {
 
   // Filas de datos
   rows.forEach((row, index) => {
-    if (index === 0) return; // Saltar el encabezado
+    if (index === 0) return; // Saltar el encabezado de la primera tabla
     const cells = row.querySelectorAll('td');
     if (cells.length > 0) {
       data.push([
