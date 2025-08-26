@@ -1410,38 +1410,49 @@ window.reconteoRecord = async function(id) {
       console.log('Usuarios cargados:', userData.length, 'usuarios');
     }
 
-    function updateUserDataLists() {
-      // Actualizar ambas listas de usuarios
-      const userList = document.getElementById('user-list');
-      const userListInventory = document.getElementById('user-list-inventory');
+   function updateUserDataLists() {
+  // Obtener los elementos datalist
+  const userList = document.getElementById('user-list');
+  const userListInventory = document.getElementById('user-list-inventory');
+  const userListInventoryNumbers = document.getElementById('user-list-inventory-numbers');
 
-      // Limpiar opciones existentes (excepto las por defecto)
-      userList.innerHTML = `
-        <option value="Lupta (Kiteo)">
-        <option value="Alan Ramos (Producción)">
-        <option value="Carlos Méndez (Almacén)">
-        <option value="Maria González (Inventario)">
-      `;
+  // Limpiar opciones existentes (excepto las por defecto)
+  userList.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
 
-      userListInventory.innerHTML = `
-        <option value="Lupta (Kiteo)">
-        <option value="Alan Ramos (Producción)">
-        <option value="Carlos Méndez (Almacén)">
-        <option value="Maria González (Inventario)">
-      `;
+  userListInventory.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
 
-      // Agregar usuarios de la base de datos
-      userData.forEach(user => {
-        const option1 = document.createElement('option');
-        option1.value = `${user.nombre} (${user.puesto})`;
-        userList.appendChild(option1);
+  userListInventoryNumbers.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
 
-        const option2 = document.createElement('option');
-        option2.value = `${user.nombre} (${user.puesto})`;
-        userListInventory.appendChild(option2);
-      });
-    }
+  // Agregar usuarios de la base de datos
+  userData.forEach(user => {
+    const option1 = document.createElement('option');
+    option1.value = `${user.nombre} (${user.puesto})`;
+    userList.appendChild(option1);
 
+    const option2 = document.createElement('option');
+    option2.value = `${user.nombre} (${user.puesto})`;
+    userListInventory.appendChild(option2);
+
+    const option3 = document.createElement('option');
+    option3.value = `${user.nombre} (${user.puesto})`;
+    userListInventoryNumbers.appendChild(option3);
+  });
+}
       // FUNCIÓN PARA CARGAS DE ASIGNACIONES
  async function loadAssignments() {
   try {
@@ -1813,6 +1824,7 @@ tabInventoryNumbers.addEventListener('click', function() {
     [tabAdmin, tabInventory, tabView],
     [contentAdmin, contentInventory, contentView]);
   loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
+   loadUserData(); // Asegurar que los usuarios estén cargados
 });
 
       
