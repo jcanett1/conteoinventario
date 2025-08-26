@@ -82,6 +82,10 @@
       <button id="tab-view" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
         Vista de Asignaciones
       </button>
+       <!-- Nueva pestaña -->
+  <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
+    Números de Inventario
+  </button>
     </div>
   </div>
   <!-- Main Content with two tab containers -->
@@ -210,6 +214,80 @@
       </div>
     </div>
 
+<!-- Tab 4: Números de Inventario -->
+<div id="content-inventory-numbers" class="hidden">
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro de Números de Inventario</h2>
+    <form id="inventory-numbers-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Select de Número de Inventario -->
+        <div>
+          <label for="inventory-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Inventario</label>
+          <select id="inventory-number" name="inventory-number" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Seleccione un número de inventario</option>
+            <!-- Opciones se cargarán dinámicamente desde Supabase -->
+          </select>
+        </div>
+        <!-- Select de Rack -->
+        <div>
+          <label for="inventory-rack" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+          <select id="inventory-rack" name="inventory-rack" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Seleccione un Rack</option>
+            <option value="A">Rack A</option>
+            <option value="B">Rack B</option>
+            <option value="C">Rack C</option>
+            <option value="D">Rack D</option>
+            <option value="E">Rack E</option>
+            <option value="F">Rack F</option>
+            <option value="G">Rack G</option>
+            <option value="AREA_KITEO">AREA KITEO</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Select de Ubicación -->
+        <div>
+          <label for="inventory-location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+          <select id="inventory-location" name="inventory-location" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Seleccione ubicación</option>
+          </select>
+        </div>
+        <!-- Input de Usuario -->
+        <div>
+          <label for="inventory-user" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+          <input type="text" id="inventory-user" name="inventory-user" list="user-list-inventory-numbers" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Seleccione o ingrese usuario">
+          <datalist id="user-list-inventory-numbers">
+            <!-- Opciones se cargarán dinámicamente -->
+          </datalist>
+        </div>
+      </div>
+      <!-- Input de Cantidad -->
+      <div>
+        <label for="inventory-quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+        <input type="number" id="inventory-quantity" name="inventory-quantity" min="1" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Ingrese cantidad">
+      </div>
+      <!-- Botón de Registrar -->
+      <div class="pt-2">
+        <button type="submit" id="inventory-numbers-submit-btn"
+          class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+          Registrar Número de Inventario
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+    
     <!-- Tab 2: Conteo de Inventario -->
     <div id="content-inventory" class="hidden">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -669,6 +747,36 @@
     return '';
   }
 }
+
+// Función para cargar números de inventario desde Supabase
+async function loadInventoryNumbers() {
+  try {
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('inventario_id, descripcion')
+      .order('inventario_id', { ascending: true });
+    if (error) throw error;
+    const select = document.getElementById('inventory-number');
+    select.innerHTML = '<option value="">Seleccione un número de inventario</option>';
+    data.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.inventario_id;
+      option.textContent = `${item.inventario_id} - ${item.descripcion}`;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar números de inventario:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudieron cargar los números de inventario'
+    });
+  }
+}
+
+
+
+    
 
     async function loadPartNumbers(datalistId) {
   try {
@@ -1557,6 +1665,61 @@ window.registerCount = async function(id) {
       }
     };
 
+// Manejar el envío del formulario de números de inventario
+document.getElementById('inventory-numbers-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const submitBtn = document.getElementById('inventory-numbers-submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Procesando...';
+  const formData = {
+    inventario_id: document.getElementById('inventory-number').value,
+    rack: document.getElementById('inventory-rack').value,
+    location: document.getElementById('inventory-location').value,
+    user: document.getElementById('inventory-user').value,
+    quantity: parseInt(document.getElementById('inventory-quantity').value),
+  };
+  try {
+    // Insertar en la tabla de conteo de inventario
+    const { error } = await supabase
+      .from('conteoinventario')
+      .insert([
+        {
+          rack: formData.rack,
+          ubicacion: formData.location,
+          usuario_asignado: formData.user,
+          numero_parte: formData.inventario_id,
+          descripcion: document.querySelector(`#inventory-number option[value="${formData.inventario_id}"]`).textContent.split(' - ')[1],
+          cantidad: formData.quantity,
+          cantidad_contada: true,
+          es_asignacion: false,
+        }
+      ]);
+    if (error) throw error;
+    Swal.fire({
+      icon: 'success',
+      title: 'Éxito',
+      text: 'Número de inventario registrado correctamente',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    this.reset();
+    await loadInventoryData();
+  } catch (error) {
+    console.error('Error al registrar número de inventario:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo registrar el número de inventario'
+    });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Registrar Número de Inventario';
+  }
+});
+
+
+
+    
 
 // Manejar cierre de sesión
 document.getElementById('logout-btn')?.addEventListener('click', async function () {
@@ -1612,6 +1775,7 @@ document.getElementById('logout-btn')?.addEventListener('click', async function 
       // Configurar ambos pares de selects
       setupLocationSelects('rack', 'location');
       setupLocationSelects('rack-assignment', 'location-assignment');
+      setupLocationSelects('inventory-rack', 'inventory-location');
 
       // CONFIGURACIÓN DE PESTAÑAS
       const tabAdmin = document.getElementById('tab-admin');
@@ -1620,6 +1784,9 @@ document.getElementById('logout-btn')?.addEventListener('click', async function 
       const contentAdmin = document.getElementById('content-admin');
       const contentInventory = document.getElementById('content-inventory');
       const contentView = document.getElementById('content-view');
+      // Configuración de la nueva pestaña
+const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
+const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
 
       function showTab(activeTab, activeContent, otherTabs, otherContents) {
         // Actualizar estilos de pestañas
@@ -1641,6 +1808,14 @@ document.getElementById('logout-btn')?.addEventListener('click', async function 
         });
       }
 
+tabInventoryNumbers.addEventListener('click', function() {
+  showTab(tabInventoryNumbers, contentInventoryNumbers,
+    [tabAdmin, tabInventory, tabView],
+    [contentAdmin, contentInventory, contentView]);
+  loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
+});
+
+      
       tabAdmin.addEventListener('click', function() {
         showTab(tabAdmin, contentAdmin, [tabInventory, tabView], [contentInventory, contentView]);
       });
