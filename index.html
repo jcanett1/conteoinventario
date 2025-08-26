@@ -365,6 +365,31 @@
           </form>
         </div>
 
+<!-- Tabla de Total por Número de Parte -->
+<div class="bg-white rounded-lg shadow-md p-6 mt-6">
+  <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Total por Número de Parte</h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 table-hover">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+        </tr>
+      </thead>
+      <tbody id="total-by-part-number" class="bg-white divide-y divide-gray-200">
+        <!-- Los datos se llenarán con JavaScript -->
+        <tr>
+          <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Cargando datos...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+        
        <!-- Summary Column -->
         <div class="md:col-span-6">
           <div class="bg-white rounded-lg shadow-md p-6">
@@ -805,6 +830,7 @@ async function loadInventoryNumbers() {
       updateRackSummary();
       updateUserSummary();
       updateInventoryRecords();
+      updateTotalByPartNumber(); // Agregar esta línea
     }
 
 // ACTUALIZAR RESUMEN POR RACK (CORREGIDA Y MODIFICADA PARA INCLUIR KITEO)
@@ -956,6 +982,60 @@ function updateRackSummary() {
 }
 // <-- Fin de la función updateRackSummary
 
+
+// Función para calcular y mostrar el total por número de parte
+function updateTotalByPartNumber() {
+  const totalByPartNumberBody = document.getElementById('total-by-part-number');
+  if (!totalByPartNumberBody) return;
+
+  if (inventoryData.length === 0) {
+    totalByPartNumberBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Crear un objeto para agrupar por número de parte
+  const totals = {};
+  inventoryData.forEach(record => {
+    const partNumber = record.numero_parte;
+    if (!totals[partNumber]) {
+      totals[partNumber] = {
+        descripcion: record.descripcion || 'Sin descripción',
+        total: 0
+      };
+    }
+    totals[partNumber].total += record.cantidad;
+  });
+
+  // Generar el HTML para la tabla
+  let html = '';
+  for (const partNumber in totals) {
+    const { descripcion, total } = totals[partNumber];
+    html += `
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900">${partNumber}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${descripcion}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${total}</div>
+        </td>
+      </tr>
+    `;
+  }
+
+  totalByPartNumberBody.innerHTML = html;
+}
+
+
+
+
+    
 
 function filterInventoryRecords() {
   const userFilter = document.getElementById('filter-user').value.toLowerCase();
