@@ -567,41 +567,102 @@
     });
 
     // Verificar sesión al cargar la página
-    document.addEventListener('DOMContentLoaded', async function () {
-        console.log('🔐 Verificando sesión de usuario...');
+   document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🔐 Verificando sesión de usuario y cargando datos iniciales...');
 
-        try {
-            // Intenta obtener la sesión actual
-            const { data: { session }, error } = await authSupabase.auth.getSession();
-
-            if (error) {
-                console.error('Error obteniendo sesión:', error.message);
-                // En caso de error crítico de autenticación, redirigir al login
-                window.location.href = 'login_completo.html';
-                return; // Detener la ejecución del resto del script
-            }
-
-            // Si no hay sesión activa
-            if (!session) {
-                console.warn('⚠️ No hay sesión activa. Redirigiendo al login...');
-                window.location.href = 'login_completo.html';
-                return; // Detener la ejecución del resto del script
-            }
-
-            // Si hay sesión, el usuario está autenticado
-            console.log('✅ Usuario autenticado:', session.user.email);
-            // Puedes almacenar la información del usuario si es necesario
-            // window.currentUser = session.user; // Ejemplo
-
-            // --- Aquí comienza la lógica original de tu aplicación ---
-            // (El resto del código DOMContentLoaded que ya tienes sigue aquí)
-
-        } catch (err) {
-            console.error('Error inesperado verificando autenticación:', err);
+    try {
+        // --- 1. Verificar sesión de usuario ---
+        const { data: { session }, error } = await authSupabase.auth.getSession();
+        if (error) {
+            console.error('Error obteniendo sesión:', error.message);
             window.location.href = 'login_completo.html';
-            return; // Detener la ejecución del resto del script
+            return;
         }
-    });
+        if (!session) {
+            console.warn('⚠️ No hay sesión activa. Redirigiendo al login...');
+            window.location.href = 'login_completo.html';
+            return;
+        }
+        console.log('✅ Usuario autenticado:', session.user.email);
+
+        // --- 2. Verificar rol del usuario ---
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('email', session.user.email)
+            .single();
+
+        if (userError || !userData) {
+            console.error('Error al obtener el rol del usuario:', userError);
+            return;
+        }
+
+        // Aplicar clase al body según el rol
+        if (userData.role === 'admin') {
+            document.body.classList.add('is-admin');
+            console.log('✅ Usuario es administrador. Mostrando todas las opciones.');
+        } else {
+            document.body.classList.remove('is-admin');
+            console.log('ℹ️ Usuario es "viewer". Restringiendo acceso a pestañas.');
+        }
+
+        // --- 3. Configurar pestañas según el rol ---
+        const tabAdmin = document.getElementById('tab-admin');
+        const tabInventory = document.getElementById('tab-inventory');
+        const tabView = document.getElementById('tab-view');
+        const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
+        const contentAdmin = document.getElementById('content-admin');
+        const contentInventory = document.getElementById('content-inventory');
+        const contentView = document.getElementById('content-view');
+        const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
+
+        // Si el usuario es "viewer", ocultar las pestañas de admin
+        if (userData.role !== 'admin') {
+            tabAdmin.style.display = 'none';
+            tabInventory.style.display = 'none';
+        }
+
+        // --- 4. Mostrar la pestaña adecuada según el rol ---
+        if (userData.role === 'admin') {
+            // Mostrar la pestaña de Administración por defecto
+            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers], [contentInventory, contentView, contentInventoryNumbers]);
+        } else {
+            // Mostrar la pestaña de Vista de Asignaciones por defecto
+            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers], [contentAdmin, contentInventory, contentInventoryNumbers]);
+            loadAssignments();
+        }
+
+        // --- 5. Configurar los eventos de clic para las pestañas ---
+        tabAdmin?.addEventListener('click', function() {
+            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers], [contentInventory, contentView, contentInventoryNumbers]);
+        });
+
+        tabInventory?.addEventListener('click', function() {
+            showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers], [contentAdmin, contentView, contentInventoryNumbers]);
+        });
+
+        tabView?.addEventListener('click', function() {
+            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers], [contentAdmin, contentInventory, contentInventoryNumbers]);
+            loadAssignments();
+        });
+
+        tabInventoryNumbers?.addEventListener('click', function() {
+            showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView], [contentAdmin, contentInventory, contentView]);
+            loadInventoryNumbers();
+            loadUserData();
+        });
+
+        // --- 6. Cargar datos iniciales ---
+        loadInventoryData();
+        loadUserData();
+        loadPartNumbers('part-number-list');
+        loadPartNumbers('part-number-list-assignment');
+
+    } catch (err) {
+        console.error('Error inesperado al cargar la página:', err);
+        Swal.fire('Error', 'Ocurrió un error al cargar la aplicación.', 'error');
+    }
+});
 
     // CONFIGURACIÓN SUPABASE
     const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
