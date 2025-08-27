@@ -1896,6 +1896,12 @@ const contentView = document.getElementById('content-view');
 const contentInventoryNumbers = document.getElementById('content-inventory-numbers'); // Nuevo contenido
 
 function showTab(activeTab, activeContent, otherTabs, otherContents) {
+    // Verificar que activeTab y activeTab.id existan
+    if (!activeTab || !activeTab.id) {
+        console.error('Error: activeTab o activeTab.id no están definidos.');
+        return;
+    }
+
     // Verificar si el usuario es "viewer" y está intentando acceder a una pestaña no permitida
     if (!document.body.classList.contains('is-admin') && ['tab-admin', 'tab-inventory'].includes(activeTab.id)) {
         Swal.fire({
@@ -1909,8 +1915,10 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
     // Limpiar estilos de todas las pestañas
     const allTabs = [activeTab, ...otherTabs];
     allTabs.forEach(tab => {
-        tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
-        tab.classList.add('text-gray-500');
+        if (tab) { // Verificar que tab no sea null o undefined
+            tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
+            tab.classList.add('text-gray-500');
+        }
     });
 
     // Aplicar estilo a la pestaña activa
@@ -1920,16 +1928,20 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
     // Mostrar/ocultar contenido
     const allContents = [activeContent, ...otherContents];
     allContents.forEach(content => {
-        content.classList.add('hidden');
-        content.classList.remove('block');
+        if (content) { // Verificar que content no sea null o undefined
+            content.classList.add('hidden');
+            content.classList.remove('block');
+        }
     });
 
-    activeContent.classList.remove('hidden');
-    activeContent.classList.add('block');
+    if (activeContent) { // Verificar que activeContent no sea null o undefined
+        activeContent.classList.remove('hidden');
+        activeContent.classList.add('block');
+    }
 }
 
-/ Eventos de clic para todas las pestañas
-tabAdmin.addEventListener('click', function() {
+// Eventos de clic para todas las pestañas
+tabAdmin?.addEventListener('click', function() {
     if (!document.body.classList.contains('is-admin')) {
         Swal.fire({
             icon: 'error',
@@ -1938,14 +1950,10 @@ tabAdmin.addEventListener('click', function() {
         });
         return;
     }
-    showTab(
-        tabAdmin, contentAdmin,
-        [tabInventory, tabView, tabInventoryNumbers],
-        [contentInventory, contentView, contentInventoryNumbers]
-    );
+    showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers], [contentInventory, contentView, contentInventoryNumbers]);
 });
 
-tabInventory.addEventListener('click', function() {
+tabInventory?.addEventListener('click', function() {
     if (!document.body.classList.contains('is-admin')) {
         Swal.fire({
             icon: 'error',
@@ -1954,31 +1962,20 @@ tabInventory.addEventListener('click', function() {
         });
         return;
     }
-    showTab(
-        tabInventory, contentInventory,
-        [tabAdmin, tabView, tabInventoryNumbers],
-        [contentAdmin, contentView, contentInventoryNumbers]
-    );
+    showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers], [contentAdmin, contentView, contentInventoryNumbers]);
 });
 
-tabView.addEventListener('click', function() {
-    showTab(
-        tabView, contentView,
-        [tabAdmin, tabInventory, tabInventoryNumbers],
-        [contentAdmin, contentInventory, contentInventoryNumbers]
-    );
+tabView?.addEventListener('click', function() {
+    showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers], [contentAdmin, contentInventory, contentInventoryNumbers]);
     loadAssignments(); // Cargar asignaciones al abrir la pestaña
 });
 
-tabInventoryNumbers.addEventListener('click', function() {
-    showTab(
-        tabInventoryNumbers, contentInventoryNumbers,
-        [tabAdmin, tabInventory, tabView],
-        [contentAdmin, contentInventory, contentView]
-    );
+tabInventoryNumbers?.addEventListener('click', function() {
+    showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView], [contentAdmin, contentInventory, contentView]);
     loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
     loadUserData(); // Asegurar que los usuarios estén cargados
 });
+
 
       // FORMULARIO DE INVENTARIO
       document.getElementById('inventory-form').addEventListener('submit', async function(e) {
