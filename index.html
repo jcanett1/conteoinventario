@@ -11,6 +11,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style id="app-style">
+    /* Ocultar elementos exclusivos del administrador por defecto */
+.admin-only {
+    display: none !important;
+}
+
+/* Mostrar elementos exclusivos del administrador si el usuario es admin */
+.is-admin .admin-only {
+    display: block !important;
+}
+    
     .bg-navy {
       background-color: #0a192f;
     }
@@ -71,23 +81,21 @@
     </div>
   </header>
   <!-- Add tab navigation -->
-  <div class="container mx-auto px-4 mt-4">
-    <div class="flex border-b border-gray-200">
-      <button id="tab-admin" class="px-4 py-2 text-navy font-medium border-b-2 border-navy">
-        Administración
-      </button>
-      <button id="tab-inventory" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
-        Conteo de Inventario
-      </button>
-      <button id="tab-view" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
-        Vista de Asignaciones
-      </button>
-       <!-- Nueva pestaña -->
-  <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
-    Números de Inventario
+<!-- Modifica las pestañas del menú -->
+<div class="flex border-b border-gray-200">
+  <button id="tab-admin" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+    <i class="fas fa-cog"></i> Administración
   </button>
-    </div>
-  </div>
+  <button id="tab-inventory" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+    <i class="fas fa-boxes"></i> Conteo de Inventario
+  </button>
+  <button id="tab-view" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
+    <i class="fas fa-tasks"></i> Vista de Asignaciones
+  </button>
+  <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
+    <i class="fas fa-list"></i> Números de Inventario
+  </button>
+</div>
   <!-- Main Content with two tab containers -->
   <main class="container mx-auto px-4 py-6">
     <!-- Tab 1: Administración -->
@@ -1888,62 +1896,88 @@ const contentView = document.getElementById('content-view');
 const contentInventoryNumbers = document.getElementById('content-inventory-numbers'); // Nuevo contenido
 
 function showTab(activeTab, activeContent, otherTabs, otherContents) {
-  // Limpiar estilos de todas las pestañas
-  const allTabs = [activeTab, ...otherTabs];
-  allTabs.forEach(tab => {
-    tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
-    tab.classList.add('text-gray-500');
-  });
+    // Verificar si el usuario es "viewer" y está intentando acceder a una pestaña no permitida
+    if (!document.body.classList.contains('is-admin') && ['tab-admin', 'tab-inventory'].includes(activeTab.id)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: 'No tienes permiso para acceder a esta sección.',
+        });
+        return;
+    }
 
-  // Aplicar estilo a la pestaña activa
-  activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
-  activeTab.classList.remove('text-gray-500');
+    // Limpiar estilos de todas las pestañas
+    const allTabs = [activeTab, ...otherTabs];
+    allTabs.forEach(tab => {
+        tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
+        tab.classList.add('text-gray-500');
+    });
 
-  // Mostrar/ocultar contenido
-  const allContents = [activeContent, ...otherContents];
-  allContents.forEach(content => {
-    content.classList.add('hidden');
-    content.classList.remove('block');
-  });
+    // Aplicar estilo a la pestaña activa
+    activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
+    activeTab.classList.remove('text-gray-500');
 
-  activeContent.classList.remove('hidden');
-  activeContent.classList.add('block');
+    // Mostrar/ocultar contenido
+    const allContents = [activeContent, ...otherContents];
+    allContents.forEach(content => {
+        content.classList.add('hidden');
+        content.classList.remove('block');
+    });
+
+    activeContent.classList.remove('hidden');
+    activeContent.classList.add('block');
 }
 
-// Eventos de clic para todas las pestañas
+/ Eventos de clic para todas las pestañas
 tabAdmin.addEventListener('click', function() {
-  showTab(
-    tabAdmin, contentAdmin,
-    [tabInventory, tabView, tabInventoryNumbers], // Incluir la nueva pestaña
-    [contentInventory, contentView, contentInventoryNumbers] // Incluir el nuevo contenido
-  );
+    if (!document.body.classList.contains('is-admin')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: 'No tienes permiso para acceder a esta sección.',
+        });
+        return;
+    }
+    showTab(
+        tabAdmin, contentAdmin,
+        [tabInventory, tabView, tabInventoryNumbers],
+        [contentInventory, contentView, contentInventoryNumbers]
+    );
 });
 
 tabInventory.addEventListener('click', function() {
-  showTab(
-    tabInventory, contentInventory,
-    [tabAdmin, tabView, tabInventoryNumbers], // Incluir la nueva pestaña
-    [contentAdmin, contentView, contentInventoryNumbers] // Incluir el nuevo contenido
-  );
+    if (!document.body.classList.contains('is-admin')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: 'No tienes permiso para acceder a esta sección.',
+        });
+        return;
+    }
+    showTab(
+        tabInventory, contentInventory,
+        [tabAdmin, tabView, tabInventoryNumbers],
+        [contentAdmin, contentView, contentInventoryNumbers]
+    );
 });
 
 tabView.addEventListener('click', function() {
-  showTab(
-    tabView, contentView,
-    [tabAdmin, tabInventory, tabInventoryNumbers], // Incluir la nueva pestaña
-    [contentAdmin, contentInventory, contentInventoryNumbers] // Incluir el nuevo contenido
-  );
-  loadAssignments(); // Cargar asignaciones cuando se hace clic en la pestaña
+    showTab(
+        tabView, contentView,
+        [tabAdmin, tabInventory, tabInventoryNumbers],
+        [contentAdmin, contentInventory, contentInventoryNumbers]
+    );
+    loadAssignments(); // Cargar asignaciones al abrir la pestaña
 });
 
 tabInventoryNumbers.addEventListener('click', function() {
-  showTab(
-    tabInventoryNumbers, contentInventoryNumbers,
-    [tabAdmin, tabInventory, tabView], // Incluir las otras pestañas
-    [contentAdmin, contentInventory, contentView] // Incluir los otros contenidos
-  );
-  loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
-  loadUserData(); // Asegurar que los usuarios estén cargados
+    showTab(
+        tabInventoryNumbers, contentInventoryNumbers,
+        [tabAdmin, tabInventory, tabView],
+        [contentAdmin, contentInventory, contentView]
+    );
+    loadInventoryNumbers(); // Cargar números de inventario al abrir la pestaña
+    loadUserData(); // Asegurar que los usuarios estén cargados
 });
 
       // FORMULARIO DE INVENTARIO
