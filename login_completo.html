@@ -1022,80 +1022,85 @@ document.getElementById('login-form').addEventListener('submit', async function(
     }
 });
 
-        // Manejar registro
-        document.getElementById('register-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const fullName = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const role = document.getElementById('register-role').value;
+       // Manejar registro - VERSIÓN CORREGIDA
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fullName = document.getElementById('register-name').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const role = document.getElementById('register-role').value;
 
-            if (!fullName || !email || !password || !role) {
-                showAlert('Por favor completa todos los campos');
-                return;
-            }
+    if (!fullName || !email || !password || !role) {
+        showAlert('Por favor completa todos los campos');
+        return;
+    }
 
-            if (password.length < 6) {
-                showAlert('La contraseña debe tener al menos 6 caracteres');
-                return;
-            }
+    if (password.length < 6) {
+        showAlert('La contraseña debe tener al menos 6 caracteres');
+        return;
+    }
 
-            showLoading('register', true);
-            clearAlerts();
+    showLoading('register', true);
+    clearAlerts();
 
-            try {
-                console.log('📝 Registrando usuario:', email);
+    try {
+        console.log('📝 Registrando usuario:', email);
 
-                // Crear usuario en Supabase Auth
-                const { data: authData, error: authError } = await supabase.auth.signUp({
+        // PRIMERO crear el registro en la tabla users
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .insert([
+                {
                     email: email,
-                    password: password
-                });
-
-                if (authError) {
-                    console.error('Error creando usuario:', authError);
-                    throw new Error(authError.message);
+                    full_name: fullName,
+                    role: role,
+                    created_at: new Date().toISOString()
                 }
+            ])
+            .select()
+            .single();
 
-                console.log('✅ Usuario creado en Auth');
+        if (userError) {
+            console.error('Error creando registro de usuario:', userError);
+            throw new Error('Error creando el perfil de usuario: ' + userError.message);
+        }
 
-                // Crear registro en la tabla users
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .insert([
-                        {
-                            email: email,
-                            full_name: fullName,
-                            role: role,
-                            created_at: new Date().toISOString()
-                        }
-                    ])
-                    .select()
-                    .single();
+        console.log('✅ Registro en tabla users exitoso:', userData);
 
-                if (userError) {
-                    console.error('Error creando registro de usuario:', userError);
-                    // Si falla la inserción, eliminar el usuario de Auth
-                    await supabase.auth.signOut();
-                    throw new Error('Error creando el perfil de usuario');
+        // LUEGO crear usuario en Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    role: role
                 }
-
-                console.log('✅ Registro completo:', userData);
-
-                showAlert('¡Cuenta creada exitosamente! Redirigiendo...', 'success');
-
-                // Redirigir al dashboard
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-
-            } catch (error) {
-                console.error('Error en registro:', error);
-                showAlert(error.message || 'Error al crear la cuenta');
-                showLoading('register', false);
             }
         });
+
+        if (authError) {
+            console.error('Error creando usuario en Auth:', authError);
+            // Revertir: eliminar el registro de la tabla users
+            await supabase.from('users').delete().eq('email', email);
+            throw new Error(authError.message);
+        }
+
+        console.log('✅ Usuario creado en Auth:', authData);
+
+        showAlert('¡Cuenta creada exitosamente! Por favor verifica tu email antes de iniciar sesión.', 'success');
+
+        // Limpiar formulario
+        document.getElementById('register-form').reset();
+
+    } catch (error) {
+        console.error('Error en registro:', error);
+        showAlert(error.message || 'Error al crear la cuenta');
+    } finally {
+        showLoading('register', false);
+    }
+});
 
         // Modal de recuperación de contraseña
         function showForgotPassword() {
