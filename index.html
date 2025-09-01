@@ -566,6 +566,56 @@
         }
     });
 
+
+    
+function showTab(activeTab, activeContent, otherTabs, otherContents) {
+    // Verificar que activeTab y activeTab.id existan
+    if (!activeTab || !activeTab.id) {
+        console.error('Error: activeTab o activeTab.id no están definidos.');
+        return;
+    }
+
+    // Verificar si el usuario es "viewer" y está intentando acceder a una pestaña no permitida
+    if (!document.body.classList.contains('is-admin') && ['tab-admin', 'tab-inventory'].includes(activeTab.id)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: 'No tienes permiso para acceder a esta sección.',
+        });
+        return;
+    }
+
+    // Limpiar estilos de todas las pestañas
+    const allTabs = [activeTab, ...otherTabs];
+    allTabs.forEach(tab => {
+        if (tab) { // Verificar que tab no sea null o undefined
+            tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
+            tab.classList.add('text-gray-500');
+        }
+    });
+
+    // Aplicar estilo a la pestaña activa
+    activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
+    activeTab.classList.remove('text-gray-500');
+
+    // Mostrar/ocultar contenido
+    const allContents = [activeContent, ...otherContents];
+    allContents.forEach(content => {
+        if (content) { // Verificar que content no sea null o undefined
+            content.classList.add('hidden');
+            content.classList.remove('block');
+        }
+    });
+
+    if (activeContent) { // Verificar que activeContent no sea null o undefined
+        activeContent.classList.remove('hidden');
+        activeContent.classList.add('block');
+    }
+}
+
+
+    
+
     // Verificar sesión al cargar la página
    document.addEventListener('DOMContentLoaded', async function() {
     console.log('🔐 Verificando sesión de usuario y cargando datos iniciales...');
@@ -1956,50 +2006,7 @@ const contentInventory = document.getElementById('content-inventory');
 const contentView = document.getElementById('content-view');
 const contentInventoryNumbers = document.getElementById('content-inventory-numbers'); // Nuevo contenido
 
-function showTab(activeTab, activeContent, otherTabs, otherContents) {
-    // Verificar que activeTab y activeTab.id existan
-    if (!activeTab || !activeTab.id) {
-        console.error('Error: activeTab o activeTab.id no están definidos.');
-        return;
-    }
 
-    // Verificar si el usuario es "viewer" y está intentando acceder a una pestaña no permitida
-    if (!document.body.classList.contains('is-admin') && ['tab-admin', 'tab-inventory'].includes(activeTab.id)) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Acceso denegado',
-            text: 'No tienes permiso para acceder a esta sección.',
-        });
-        return;
-    }
-
-    // Limpiar estilos de todas las pestañas
-    const allTabs = [activeTab, ...otherTabs];
-    allTabs.forEach(tab => {
-        if (tab) { // Verificar que tab no sea null o undefined
-            tab.classList.remove('border-b-2', 'border-navy', 'text-navy');
-            tab.classList.add('text-gray-500');
-        }
-    });
-
-    // Aplicar estilo a la pestaña activa
-    activeTab.classList.add('border-b-2', 'border-navy', 'text-navy');
-    activeTab.classList.remove('text-gray-500');
-
-    // Mostrar/ocultar contenido
-    const allContents = [activeContent, ...otherContents];
-    allContents.forEach(content => {
-        if (content) { // Verificar que content no sea null o undefined
-            content.classList.add('hidden');
-            content.classList.remove('block');
-        }
-    });
-
-    if (activeContent) { // Verificar que activeContent no sea null o undefined
-        activeContent.classList.remove('hidden');
-        activeContent.classList.add('block');
-    }
-}
 
 // Eventos de clic para todas las pestañas
 tabAdmin?.addEventListener('click', function() {
