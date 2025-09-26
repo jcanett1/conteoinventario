@@ -2227,8 +2227,62 @@ tabInventoryNumbers?.addEventListener('click', function() {
         });
       }
     });
+      
+      // CARGAR DATOS INICIALES
+      loadInventoryData();
+      loadUserData();
 
-// --- Función para Carga Masiva ---
+      // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
+      loadPartNumbers('part-number-list');
+      loadPartNumbers('part-number-list-assignment');
+
+      // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
+      document.getElementById('part-number').addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        if (partNumber) {
+          const description = await getPartDescription(partNumber);
+          if (!description) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Número de parte no encontrado',
+              text: 'El número de parte ingresado no existe en la base de datos.',
+            });
+            document.getElementById('description').value = '';
+          } else {
+            document.getElementById('description').value = description;
+          }
+        }
+      });
+
+      // Event Listeners para filtros
+      document.getElementById('filter-user').addEventListener('input', filterInventoryRecords);
+      document.getElementById('filter-part').addEventListener('input', filterInventoryRecords);
+      document.getElementById('clear-filters-btn').addEventListener('click', function() {
+        document.getElementById('filter-user').value = '';
+        document.getElementById('filter-part').value = '';
+        filterInventoryRecords();
+      });
+
+      // Event Listeners para exportar
+      document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+      document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
+
+      // Event Listeners para autocompletar
+      document.getElementById('part-number-assignment').addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        if (partNumber) {
+          const description = await getPartDescription(partNumber);
+          if (!description) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Número de parte no encontrado',
+              text: 'El número de parte ingresado no existe en la base de datos.',
+            });
+            document.getElementById('description').value = '';
+          }
+        }
+      });
+      // --- Función para Carga Masiva ---
 async function handleBulkUpload(file) {
   const resultDiv = document.getElementById('upload-result');
   const messagesDiv = document.getElementById('upload-messages');
@@ -2395,68 +2449,6 @@ function readFileAsArrayBuffer(file) {
           return;
         }
         await handleBulkUpload(file);
-      });
-
-
-
-
-
-
-
-      
-      // CARGAR DATOS INICIALES
-      loadInventoryData();
-      loadUserData();
-
-      // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
-      loadPartNumbers('part-number-list');
-      loadPartNumbers('part-number-list-assignment');
-
-      // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
-      document.getElementById('part-number').addEventListener('blur', async function() {
-        const partNumber = this.value.trim();
-        if (partNumber) {
-          const description = await getPartDescription(partNumber);
-          if (!description) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'Número de parte no encontrado',
-              text: 'El número de parte ingresado no existe en la base de datos.',
-            });
-            document.getElementById('description').value = '';
-          } else {
-            document.getElementById('description').value = description;
-          }
-        }
-      });
-
-      // Event Listeners para filtros
-      document.getElementById('filter-user').addEventListener('input', filterInventoryRecords);
-      document.getElementById('filter-part').addEventListener('input', filterInventoryRecords);
-      document.getElementById('clear-filters-btn').addEventListener('click', function() {
-        document.getElementById('filter-user').value = '';
-        document.getElementById('filter-part').value = '';
-        filterInventoryRecords();
-      });
-
-      // Event Listeners para exportar
-      document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
-      document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
-
-      // Event Listeners para autocompletar
-      document.getElementById('part-number-assignment').addEventListener('blur', async function() {
-        const partNumber = this.value.trim();
-        if (partNumber) {
-          const description = await getPartDescription(partNumber);
-          if (!description) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'Número de parte no encontrado',
-              text: 'El número de parte ingresado no existe en la base de datos.',
-            });
-            document.getElementById('description').value = '';
-          }
-        }
       });
     }); // <-- CERRAR EL EVENT LISTENER DOMContentLoaded PRINCIPAL
  </script>
