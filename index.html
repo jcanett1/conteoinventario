@@ -647,10 +647,9 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
 
     
 
-    // Verificar sesión al cargar la página
-   document.addEventListener('DOMContentLoaded', async function() {
+// --- Verificación de Sesión y Carga Inicial ---
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🔐 Verificando sesión de usuario y cargando datos iniciales...');
-
     try {
         // --- 1. Verificar sesión de usuario ---
         const { data: { session }, error } = await authSupabase.auth.getSession();
@@ -667,19 +666,19 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
         console.log('✅ Usuario autenticado:', session.user.email);
 
         // --- 2. Verificar rol del usuario ---
-        const { data: userData, error: userError } = await supabase
+        const { data: userDataFromDB, error: userError } = await supabase
             .from('users')
             .select('role')
             .eq('email', session.user.email)
             .single();
 
-        if (userError || !userData) {
+        if (userError || !userDataFromDB) {
             console.error('Error al obtener el rol del usuario:', userError);
             return;
         }
 
         // Aplicar clase al body según el rol
-        if (userData.role === 'admin') {
+        if (userDataFromDB.role === 'admin') {
             document.body.classList.add('is-admin');
             console.log('✅ Usuario es administrador. Mostrando todas las opciones.');
         } else {
@@ -692,15 +691,16 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
         const tabInventory = document.getElementById('tab-inventory');
         const tabView = document.getElementById('tab-view');
         const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
+        const tabBulkUpload = document.getElementById('tab-bulk-upload'); // Añadir esta línea
+
         const contentAdmin = document.getElementById('content-admin');
         const contentInventory = document.getElementById('content-inventory');
         const contentView = document.getElementById('content-view');
         const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
-        const tabBulkUpload = document.getElementById('tab-bulk-upload'); // Añadir esta línea
         const contentBulkUpload = document.getElementById('content-bulk-upload'); // Añadir esta línea
 
         // Si el usuario es "viewer", ocultar las pestañas de admin
-        if (userData.role !== 'admin') {
+        if (userDataFromDB.role !== 'admin') {
             tabAdmin.style.display = 'none';
             tabInventory.style.display = 'none';
             tabInventoryNumbers.style.display = 'none'; // Añadir esta línea
@@ -708,8 +708,8 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
         }
 
         // --- 4. Mostrar la pestaña adecuada según el rol ---
-         if (userData.role === 'admin') {
-            // Mostrar la pestaña de Administración por defecto (o la nueva si lo prefieres)
+        if (userDataFromDB.role === 'admin') {
+            // Mostrar la pestaña de Administración por defecto
             showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload], [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
         } else {
             // Mostrar la pestaña de Vista de Asignaciones por defecto
@@ -719,19 +719,16 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
 
         // --- 5. Configurar los eventos de clic para las pestañas ---
         tabAdmin?.addEventListener('click', function() {
-            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers], [contentInventory, contentView, contentInventoryNumbers]);
+            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload], [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
         });
-
         tabInventory?.addEventListener('click', function() {
-            showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers], [contentAdmin, contentView, contentInventoryNumbers]);
+            showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
         });
-
         tabView?.addEventListener('click', function() {
-            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers], [contentAdmin, contentInventory, contentInventoryNumbers]);
+            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
             loadAssignments();
         });
-
-       tabInventoryNumbers?.addEventListener('click', function() {
+        tabInventoryNumbers?.addEventListener('click', function() {
             showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView, tabBulkUpload], [contentAdmin, contentInventory, contentView, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
             loadInventoryNumbers();
             loadUserData();
@@ -743,6 +740,18 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
             document.getElementById('upload-result').classList.add('hidden');
             document.getElementById('upload-messages').innerHTML = '';
         });
+
+        // --- 6. Cargar datos iniciales ---
+        loadInventoryData();
+        loadUserData();
+        loadPartNumbers('part-number-list');
+        loadPartNumbers('part-number-list-assignment');
+
+    } catch (err) {
+        console.error('Error inesperado al cargar la página:', err);
+        Swal.fire('Error', 'Ocurrió un error al cargar la aplicación.', 'error');
+    }
+});
 
     // CONFIGURACIÓN SUPABASE
     const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
