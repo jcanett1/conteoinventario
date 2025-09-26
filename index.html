@@ -95,6 +95,14 @@
   <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
     <i class="fas fa-list"></i> Números de Inventario
   </button>
+  
+ <!-- Nueva Pestaña Carga Masiva -->
+    <button id="tab-bulk-upload" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+      <i class="fas fa-file-upload"></i> Carga Masiva
+    </button>
+  </div>
+
+
 </div>
   <!-- Main Content with two tab containers -->
   <main class="container mx-auto px-4 py-6">
@@ -541,6 +549,29 @@
     </div>
   </div>
 </div>
+
+ <!-- Tab 5: Carga Masiva -->
+    <div id="content-bulk-upload" class="hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Carga Masiva de Asignaciones</h2>
+        <p class="mb-4 text-sm text-gray-600">Sube un archivo Excel (.xlsx) con las columnas: Rack, Ubicación, Número de Parte, Descripción, Usuario Asignado. La Cantidad Contada se dejará en blanco para que sea ingresada posteriormente.</p>
+        <form id="bulk-upload-form" class="space-y-4">
+          <div>
+            <label for="excel-file" class="block text-sm font-medium text-gray-700 mb-1">Seleccionar Archivo Excel</label>
+            <input type="file" id="excel-file" name="excel-file" accept=".xlsx, .xls" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="pt-2">
+            <button type="submit" id="upload-submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+              Subir y Procesar
+            </button>
+          </div>
+        </form>
+        <div id="upload-result" class="mt-6 p-4 bg-gray-50 rounded-md hidden">
+          <h3 class="text-lg font-medium mb-2">Resultado de la Carga:</h3>
+          <div id="upload-messages" class="text-sm"></div>
+        </div>
+      </div>
+    </div>
   </main>
   <!-- Footer -->
   <footer class="bg-navy text-white py-4 mt-8">
@@ -665,20 +696,24 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
         const contentInventory = document.getElementById('content-inventory');
         const contentView = document.getElementById('content-view');
         const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
+        const tabBulkUpload = document.getElementById('tab-bulk-upload'); // Añadir esta línea
+        const contentBulkUpload = document.getElementById('content-bulk-upload'); // Añadir esta línea
 
         // Si el usuario es "viewer", ocultar las pestañas de admin
         if (userData.role !== 'admin') {
             tabAdmin.style.display = 'none';
             tabInventory.style.display = 'none';
+            tabInventoryNumbers.style.display = 'none'; // Añadir esta línea
+            tabBulkUpload.style.display = 'none'; // Añadir esta línea
         }
 
         // --- 4. Mostrar la pestaña adecuada según el rol ---
-        if (userData.role === 'admin') {
-            // Mostrar la pestaña de Administración por defecto
-            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers], [contentInventory, contentView, contentInventoryNumbers]);
+         if (userData.role === 'admin') {
+            // Mostrar la pestaña de Administración por defecto (o la nueva si lo prefieres)
+            showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload], [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
         } else {
             // Mostrar la pestaña de Vista de Asignaciones por defecto
-            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers], [contentAdmin, contentInventory, contentInventoryNumbers]);
+            showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
             loadAssignments();
         }
 
@@ -696,23 +731,18 @@ function showTab(activeTab, activeContent, otherTabs, otherContents) {
             loadAssignments();
         });
 
-        tabInventoryNumbers?.addEventListener('click', function() {
-            showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView], [contentAdmin, contentInventory, contentView]);
+       tabInventoryNumbers?.addEventListener('click', function() {
+            showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView, tabBulkUpload], [contentAdmin, contentInventory, contentView, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
             loadInventoryNumbers();
             loadUserData();
         });
-
-        // --- 6. Cargar datos iniciales ---
-        loadInventoryData();
-        loadUserData();
-        loadPartNumbers('part-number-list');
-        loadPartNumbers('part-number-list-assignment');
-
-    } catch (err) {
-        console.error('Error inesperado al cargar la página:', err);
-        Swal.fire('Error', 'Ocurrió un error al cargar la aplicación.', 'error');
-    }
-});
+        tabBulkUpload?.addEventListener('click', function() { // Añadir este bloque
+            showTab(tabBulkUpload, contentBulkUpload, [tabAdmin, tabInventory, tabView, tabInventoryNumbers], [contentAdmin, contentInventory, contentView, contentInventoryNumbers]); // Añadir tabBulkUpload y contentBulkUpload
+            // Opcional: Limpiar el formulario y resultados anteriores
+            document.getElementById('bulk-upload-form').reset();
+            document.getElementById('upload-result').classList.add('hidden');
+            document.getElementById('upload-messages').innerHTML = '';
+        });
 
     // CONFIGURACIÓN SUPABASE
     const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
@@ -2189,6 +2219,182 @@ tabInventoryNumbers?.addEventListener('click', function() {
       }
     });
 
+// --- Función para Carga Masiva ---
+async function handleBulkUpload(file) {
+  const resultDiv = document.getElementById('upload-result');
+  const messagesDiv = document.getElementById('upload-messages');
+  const submitBtn = document.getElementById('upload-submit-btn');
+  let successCount = 0;
+  let errorCount = 0;
+  let messages = [];
+
+  resultDiv.classList.remove('hidden');
+  messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
+  submitBtn.disabled = true;
+
+  try {
+    const data = await readFileAsArrayBuffer(file);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
+      messagesDiv.innerHTML = messages.join('');
+      return;
+    }
+
+    // Validar columnas
+    const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado']; // Ajusta según las columnas exactas de tu Excel
+    const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim()); // Quitar espacios en blanco
+    console.log('Headers encontrados en el archivo:', fileHeaders); // Debug
+
+    const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
+    if (missingHeaders.length > 0) {
+      messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
+      messagesDiv.innerHTML = messages.join('');
+      return;
+    }
+
+    // Procesar filas
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      let rowSuccess = true;
+      let errorMsg = '';
+
+      // Mapear columnas del Excel a las del objeto de Supabase
+      // Asegúrate de que los nombres coincidan exactamente con las claves de tu objeto y Supabase
+      const rack = row['Rack']?.toString().trim();
+      const ubicacion = row['Ubicación']?.toString().trim();
+      const numeroParte = row['Número de Parte']?.toString().trim();
+      const descripcion = row['Descripción']?.toString().trim();
+      const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
+
+      // Validaciones básicas
+      if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
+        errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
+        rowSuccess = false;
+      } else if (rack.length !== 1 && rack !== 'AREA_KITEO') { // Ajusta según tus reglas de rack
+        errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
+        rowSuccess = false;
+      }
+
+      if (rowSuccess) {
+        try {
+          // Buscar descripción si no se proporcionó o está vacía (opcional, dependiendo de tu flujo)
+          // if (!descripcion) {
+          //    const descFromDB = await getPartDescription(numeroParte);
+          //    if (descFromDB) {
+          //        descripcion = descFromDB;
+          //    } else {
+          //        errorMsg = `Fila ${i + 2}: Número de parte '${numeroParte}' no encontrado en la base de datos.`;
+          //        rowSuccess = false;
+          //    }
+          // }
+          if (rowSuccess) {
+            // Insertar en Supabase
+            const { error } = await supabase
+              .from('conteoinventario')
+              .insert([
+                {
+                  rack: rack,
+                  ubicacion: ubicacion,
+                  numero_parte: numeroParte,
+                  descripcion: descripcion,
+                  usuario_asignado: usuarioAsignado,
+                  cantidad: 0, // Se deja en 0 para que sea contado
+                  cantidad_contada: false, // Se marca como no contado
+                  es_asignacion: true, // Se marca como asignación pendiente
+                  es_reconteo: false, // No es reconteo
+                  fecha_actualizacion: new Date().toISOString()
+                }
+              ]);
+
+            if (error) {
+              throw error; // Lanza el error para que sea capturado por el catch del bucle
+            }
+            successCount++;
+          }
+        } catch (insertError) {
+          console.error('Error al insertar fila:', i + 2, insertError);
+          errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
+          rowSuccess = false;
+        }
+      }
+
+      if (!rowSuccess) {
+        errorCount++;
+        messages.push(`<p class="text-red-500">${errorMsg}</p>`);
+      }
+    }
+
+    // Mostrar resultados finales
+    messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
+    messagesDiv.innerHTML = messages.join('');
+    console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
+
+    // Opcional: Recargar la vista de asignaciones si se insertaron registros exitosos
+    if (successCount > 0) {
+        await loadAssignments();
+        await loadInventoryData(); // Tambien recargar el inventario general
+    }
+
+  } catch (error) {
+    console.error('Error general al procesar el archivo:', error);
+    messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+// --- Función auxiliar para leer archivo ---
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ... (resto del código existente) ...
+
+    // INICIALIZACIÓN DEL DOCUMENTO
+    document.addEventListener('DOMContentLoaded', function() {
+      // ... (código existente) ...
+
+      // Añadir evento para el formulario de carga masiva
+      document.getElementById('bulk-upload-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('excel-file');
+        if (fileInput.files.length === 0) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Archivo no seleccionado',
+            text: 'Por favor, selecciona un archivo Excel para subir.'
+          });
+          return;
+        }
+        const file = fileInput.files[0];
+        if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Tipo de archivo no válido',
+            text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
+          });
+          return;
+        }
+        await handleBulkUpload(file);
+      });
+
+
+
+
+
+
+
+      
       // CARGAR DATOS INICIALES
       loadInventoryData();
       loadUserData();
