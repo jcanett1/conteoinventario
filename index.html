@@ -207,22 +207,7 @@
                 </tr>
               </thead>
               <tbody id="user-registry" class="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">Lupta</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Kiteo</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">Alan Ramos</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Producción</div>
-                  </td>
-                </tr>
+                
               </tbody>
             </table>
           </div>
@@ -727,6 +712,44 @@
         }
     }
 
+function updateUserRegistryTable() {
+  const tableBody = document.getElementById('user-registry');
+  if (!tableBody) return;
+
+  // Limpiar tabla
+  tableBody.innerHTML = '';
+
+  if (userData.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
+          No hay usuarios registrados
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Llenar con datos reales
+  userData.forEach(user => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">${user.puesto}</div>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+
+
+
+
+  
     // FUNCIONES DE SUPABASE PARA USUARIOS
    async function getAllUsers() {
     try {
@@ -1310,7 +1333,8 @@ async function loadPartNumbers(datalistId) {
       });
     }
   });
-
+// ✅ ACTUALIZAR LA TABLA DE REGISTRO DE USUARIOS
+  updateUserRegistryTable();
   console.log('Usuarios cargados:', userData.length, 'usuarios');
 }
 
