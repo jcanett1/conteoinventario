@@ -1287,29 +1287,31 @@ async function loadPartNumbers(datalistId) {
       console.log('Datos cargados:', inventoryData.length, 'registros');
     }
 
-  async function loadUserData() {
-    console.log('Cargando datos de usuarios...');
-    userData = await getAllUsers();
+ async function loadUserData() {
+  console.log('Cargando datos de usuarios...');
+  userData = await getAllUsers();
 
-    const selects = [
-        { id: 'user', element: document.getElementById('user') },
-        { id: 'user-assignment', element: document.getElementById('user-assignment') },
-        { id: 'inventory-user', element: document.getElementById('inventory-user') }
-    ];
+  // Mapeo de datalist IDs a los usuarios
+  const datalists = [
+    { id: 'user-list', element: document.getElementById('user-list') },
+    { id: 'user-list-inventory-numbers', element: document.getElementById('user-list-inventory-numbers') },
+    { id: 'user-list-inventory', element: document.getElementById('user-list-inventory') }
+  ];
 
-    selects.forEach(({ id, element }) => {
-        if (element) {
-            element.innerHTML = '<option value="">Seleccione usuario</option>';
-            userData.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id; // ✅ Usa ID como valor (único e inmutable)
-                option.textContent = `${user.nombre} (${user.puesto})`; // ✅ Muestra nombre y puesto
-                element.appendChild(option);
-            });
-        }
-    });
+  datalists.forEach(({ element }) => {
+    if (element) {
+      element.innerHTML = ''; // Limpiar opciones anteriores
+      userData.forEach(user => {
+        const option = document.createElement('option');
+        option.value = `${user.nombre} (${user.puesto})`; // Mostrar nombre legible
+        // Opcional: si necesitas el ID en el backend, podrías guardarlo en un atributo data, 
+        // pero para el input solo necesitas el texto visible.
+        element.appendChild(option);
+      });
+    }
+  });
 
-    console.log('Usuarios cargados:', userData.length, 'usuarios');
+  console.log('Usuarios cargados:', userData.length, 'usuarios');
 }
 
     // FUNCIONES DE ASIGNACIONES
