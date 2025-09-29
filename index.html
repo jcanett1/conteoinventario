@@ -955,58 +955,53 @@ function updateRackSummary() {
 
   
     // ACTUALIZAR RESUMEN POR USUARIO
-    function updateUserSummary() {
-        console.log('- Iniciando updateUserSummary -');
-        console.log('Longitud de inventoryData:', inventoryData ? inventoryData.length : 'inventoryData es undefined/null');
+ function updateUserSummary() {
+      const userSummary = document.getElementById('user-summary');
 
-        const summaryDiv = document.getElementById('user-summary');
-        if (!summaryDiv) {
-            console.error('No se encontró el div #user-summary');
-            return;
-        }
-        summaryDiv.innerHTML = ''; // Limpiar contenido anterior
+      let html = '';
 
-        if (!inventoryData || inventoryData.length === 0) {
-            console.log('inventoryData está vacío o no definido.');
-            summaryDiv.innerHTML = '<p class="text-gray-500">No hay datos de inventario para mostrar.</p>';
-            return;
-        }
+      if (inventoryData.length === 0) {
+        html = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
+      } else {
+        const users = [...new Set(inventoryData.map(item => item.usuario_asignado))];
 
-        const userTotals = {};
-        inventoryData.forEach(item => {
-            const user = item.usuario_asignado;
-            if (!user) return; // Saltar si no hay usuario asignado
-            if (!userTotals[user]) {
-                userTotals[user] = { total: 0, counted: 0, pending: 0 };
-            }
-            // Contar total de registros asignados
-            userTotals[user].total += 1;
-            // Contar registros contados y pendientes
-            if (item.cantidad_contada) {
-                userTotals[user].counted += 1;
-            } else {
-                userTotals[user].pending += 1;
-            }
-        });
+        users.forEach(user => {
+          const userRacks = [...new Set(inventoryData.filter(item => item.usuario_asignado === user).map(item => item.rack))];
 
-        console.log('Totales por Usuario calculados:', userTotals);
+          userRacks.forEach(rack => {
+            const rackItems = inventoryData.filter(item => item.usuario_asignado === user && item.rack === rack);
+            const totalItems = rackItems.length;
+            const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
 
-        // Crear un array de usuarios y ordenarlo alfabéticamente
-        const sortedUsers = Object.keys(userTotals).sort();
+            const latestTimestamp = rackItems.reduce((latest, item) => {
+              return new Date(item.fecha_creacion) > new Date(latest) ? item.fecha_creacion : latest;
+            }, rackItems[0].fecha_creacion);
 
-        sortedUsers.forEach(user => {
-            const div = document.createElement('div');
-            div.className = 'bg-white rounded-lg shadow p-4';
-            div.innerHTML = `
-                <h3 class="font-semibold text-navy">${user}</h3>
-                <p class="text-lg"><span class="font-bold">Total:</span> ${userTotals[user].total}</p>
-                <p class="text-lg"><span class="text-green-500 font-bold">Contados:</span> ${userTotals[user].counted}</p>
-                <p class="text-lg"><span class="text-red-500 font-bold">Pendientes:</span> ${userTotals[user].pending}</p>
+            html += `
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">${user}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">Rack ${rack}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalItems}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalQuantity}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-500">${moment(latestTimestamp).format('DD/MM/YYYY HH:mm')}</div>
+                </td>
+              </tr>
             `;
-            summaryDiv.appendChild(div);
+          });
         });
-    }
+      }
 
+      userSummary.innerHTML = html;
+    }
     // ACTUALIZAR REGISTROS DE INVENTARIO
   function updateInventoryRecords() {
     console.log('- Iniciando updateInventoryRecords -');
