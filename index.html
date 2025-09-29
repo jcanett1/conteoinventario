@@ -728,19 +728,19 @@
     }
 
     // FUNCIONES DE SUPABASE PARA USUARIOS
-    async function getAllUsers() {
-        try {
-            const { data, error } = await supabase
-                .from('usuarioconteo')
-                .select('nombre')
-                .order('nombre', { ascending: true });
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('Error getting users:', error);
-            return [];
-        }
+   async function getAllUsers() {
+    try {
+        const { data, error } = await supabase
+            .from('usuarioconteo')
+            .select('id, nombre') // ← Trae ambos campos
+            .order('nombre', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('Error getting users:', error);
+        return [];
     }
+}
 
     async function insertUser(userData) {
         try {
