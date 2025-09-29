@@ -1157,6 +1157,59 @@
         }
     };
 
+async function loadPartNumbers(datalistId) {
+    try {
+        // Ajusta el nombre de la tabla y columna según tu base de datos
+        const { data, error } = await supabase
+            .from('numerosinventario') // ← ¡Cambia esto al nombre real de tu tabla!
+            .select('inventario_id'); // ← ¡Y esto al nombre real de tu columna!
+
+        if (error) throw error;
+
+        const datalist = document.getElementById(datalistId);
+        if (!datalist) {
+            console.warn(`Datalist con ID "${datalistId}" no encontrado.`);
+            return;
+        }
+
+        // Limpiar opciones anteriores
+        datalist.innerHTML = '';
+
+        // Agregar nuevas opciones
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.inventario_id; // ← ajusta al nombre de tu campo
+            datalist.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar números de parte:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error al cargar datos',
+            text: 'No se pudieron cargar los números de parte.',
+        });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
     // FUNCIONES DE CARGA DE DATOS
     async function loadInventoryData() {
         console.log('Cargando datos de inventario...');
