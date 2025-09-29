@@ -1158,49 +1158,26 @@
     };
 
 async function loadPartNumbers(datalistId) {
-    try {
-        // Obtenemos solo el 'id' (que usas como número de parte)
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('inventario_id, descripcion'); 
+  try {
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('inventario_id, descripcion'); // Cambia 'numero_parte' por 'inventario_id'
 
-        if (error) throw error;
+    if (error) throw error;
 
-        const datalist = document.getElementById(datalistId);
-        if (!datalist) {
-            console.warn(`Datalist con ID "${datalistId}" no encontrado.`);
-            return;
-        }
+    const datalist = document.getElementById(datalistId);
+    datalist.innerHTML = '';
 
-        datalist.innerHTML = '';
-
-        data.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.inventario_id.toString(); // Convertir a string para el input
-            datalist.appendChild(option);
-        });
-
-    } catch (error) {
-        console.error('Error al cargar números de parte:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error al cargar datos',
-            text: 'No se pudieron cargar los números de parte.',
-        });
-    }
+    data.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.inventario_id; // Cambia 'numero_parte' por 'inventario_id'
+      option.textContent = `${item.inventario_id} - ${item.descripcion}`;
+      datalist.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar números de parte:', error);
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
