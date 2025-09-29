@@ -1316,6 +1316,63 @@ async function loadPartNumbers(datalistId) {
         }
     }
 
+ function updateUserDataLists() {
+  // Obtener los elementos datalist
+  const userList = document.getElementById('user-list');
+  const userListInventory = document.getElementById('user-list-inventory');
+  const userListInventoryNumbers = document.getElementById('user-list-inventory-numbers');
+
+  // Limpiar opciones existentes (excepto las por defecto)
+  userList.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
+
+  userListInventory.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
+
+  userListInventoryNumbers.innerHTML = `
+    <option value="Lupta (Kiteo)">
+    <option value="Alan Ramos (Producción)">
+    <option value="Carlos Méndez (Almacén)">
+    <option value="Maria González (Inventario)">
+  `;
+
+  // Agregar usuarios de la base de datos
+  userData.forEach(user => {
+    const option1 = document.createElement('option');
+    option1.value = `${user.nombre} (${user.puesto})`;
+    userList.appendChild(option1);
+
+    const option2 = document.createElement('option');
+    option2.value = `${user.nombre} (${user.puesto})`;
+    userListInventory.appendChild(option2);
+
+    const option3 = document.createElement('option');
+    option3.value = `${user.nombre} (${user.puesto})`;
+    userListInventoryNumbers.appendChild(option3);
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
 
 
 function filterInventoryRecords() {
