@@ -1248,6 +1248,41 @@ async function loadPartNumbers(datalistId) {
         }
     }
 
+
+
+function filterInventoryRecords() {
+    // Obtener valores de los filtros
+    const userFilter = document.getElementById('filter-user')?.value.toLowerCase().trim() || '';
+    const partFilter = document.getElementById('filter-part')?.value.toLowerCase().trim() || '';
+
+    // Seleccionar todas las filas de la tabla (ajusta el selector si tu tabla tiene otro ID)
+    const rows = document.querySelectorAll('#inventory-table tbody tr');
+
+    rows.forEach(row => {
+        // Ajusta estos selectores según tu HTML
+        const userNameCell = row.querySelector('.user-name'); // o td:nth-child(2), etc.
+        const partNumberCell = row.querySelector('.part-number'); // o td:nth-child(1), etc.
+
+        const userName = userNameCell ? userNameCell.textContent.toLowerCase() : '';
+        const partNumber = partNumberCell ? partNumberCell.textContent.toLowerCase() : '';
+
+        // Verificar si coincide con ambos filtros
+        const matchesUser = userFilter === '' || userName.includes(userFilter);
+        const matchesPart = partFilter === '' || partNumber.includes(partFilter);
+
+        // Mostrar u ocultar fila
+        row.style.display = (matchesUser && matchesPart) ? '' : 'none';
+    });
+}
+
+
+
+
+
+
+
+
+  
     function updateAssignmentList(assignments) {
         const assignmentList = document.getElementById('assignment-list');
         if (!assignmentList) {
