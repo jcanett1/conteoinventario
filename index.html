@@ -1279,46 +1279,20 @@ async function loadPartNumbers(datalistId) {
 
 
   
-    // FUNCIONES DE CARGA DE DATOS
+   // FUNCIONES PRINCIPALES DE CARGA DE DATOS
     async function loadInventoryData() {
-        console.log('Cargando datos de inventario...');
-        inventoryData = await getAllInventoryRecords();
-        updateUI();
+      console.log('Cargando datos de inventario...');
+      inventoryData = await getAllInventoryRecords();
+      updateUI();
+      console.log('Datos cargados:', inventoryData.length, 'registros');
     }
 
     async function loadUserData() {
-        console.log('Cargando datos de usuarios...');
-        userData = await getAllUsers();
-        const userSelect = document.getElementById('user');
-        const userAssignmentSelect = document.getElementById('user-assignment');
-        const inventoryUserSelect = document.getElementById('inventory-user');
-        if (userSelect) {
-            userSelect.innerHTML = '<option value="">Seleccione usuario</option>';
-            userData.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.nombre;
-                option.textContent = user.nombre;
-                userSelect.appendChild(option);
-            });
-        }
-         if (userAssignmentSelect) {
-            userAssignmentSelect.innerHTML = '<option value="">Seleccione usuario</option>';
-            userData.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.nombre;
-                option.textContent = user.nombre;
-                userAssignmentSelect.appendChild(option);
-            });
-        }
-        if (inventoryUserSelect) {
-            inventoryUserSelect.innerHTML = '<option value="">Seleccione usuario</option>';
-            userData.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.nombre;
-                option.textContent = user.nombre;
-                inventoryUserSelect.appendChild(option);
-            });
-        }
+      console.log('Cargando datos de usuarios...');
+      userData = await getAllUsers();
+      updateUserRegistry();
+      updateUserDataLists();
+      console.log('Usuarios cargados:', userData.length, 'usuarios');
     }
 
     // FUNCIONES DE ASIGNACIONES
