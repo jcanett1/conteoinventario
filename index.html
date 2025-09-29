@@ -1359,7 +1359,75 @@ async function loadPartNumbers(datalistId) {
         }
     }
 
+// Función para exportar a Excel
+function exportToExcel() {
+  const table = document.getElementById('inventory-table-body');
+  if (!table || table.children.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
+    return;
+  }
 
+  const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+    return Array.from(row.querySelectorAll('td')).map(cell => {
+      // Extraer solo el texto visible (sin botones)
+      if (cell.querySelector('button')) return ''; // Opcional: omitir columna de acciones
+      return cell.textContent.trim();
+    });
+  });
+
+  // Agregar encabezados
+  const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Cantidad', 'Usuario'];
+  const data = [headers, ...rows.filter(r => r.length > 0)];
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  XLSX.writeFile(wb, 'inventario_pxg.xlsx');
+}
+
+// Función para exportar a PDF
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text('Registros de Inventario - PXG', 14, 20);
+  doc.setFontSize(10);
+
+  const table = document.getElementById('inventory-table-body');
+  if (!table || table.children.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
+    return;
+  }
+
+  const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Núm. Parte', 'Descripción', 'Cantidad', 'Usuario'];
+  const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+    return Array.from(row.querySelectorAll('td')).map((cell, idx) => {
+      if (idx === 7) return ''; // Saltar columna de acciones
+      return cell.textContent.trim();
+    }).filter(cell => cell !== ''); // Eliminar columna vacía
+  }).filter(r => r.length > 0);
+
+  // Configurar tabla
+  doc.autoTable({
+    head: [headers],
+    body: rows,
+    startY: 30,
+    theme: 'grid',
+    styles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 25 },
+      1: { cellWidth: 15 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 40 },
+      5: { cellWidth: 15 },
+      6: { cellWidth: 25 }
+    }
+  });
+
+  doc.save('inventario_pxg.pdf');
+}
 
 
 
