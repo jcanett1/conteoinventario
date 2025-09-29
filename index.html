@@ -732,7 +732,7 @@
         try {
             const { data, error } = await supabase
                 .from('usuarioconteo')
-                .select('*')
+                .select('nombre')
                 .order('nombre', { ascending: true });
             if (error) throw error;
             return data || [];
