@@ -1162,7 +1162,7 @@ async function loadPartNumbers(datalistId) {
         // Obtenemos solo el 'id' (que usas como número de parte)
         const { data, error } = await supabase
             .from('numerosinventario')
-            .select('id');
+            .select('inventario_id');
 
         if (error) throw error;
 
@@ -1176,7 +1176,7 @@ async function loadPartNumbers(datalistId) {
 
         data.forEach(item => {
             const option = document.createElement('option');
-            option.value = item.id.toString(); // Convertir a string para el input
+            option.value = item.inventario_id.toString(); // Convertir a string para el input
             datalist.appendChild(option);
         });
 
