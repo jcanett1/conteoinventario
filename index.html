@@ -732,7 +732,7 @@
     try {
         const { data, error } = await supabase
             .from('usuarioconteo')
-            .select('id, nombre, pusto') // ← Trae ambos campos
+            .select('id, nombre, puesto') // ← Trae ambos campos
             .order('nombre', { ascending: true });
         if (error) throw error;
         return data || [];
