@@ -1357,50 +1357,6 @@ async function loadPartNumbers(datalistId) {
         }
     }
 
- function updateUserDataLists() {
-  // Obtener los elementos datalist
-  const userList = document.getElementById('user-list');
-  const userListInventory = document.getElementById('user-list-inventory');
-  const userListInventoryNumbers = document.getElementById('user-list-inventory-numbers');
-
-
-  // Agregar usuarios de la base de datos
-  userData.forEach(user => {
-    const option1 = document.createElement('option');
-    option1.value = `${user.nombre} (${user.puesto})`;
-    userList.appendChild(option1);
-
-    const option2 = document.createElement('option');
-    option2.value = `${user.nombre} (${user.puesto})`;
-    userListInventory.appendChild(option2);
-
-    const option3 = document.createElement('option');
-    option3.value = `${user.nombre} (${user.puesto})`;
-    userListInventoryNumbers.appendChild(option3);
-  });
-}
-
-
-function updateUserRegistry() {
-    const userRegistryBody = document.getElementById('user-registry-body');
-    if (!userRegistryBody) return;
-
-    userRegistryBody.innerHTML = '';
-    userData.forEach(user => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${user.nombre}</td>
-            <td>${user.puesto}</td>
-            <td>
-                <button onclick="editUser(${user.id})">Editar</button>
-                <button onclick="deleteUser(${user.id})">Eliminar</button>
-            </td>
-        `;
-        userRegistryBody.appendChild(row);
-    });
-}
-
-
 
 
 
