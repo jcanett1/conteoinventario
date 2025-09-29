@@ -1048,53 +1048,55 @@ function updateRackSummary() {
     });
 }
 
-    // ACTUALIZAR TOTAL POR NÚMERO DE PARTE
-    function updateTotalByPartNumber() {
-        console.log('- Iniciando updateTotalByPartNumber -');
-        console.log('Longitud de inventoryData:', inventoryData ? inventoryData.length : 'inventoryData es undefined/null');
+  // Función para calcular y mostrar el total por número de parte
+function updateTotalByPartNumber() {
+  const totalByPartNumberBody = document.getElementById('total-by-part-number');
+  if (!totalByPartNumberBody) return;
 
-        const summaryDiv = document.getElementById('total-by-part-number');
-        if (!summaryDiv) {
-            console.error('No se encontró el div #total-by-part-number');
-            return;
-        }
-        summaryDiv.innerHTML = ''; // Limpiar contenido anterior
+  if (inventoryData.length === 0) {
+    totalByPartNumberBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td>
+      </tr>
+    `;
+    return;
+  }
 
-        if (!inventoryData || inventoryData.length === 0) {
-            console.log('inventoryData está vacío o no definido.');
-            summaryDiv.innerHTML = '<p class="text-gray-500">No hay datos de inventario para mostrar.</p>';
-            return;
-        }
-
-        const partNumberTotals = {};
-        inventoryData.forEach(item => {
-            const partNumber = item.numero_parte;
-            if (!partNumber) return; // Saltar si no hay número de parte
-            if (!partNumberTotals[partNumber]) {
-                partNumberTotals[partNumber] = { total: 0, description: item.descripcion };
-            }
-            // Solo sumar si el conteo ha sido realizado (cantidad_contada es true o cantidad > 0)
-            if (item.cantidad_contada || item.cantidad > 0) {
-                 partNumberTotals[partNumber].total += item.cantidad || 0;
-            }
-        });
-
-        console.log('Totales por Número de Parte calculados:', partNumberTotals);
-
-        // Crear un array de objetos [partNumber, details] y ordenarlo por número de parte
-        const sortedPartNumbers = Object.entries(partNumberTotals).sort(([a], [b]) => a.localeCompare(b));
-
-        sortedPartNumbers.forEach(([partNumber, details]) => {
-            const div = document.createElement('div');
-            div.className = 'bg-white rounded-lg shadow p-4';
-            div.innerHTML = `
-                <h3 class="font-semibold text-navy">${partNumber}</h3>
-                <p class="text-sm text-gray-600">${details.description}</p>
-                <p class="text-xl font-bold">${details.total}</p>
-            `;
-            summaryDiv.appendChild(div);
-        });
+  // Crear un objeto para agrupar por número de parte
+  const totals = {};
+  inventoryData.forEach(record => {
+    const partNumber = record.numero_parte;
+    if (!totals[partNumber]) {
+      totals[partNumber] = {
+        descripcion: record.descripcion || 'Sin descripción',
+        total: 0
+      };
     }
+    totals[partNumber].total += record.cantidad;
+  });
+
+  // Generar el HTML para la tabla
+  let html = '';
+  for (const partNumber in totals) {
+    const { descripcion, total } = totals[partNumber];
+    html += `
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900">${partNumber}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${descripcion}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${total}</div>
+        </td>
+      </tr>
+    `;
+  }
+
+  totalByPartNumberBody.innerHTML = html;
+}
+
 
     // FUNCIONES GLOBALES PARA EDICIÓN Y ELIMINACIÓN
     window.editRecord = async function(id) {
