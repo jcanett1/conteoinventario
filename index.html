@@ -1322,27 +1322,6 @@ async function loadPartNumbers(datalistId) {
   const userListInventory = document.getElementById('user-list-inventory');
   const userListInventoryNumbers = document.getElementById('user-list-inventory-numbers');
 
-  // Limpiar opciones existentes (excepto las por defecto)
-  userList.innerHTML = `
-    <option value="Lupta (Kiteo)">
-    <option value="Alan Ramos (Producción)">
-    <option value="Carlos Méndez (Almacén)">
-    <option value="Maria González (Inventario)">
-  `;
-
-  userListInventory.innerHTML = `
-    <option value="Lupta (Kiteo)">
-    <option value="Alan Ramos (Producción)">
-    <option value="Carlos Méndez (Almacén)">
-    <option value="Maria González (Inventario)">
-  `;
-
-  userListInventoryNumbers.innerHTML = `
-    <option value="Lupta (Kiteo)">
-    <option value="Alan Ramos (Producción)">
-    <option value="Carlos Méndez (Almacén)">
-    <option value="Maria González (Inventario)">
-  `;
 
   // Agregar usuarios de la base de datos
   userData.forEach(user => {
