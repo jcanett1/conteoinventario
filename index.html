@@ -1159,10 +1159,10 @@
 
 async function loadPartNumbers(datalistId) {
     try {
-        // Ajusta el nombre de la tabla y columna según tu base de datos
+        // Obtenemos solo el 'id' (que usas como número de parte)
         const { data, error } = await supabase
-            .from('numerosinventario') // ← ¡Cambia esto al nombre real de tu tabla!
-            .select('inventario_id'); // ← ¡Y esto al nombre real de tu columna!
+            .from('numerosinventario')
+            .select('id');
 
         if (error) throw error;
 
@@ -1172,13 +1172,11 @@ async function loadPartNumbers(datalistId) {
             return;
         }
 
-        // Limpiar opciones anteriores
         datalist.innerHTML = '';
 
-        // Agregar nuevas opciones
         data.forEach(item => {
             const option = document.createElement('option');
-            option.value = item.inventario_id; // ← ajusta al nombre de tu campo
+            option.value = item.id.toString(); // Convertir a string para el input
             datalist.appendChild(option);
         });
 
