@@ -913,9 +913,9 @@
         console.log('- Iniciando updateInventoryRecords -');
         console.log('Longitud de inventoryData:', inventoryData ? inventoryData.length : 'inventoryData es undefined/null');
 
-        const tableBody = document.getElementById('inventory-table-body');
+        const tableBody = document.getElementById('inventory-records');
         if (!tableBody) {
-            console.error('No se encontró el tbody #inventory-table-body');
+            console.error('No se encontró el tbody #inventory-records');
             return;
         }
         tableBody.innerHTML = ''; // Limpiar contenido anterior
