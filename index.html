@@ -1287,49 +1287,25 @@ async function loadPartNumbers(datalistId) {
       console.log('Datos cargados:', inventoryData.length, 'registros');
     }
 
-   async function loadUserData() {
+  async function loadUserData() {
     console.log('Cargando datos de usuarios...');
     userData = await getAllUsers();
 
-    // Obtener los selects
-    const userList = document.getElementById('user');
-    const userListInventory = document.getElementById('user-assignment');
-    const userListInventoryNumbers = document.getElementById('inventory-user');
+    const selects = [
+        { id: 'user', element: document.getElementById('user') },
+        { id: 'user-assignment', element: document.getElementById('user-assignment') },
+        { id: 'inventory-user', element: document.getElementById('inventory-user') }
+    ];
 
-    // Limpiar opciones existentes
-    if (userList) {
-        userList.innerHTML = '<option value="">Seleccione usuario</option>';
-    }
-    if (userListInventory) {
-        userListInventory.innerHTML = '<option value="">Seleccione usuario</option>';
-    }
-    if (userListInventoryNumbers) {
-        userListInventoryNumbers.innerHTML = '<option value="">Seleccione usuario</option>';
-    }
-
-    // Agregar usuarios de la base de datos
-    userData.forEach(user => {
-        const displayText = `${user.nombre} (${user.puesto})`;
-
-        if (userList) {
-            const option1 = document.createElement('option');
-            option1.value = user.id; // ✅ Mejor usar ID como valor
-            option1.textContent = displayText;
-            userList.appendChild(option1);
-        }
-
-        if (userListInventory) {
-            const option2 = document.createElement('option');
-            option2.value = user.id;
-            option2.textContent = displayText;
-            userListInventory.appendChild(option2);
-        }
-
-        if (userListInventoryNumbers) {
-            const option3 = document.createElement('option');
-            option3.value = user.id;
-            option3.textContent = displayText;
-            userListInventoryNumbers.appendChild(option3);
+    selects.forEach(({ id, element }) => {
+        if (element) {
+            element.innerHTML = '<option value="">Seleccione usuario</option>';
+            userData.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id; // ✅ Usa ID como valor (único e inmutable)
+                option.textContent = `${user.nombre} (${user.puesto})`; // ✅ Muestra nombre y puesto
+                element.appendChild(option);
+            });
         }
     });
 
