@@ -613,55 +613,46 @@ async function getAllInventoryRecords() {
     }
 }
 
-   // --- INICIO: FUNCIÓN PARA CARGAR RACKS DINÁMICAMENTE ---
-async function loadAllRacks() {
-    console.log('Cargando todos los racks únicos desde la base de datos...');
-    try {
-        // 1. Obtenemos todos los valores únicos de la columna 'rack'.
-        // Supabase no tiene un "distinct" directo en el cliente JS, pero podemos usar una Vista o RPC.
-        // Una forma más simple es traer todos los racks y filtrarlos en JS.
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('rack');
+   // --- INICIO: FUNCIÓN PARA CARGAR RACKS (MODIFICADA PARA DEVOLVER PROMISE) ---
+function loadAllRacks() {
+    return new Promise(async (resolve, reject) => {
+        console.log('Iniciando carga de racks...');
+        try {
+            const { data, error } = await supabase.from('numerosinventario').select('rack');
+            if (error) throw error;
 
-        if (error) throw error;
+            const uniqueRacks = [...new Set(data.map(item => item.rack).filter(Boolean))].sort((a, b) => a - b); // Ordena numéricamente
+            console.log('Racks únicos encontrados:', uniqueRacks);
 
-        // 2. Creamos una lista de racks únicos y la ordenamos.
-        const uniqueRacks = [...new Set(data.map(item => item.rack).filter(Boolean))].sort();
-        
-        console.log('Racks únicos encontrados:', uniqueRacks);
+            const rackSelectsToPopulate = [
+                document.getElementById('rack-assignment'),
+                document.getElementById('rack')
+            ];
 
-        // 3. Identificamos los selects que necesitan ser poblados.
-        const rackSelectsToPopulate = [
-            document.getElementById('rack-assignment'),
-            document.getElementById('rack')
-            // Añade aquí otros IDs de selects de rack si los tienes
-        ];
+            rackSelectsToPopulate.forEach(select => {
+                if (select) {
+                    const defaultOption = select.querySelector('option');
+                    select.innerHTML = '';
+                    select.appendChild(defaultOption);
+                    uniqueRacks.forEach(rackValue => {
+                        const option = document.createElement('option');
+                        option.value = rackValue;
+                        option.textContent = isNaN(rackValue) ? rackValue : `Rack ${rackValue}`;
+                        select.appendChild(option);
+                    });
+                }
+            });
+            
+            console.log('✅ Racks cargados en los selects.');
+            resolve(); // Avisa que la carga ha terminado con éxito
 
-        // 4. Poblamos cada select con las opciones.
-        rackSelectsToPopulate.forEach(select => {
-            if (select) {
-                // Guardamos la opción por defecto
-                const defaultOption = select.querySelector('option');
-                select.innerHTML = ''; // Limpiamos
-                select.appendChild(defaultOption); // La volvemos a poner
-
-                uniqueRacks.forEach(rackValue => {
-                    const option = document.createElement('option');
-                    option.value = rackValue;
-                    // Mostramos un texto amigable. Si el rack es "2", el texto será "Rack 2".
-                    option.textContent = isNaN(rackValue) ? rackValue : `Rack ${rackValue}`;
-                    select.appendChild(option);
-                });
-            }
-        });
-
-    } catch (err) {
-        console.error('Error fatal al cargar los racks:', err);
-        Swal.fire('Error Crítico', 'No se pudieron cargar los racks desde la base de datos.', 'error');
-    }
+        } catch (err) {
+            console.error('Error fatal al cargar los racks:', err);
+            reject(err); // Avisa que la carga falló
+        }
+    });
 }
-// --- FIN: FUNCIÓN PARA CARGAR RACKS DINÁMICAMENTE ---
+// --- FIN: FUNCIÓN PARA CARGAR RACKS (MODIFICADA) ---
 
 async function insertInventoryRecord(record) {
     try {
@@ -1972,108 +1963,98 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
- // --- INICIO: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE DE UBICACIONES ---
-const partNumberAssignmentInput = document.getElementById('part-number-assignment');
-if (partNumberAssignmentInput) {
-    partNumberAssignmentInput.addEventListener('blur', async function() {
-        const partNumber = this.value.trim();
-        const rackSelect = document.getElementById('rack-assignment');
-        const locationSelect = document.getElementById('location-assignment');
+       // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
+    const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+    if (partNumberAssignmentInput) {
+        partNumberAssignmentInput.addEventListener('blur', async function() {
+            const partNumber = this.value.trim();
+            const rackSelect = document.getElementById('rack-assignment');
+            const locationSelect = document.getElementById('location-assignment');
 
-        // Función para limpiar y reiniciar los selects
-        const resetSelects = () => {
-            rackSelect.innerHTML = `
-                <option value="">Seleccione un Rack</option>
-                <option value="A">Rack A</option>
-                <option value="B">Rack B</option>
-                <option value="C">Rack C</option>
-                <option value="D">Rack D</option>
-                <option value="E">Rack E</option>
-                <option value="F">Rack F</option>
-                <option value="G">Rack G</option>
-                <option value="AREA_KITEO">AREA KITEO</option>
-            `;
-            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-        };
+            if (!partNumber) return;
 
-        // Si el campo de número de parte está vacío, reiniciamos los selects a su estado original
-        if (!partNumber) {
-            resetSelects();
-            return;
-        }
+            console.log(`(Asignación) Buscando ubicaciones para: ${partNumber}`);
 
-        console.log(`Buscando ubicaciones para el número de parte: ${partNumber}`);
+            try {
+                const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
+                if (error) throw error;
 
-        try {
-            // 1. Buscamos TODAS las ubicaciones para ese número de parte.
-            // Ya no usamos .single() porque esperamos múltiples resultados.
-            const { data, error } = await supabase
-                .from('numerosinventario')
-                .select('rack, location') // Solo necesitamos el rack y la ubicación
-                .eq('inventario_id', partNumber);
-
-            // Si hay un error en la consulta
-            if (error) {
-                throw error;
-            }
-
-            // Si no se encuentra ninguna ubicación para ese número de parte
-            if (!data || data.length === 0) {
-                console.warn('No se encontró el número de parte.');
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Número de parte no encontrado',
-                    text: 'Este número de parte no existe en la base de datos de inventario.',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-                resetSelects(); // Reiniciamos los selects
-                return;
-            }
-
-            console.log('Ubicaciones encontradas:', data);
-
-            // 2. Filtramos los racks únicos y los poblamos en el select de Rack
-            const uniqueRacks = [...new Set(data.map(item => item.rack))];
-            rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>'; // Limpiamos
-            uniqueRacks.forEach(rack => {
-                const option = document.createElement('option');
-                option.value = rack;
-                // Mostramos un nombre más amigable si es un rack estándar
-                option.textContent = rack.startsWith('AREA') ? rack : `Rack ${rack}`;
-                rackSelect.appendChild(option);
-            });
-
-            // 3. Limpiamos el select de ubicación, se llenará cuando el usuario elija un rack
-            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-
-            // 4. Modificamos el comportamiento del 'change' del rack para usar los datos que ya tenemos
-            rackSelect.onchange = () => {
-                const selectedRack = rackSelect.value;
-                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>'; // Limpiar al cambiar
-
-                if (selectedRack) {
-                    // Filtramos las ubicaciones que corresponden al rack seleccionado de los datos que ya obtuvimos
-                    const locationsForRack = data.filter(item => item.rack === selectedRack);
-                    locationsForRack.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.location;
-                        option.textContent = item.location;
-                        locationSelect.appendChild(option);
-                    });
+                if (!data || data.length === 0) {
+                    Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                    return;
                 }
-            };
 
-        } catch (err) {
-            console.error('Error al buscar ubicaciones:', err);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de Búsqueda',
-                text: 'Ocurrió un problema al buscar las ubicaciones para el número de parte.'
-            });
-            resetSelects(); // En caso de error, reiniciamos todo
-        }
-    });
+                const uniqueRacks = [...new Set(data.map(item => item.rack))];
+                rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>';
+                uniqueRacks.forEach(rack => {
+                    const option = document.createElement('option');
+                    option.value = rack;
+                    option.textContent = isNaN(rack) ? rack : `Rack ${rack}`;
+                    rackSelect.appendChild(option);
+                });
+
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+
+                rackSelect.onchange = () => {
+                    const selectedRack = rackSelect.value;
+                    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                    if (selectedRack) {
+                        const locationsForRack = data.filter(item => item.rack === selectedRack);
+                        locationsForRack.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.location;
+                            option.textContent = item.location;
+                            locationSelect.appendChild(option);
+                        });
+                    }
+                };
+            } catch (err) {
+                console.error('(Asignación) Error al buscar ubicaciones:', err);
+            }
+        });
+    }
+
+ // --- INICIO: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE DE UBICACIONES ---
+ const partNumberManualInput = document.getElementById('part-number');
+    if (partNumberManualInput) {
+        partNumberManualInput.addEventListener('blur', async function() {
+            const partNumber = this.value.trim();
+            const rackSelect = document.getElementById('rack');
+            const locationSelect = document.getElementById('location');
+            const descriptionInput = document.getElementById('description');
+
+            if (!partNumber) return;
+
+            console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
+
+            try {
+                const { data, error } = await supabase.from('numerosinventario').select('descripcion, rack, location').eq('inventario_id', partNumber).limit(1).single();
+
+                if (error || !data) {
+                    descriptionInput.value = '';
+                    rackSelect.value = '';
+                    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                    Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                    return;
+                }
+
+                console.log('(Registro Manual) Datos encontrados:', data);
+
+                descriptionInput.value = data.descripcion || '';
+                rackSelect.value = data.rack || ''; // Esto ahora funcionará
+
+                locationSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = data.location;
+                option.textContent = data.location;
+                locationSelect.appendChild(option);
+                locationSelect.value = data.location;
+
+            } catch (err) {
+                console.error('(Registro Manual) Error al buscar datos:', err);
+            }
+        });
+    }
 }
 // --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
