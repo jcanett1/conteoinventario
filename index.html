@@ -1983,50 +1983,80 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
-        // Autocompletar rack, ubicación y descripción al seleccionar número de parte en ASIGNACIÓN
+           // --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE ASIGNACIÓN ---
         const partNumberAssignmentInput = document.getElementById('part-number-assignment');
         if (partNumberAssignmentInput) {
-            partNumberAssignmentInput.addEventListener('input', async function () {
+            // Usamos el evento 'blur' para que se active cuando el usuario termine de escribir o seleccionar
+            partNumberAssignmentInput.addEventListener('blur', async function() {
                 const partNumber = this.value.trim();
-                const descriptionInput = document.getElementById('part-description-assignment');
                 const rackSelect = document.getElementById('rack-assignment');
                 const locationSelect = document.getElementById('location-assignment');
 
+                // Si el campo está vacío, no hacemos nada
                 if (!partNumber) {
-                    if (descriptionInput) descriptionInput.value = '';
                     return;
                 }
 
+                console.log(`Buscando datos para el número de parte: ${partNumber}`);
+
                 try {
+                    // 1. Buscamos en la tabla 'numerosinventario' la información asociada
                     const { data, error } = await supabase
                         .from('numerosinventario')
-                        .select('inventario_id, descripcion, rack, location')
+                        .select('descripcion, rack, location') // Seleccionamos los campos que necesitamos
                         .eq('inventario_id', partNumber)
-                        .single();
+                        .single(); // Usamos .single() porque esperamos un único resultado
 
+                    // Si hay un error o no se encuentran datos, mostramos una alerta y limpiamos los campos
                     if (error || !data) {
-                        if (descriptionInput) descriptionInput.value = '';
+                        console.warn('No se encontró el número de parte o hubo un error:', error);
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Número de parte no encontrado',
+                            text: 'Este número de parte no existe en la base de datos de inventario.',
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                        // Limpiamos los selects por si tenían valores previos
+                        rackSelect.value = '';
+                        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
                         return;
                     }
 
-                    if (descriptionInput) descriptionInput.value = data.descripcion || '';
+                    console.log('Datos encontrados:', data);
 
-                    if (rackSelect && rackSelect.querySelector(`option[value="${data.rack}"]`)) {
+                    // 2. Asignamos el valor al select de Rack
+                    if (rackSelect && data.rack) {
                         rackSelect.value = data.rack;
+                        // Disparamos el evento 'change' para que se carguen las ubicaciones correspondientes
                         rackSelect.dispatchEvent(new Event('change'));
-                        
-                        setTimeout(() => {
-                            if (locationSelect && locationSelect.querySelector(`option[value="${data.location}"]`)) {
-                                locationSelect.value = data.location;
-                            }
-                        }, 10);
                     }
+
+                    // 3. Asignamos el valor a la Ubicación
+                    // Usamos un pequeño retraso (setTimeout) para dar tiempo a que el evento 'change' del rack
+                    // llene las opciones del select de ubicación.
+                    setTimeout(() => {
+                        if (locationSelect && data.location) {
+                            locationSelect.value = data.location;
+                            console.log(`Ubicación establecida a: ${data.location}`);
+                        }
+                    }, 100); // 100 milisegundos es suficiente
+
+                    // La descripción se obtiene y se usa al momento de enviar el formulario,
+                    // por lo que no es necesario mostrarla aquí. El sistema ya la busca al registrar.
+
                 } catch (err) {
-                    console.error('Error al autocompletar datos del número de parte:', err);
-                    if (descriptionInput) descriptionInput.value = '';
+                    console.error('Error al autocompletar los datos:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Búsqueda',
+                        text: 'Ocurrió un problema al buscar la información del número de parte.'
+                    });
                 }
             });
         }
+        // --- FIN: CÓDIGO PARA AUTOCOMPLETAR ---
+
 
     } catch (error) {
         console.error('Error en la inicialización:', error);
