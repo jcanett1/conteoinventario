@@ -1939,27 +1939,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadPartNumbers('part-number-list-assignment');
 
         // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
-        const partNumberInput = document.getElementById('part-number');
-        if (partNumberInput) {
-            partNumberInput.addEventListener('blur', async function() {
-                const partNumber = this.value.trim();
-                if (partNumber) {
-                    const description = await getPartDescription(partNumber);
-                    if (!description) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Número de parte no encontrado',
-                            text: 'El número de parte ingresado no existe en la base de datos.',
-                        });
-                        const descriptionInput = document.getElementById('description');
-                        if (descriptionInput) descriptionInput.value = '';
-                    } else {
-                        const descriptionInput = document.getElementById('description');
-                        if (descriptionInput) descriptionInput.value = description;
-                    }
-                }
-            });
-        }
+
 
         // Event Listeners para filtros
         const filterUser = document.getElementById('filter-user');
