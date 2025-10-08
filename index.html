@@ -2035,7 +2035,7 @@ function setupEventListeners() {
     if (partNumberManualInput) {
         partNumberManualInput.addEventListener('blur', async function() {
             const partNumber = this.value.trim();
-            const rackSelect = document.getElementById('rack');
+            const rackSelect = document.getElementById('rack-assignment');
             const locationSelect = document.getElementById('location');
             const descriptionInput = document.getElementById('description');
 
