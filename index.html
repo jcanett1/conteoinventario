@@ -1958,6 +1958,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
 
+      // CARGAR DATOS INICIALES
+        await loadAllRacks();
+        loadInventoryData();
+        loadUserData();
+        // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
+        loadPartNumbers('part-number-list');
+        loadPartNumbers('part-number-list-assignment');
+       // Configurar listeners para autocompletado
+        setupEventListeners();
+
+
+
 function setupEventListeners() {
     console.log('Configurando todos los event listeners...');
 
@@ -2087,15 +2099,6 @@ if (partNumberManualInput) {
 }); // ← CIERRE DEL DOMContentLoaded
 
 
-// CARGAR DATOS INICIALES
-        await loadAllRacks();
-        loadInventoryData();
-        loadUserData();
-        // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
-        loadPartNumbers('part-number-list');
-        loadPartNumbers('part-number-list-assignment');
-       // Configurar listeners para autocompletado
-        setupEventListeners();
 
 
    
