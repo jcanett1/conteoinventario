@@ -2034,7 +2034,7 @@ if (partNumberAssignmentInput) {
 }
 // --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
-// --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL) ---
+// --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL CORREGIDA) ---
 const partNumberManualInput = document.getElementById('part-number');
 if (partNumberManualInput) {
     partNumberManualInput.addEventListener('blur', async function() {
@@ -2056,7 +2056,6 @@ if (partNumberManualInput) {
                 .single();
 
             if (error || !data) {
-                // Limpiar campos si no se encuentra
                 descriptionInput.value = '';
                 rackSelect.value = '';
                 locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
@@ -2066,25 +2065,40 @@ if (partNumberManualInput) {
 
             console.log('(Registro Manual) Datos encontrados:', data);
 
-            // --- Lógica de Autocompletado Directo (Mejorada) ---
+            // --- Lógica de Autocompletado Directo (CORREGIDA) ---
             descriptionInput.value = data.descripcion || '';
-            rackSelect.value = data.rack || '';
 
-            // Como ya sabemos la ubicación, la creamos y la añadimos directamente.
-            // Esto es más robusto que disparar un evento 'change'.
+            // --- INICIO DE LA CORRECCIÓN PARA EL RACK ---
+            const rackValueFromDB = data.rack;
+            const rackOptionExists = rackSelect.querySelector(`option[value="${rackValueFromDB}"]`);
+
+            if (rackOptionExists) {
+                // Si la opción con el valor exacto (ej: "A") existe, la seleccionamos.
+                rackSelect.value = rackValueFromDB;
+                console.log(`✅ Rack establecido a: "${rackValueFromDB}"`);
+            } else {
+                // Si no existe, es un error de consistencia de datos.
+                rackSelect.value = ''; // Dejamos el select en blanco.
+                console.error(`❌ ERROR DE DATOS: El valor del rack desde la base de datos ("${rackValueFromDB}") no existe como una opción válida en el HTML.`);
+                console.error('Verifica que los valores en la columna "rack" de tu tabla "numerosinventario" (ej: "A", "B", "AREA_KITEO") coincidan con los "value" de las opciones del select de Rack en tu HTML.');
+            }
+            // --- FIN DE LA CORRECCIÓN PARA EL RACK ---
+
+            // Lógica para la ubicación (esta ya funcionaba bien)
             locationSelect.innerHTML = ''; // Limpiamos opciones viejas
             const option = document.createElement('option');
             option.value = data.location;
             option.textContent = data.location;
             locationSelect.appendChild(option);
-            locationSelect.value = data.location; // La seleccionamos
+            locationSelect.value = data.location;
 
         } catch (err) {
             console.error('(Registro Manual) Error al buscar datos:', err);
         }
     });
 }
-// --- FIN: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL) ---
+// --- FIN: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL CORREGIDA) ---
+
 
 
 
