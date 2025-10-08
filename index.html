@@ -1937,6 +1937,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
         loadPartNumbers('part-number-list');
         loadPartNumbers('part-number-list-assignment');
+       // Configurar listeners para autocompletado
+        setupEventListeners();
 
         // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
 
