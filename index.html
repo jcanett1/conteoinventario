@@ -1983,79 +1983,111 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
-           // --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE ASIGNACIÓN ---
-        const partNumberAssignmentInput = document.getElementById('part-number-assignment');
-        if (partNumberAssignmentInput) {
-            // Usamos el evento 'blur' para que se active cuando el usuario termine de escribir o seleccionar
-            partNumberAssignmentInput.addEventListener('blur', async function() {
-                const partNumber = this.value.trim();
-                const rackSelect = document.getElementById('rack-assignment');
-                const locationSelect = document.getElementById('location-assignment');
+ // --- INICIO: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE DE UBICACIONES ---
+const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+if (partNumberAssignmentInput) {
+    partNumberAssignmentInput.addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        const rackSelect = document.getElementById('rack-assignment');
+        const locationSelect = document.getElementById('location-assignment');
 
-                // Si el campo está vacío, no hacemos nada
-                if (!partNumber) {
-                    return;
-                }
+        // Función para limpiar y reiniciar los selects
+        const resetSelects = () => {
+            rackSelect.innerHTML = `
+                <option value="">Seleccione un Rack</option>
+                <option value="A">Rack A</option>
+                <option value="B">Rack B</option>
+                <option value="C">Rack C</option>
+                <option value="D">Rack D</option>
+                <option value="E">Rack E</option>
+                <option value="F">Rack F</option>
+                <option value="G">Rack G</option>
+                <option value="AREA_KITEO">AREA KITEO</option>
+            `;
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        };
 
-                console.log(`Buscando datos para el número de parte: ${partNumber}`);
+        // Si el campo de número de parte está vacío, reiniciamos los selects a su estado original
+        if (!partNumber) {
+            resetSelects();
+            return;
+        }
 
-                try {
-                    // 1. Buscamos en la tabla 'numerosinventario' la información asociada
-                    const { data, error } = await supabase
-                        .from('numerosinventario')
-                        .select('descripcion, rack, location') // Seleccionamos los campos que necesitamos
-                        .eq('inventario_id', partNumber)
-                        .single(); // Usamos .single() porque esperamos un único resultado
+        console.log(`Buscando ubicaciones para el número de parte: ${partNumber}`);
 
-                    // Si hay un error o no se encuentran datos, mostramos una alerta y limpiamos los campos
-                    if (error || !data) {
-                        console.warn('No se encontró el número de parte o hubo un error:', error);
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Número de parte no encontrado',
-                            text: 'Este número de parte no existe en la base de datos de inventario.',
-                            timer: 2500,
-                            showConfirmButton: false
-                        });
-                        // Limpiamos los selects por si tenían valores previos
-                        rackSelect.value = '';
-                        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                        return;
-                    }
+        try {
+            // 1. Buscamos TODAS las ubicaciones para ese número de parte.
+            // Ya no usamos .single() porque esperamos múltiples resultados.
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('rack, location') // Solo necesitamos el rack y la ubicación
+                .eq('inventario_id', partNumber);
 
-                    console.log('Datos encontrados:', data);
+            // Si hay un error en la consulta
+            if (error) {
+                throw error;
+            }
 
-                    // 2. Asignamos el valor al select de Rack
-                    if (rackSelect && data.rack) {
-                        rackSelect.value = data.rack;
-                        // Disparamos el evento 'change' para que se carguen las ubicaciones correspondientes
-                        rackSelect.dispatchEvent(new Event('change'));
-                    }
+            // Si no se encuentra ninguna ubicación para ese número de parte
+            if (!data || data.length === 0) {
+                console.warn('No se encontró el número de parte.');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Número de parte no encontrado',
+                    text: 'Este número de parte no existe en la base de datos de inventario.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+                resetSelects(); // Reiniciamos los selects
+                return;
+            }
 
-                    // 3. Asignamos el valor a la Ubicación
-                    // Usamos un pequeño retraso (setTimeout) para dar tiempo a que el evento 'change' del rack
-                    // llene las opciones del select de ubicación.
-                    setTimeout(() => {
-                        if (locationSelect && data.location) {
-                            locationSelect.value = data.location;
-                            console.log(`Ubicación establecida a: ${data.location}`);
-                        }
-                    }, 100); // 100 milisegundos es suficiente
+            console.log('Ubicaciones encontradas:', data);
 
-                    // La descripción se obtiene y se usa al momento de enviar el formulario,
-                    // por lo que no es necesario mostrarla aquí. El sistema ya la busca al registrar.
+            // 2. Filtramos los racks únicos y los poblamos en el select de Rack
+            const uniqueRacks = [...new Set(data.map(item => item.rack))];
+            rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>'; // Limpiamos
+            uniqueRacks.forEach(rack => {
+                const option = document.createElement('option');
+                option.value = rack;
+                // Mostramos un nombre más amigable si es un rack estándar
+                option.textContent = rack.startsWith('AREA') ? rack : `Rack ${rack}`;
+                rackSelect.appendChild(option);
+            });
 
-                } catch (err) {
-                    console.error('Error al autocompletar los datos:', err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error de Búsqueda',
-                        text: 'Ocurrió un problema al buscar la información del número de parte.'
+            // 3. Limpiamos el select de ubicación, se llenará cuando el usuario elija un rack
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+
+            // 4. Modificamos el comportamiento del 'change' del rack para usar los datos que ya tenemos
+            rackSelect.onchange = () => {
+                const selectedRack = rackSelect.value;
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>'; // Limpiar al cambiar
+
+                if (selectedRack) {
+                    // Filtramos las ubicaciones que corresponden al rack seleccionado de los datos que ya obtuvimos
+                    const locationsForRack = data.filter(item => item.rack === selectedRack);
+                    locationsForRack.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.location;
+                        option.textContent = item.location;
+                        locationSelect.appendChild(option);
                     });
                 }
+            };
+
+        } catch (err) {
+            console.error('Error al buscar ubicaciones:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Búsqueda',
+                text: 'Ocurrió un problema al buscar las ubicaciones para el número de parte.'
             });
+            resetSelects(); // En caso de error, reiniciamos todo
         }
-        // --- FIN: CÓDIGO PARA AUTOCOMPLETAR ---
+    });
+}
+// --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
+
 
 
     } catch (error) {
