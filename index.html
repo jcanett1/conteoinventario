@@ -1930,15 +1930,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // CARGAR DATOS INICIALES
-        await loadAllRacks();
-        loadInventoryData();
-        loadUserData();
-        // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
-        loadPartNumbers('part-number-list');
-        loadPartNumbers('part-number-list-assignment');
-       // Configurar listeners para autocompletado
-        setupEventListeners();
+        
 
         // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
 
@@ -2093,6 +2085,20 @@ if (partNumberManualInput) {
     }
 
 }); // ← CIERRE DEL DOMContentLoaded
+
+
+// CARGAR DATOS INICIALES
+        await loadAllRacks();
+        loadInventoryData();
+        loadUserData();
+        // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
+        loadPartNumbers('part-number-list');
+        loadPartNumbers('part-number-list-assignment');
+       // Configurar listeners para autocompletado
+        setupEventListeners();
+
+
+   
 
 // Función para Carga Masiva
 async function handleBulkUpload(file) {
