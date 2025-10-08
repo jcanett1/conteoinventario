@@ -2068,7 +2068,72 @@ if (partNumberAssignmentInput) {
 }
 // --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
+// --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL ---
+const partNumberManualInput = document.getElementById('part-number'); // <-- CAMBIO 1
+if (partNumberManualInput) {
+    partNumberManualInput.addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        const rackSelect = document.getElementById('rack'); // <-- CAMBIO 2
+        const locationSelect = document.getElementById('location'); // <-- CAMBIO 3
+        const descriptionInput = document.getElementById('description'); // <-- CAMBIO 4: Añadido
 
+        if (!partNumber) {
+            return;
+        }
+
+        console.log(`(Registro Manual) Buscando datos para el número de parte: ${partNumber}`);
+
+        try {
+            // Buscamos la información. Usamos .limit(1).single() para tomar solo el primer resultado.
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('descripcion, rack, location') // <-- CAMBIO 5: Añadido 'descripcion'
+                .eq('inventario_id', partNumber)
+                .limit(1)
+                .single();
+
+            if (error || !data) {
+                console.warn('(Registro Manual) No se encontró el número de parte o hubo un error:', error);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Número de parte no encontrado',
+                    text: 'Este número de parte no existe en la base de datos.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+
+            console.log('(Registro Manual) Datos encontrados:', data);
+
+            // --- Lógica de Autocompletado Directo ---
+            
+            // 1. Asignar Descripción
+            descriptionInput.value = data.descripcion || '';
+
+            // 2. Asignar Rack
+            rackSelect.value = data.rack || '';
+            
+            // 3. Disparar evento para que se carguen las ubicaciones del rack
+            rackSelect.dispatchEvent(new Event('change'));
+
+            // 4. Asignar Ubicación (con un pequeño retraso para dar tiempo a que se cargue el select)
+            setTimeout(() => {
+                locationSelect.value = data.location || '';
+                console.log(`(Registro Manual) Ubicación establecida a: "${data.location}"`);
+            }, 100);
+
+        } catch (err) {
+            console.error('(Registro Manual) Error al buscar datos:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Búsqueda',
+                text: 'Ocurrió un problema al buscar la información para el autocompletado.'
+            });
+        }
+    });
+}
+// --- FIN: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL ---
 
 
 
