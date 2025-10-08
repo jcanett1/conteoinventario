@@ -1966,8 +1966,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function setupEventListeners() {
     console.log('Configurando todos los event listeners...');
-      
-        // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
+
+    // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
     const partNumberAssignmentInput = document.getElementById('part-number-assignment');
     if (partNumberAssignmentInput) {
         partNumberAssignmentInput.addEventListener('blur', async function() {
@@ -1975,11 +1975,16 @@ function setupEventListeners() {
             const rackSelect = document.getElementById('rack-assignment');
             const locationSelect = document.getElementById('location-assignment');
 
-            if (!partNumber) return;
+            if (!partNumber) {
+                // Si se borra el número de parte, restauramos la lista completa de racks
+                await loadAllRacks(); // Vuelve a cargar todos los racks
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                return;
+            }
 
             console.log(`(Asignación) Buscando ubicaciones para: ${partNumber}`);
 
-            try { // <-- INICIO DEL TRY
+            try {
                 const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
                 if (error) throw error;
 
@@ -1988,8 +1993,9 @@ function setupEventListeners() {
                     return;
                 }
 
+                // Lógica para mostrar opciones múltiples
                 const uniqueRacks = [...new Set(data.map(item => item.rack))];
-                rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>';
+                rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>'; // Limpiamos y ponemos el default
                 uniqueRacks.forEach(rack => {
                     const option = document.createElement('option');
                     option.value = rack;
@@ -1999,6 +2005,8 @@ function setupEventListeners() {
 
                 locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
 
+                // Limpiamos cualquier listener 'onchange' anterior y asignamos uno nuevo
+                rackSelect.onchange = null; 
                 rackSelect.onchange = () => {
                     const selectedRack = rackSelect.value;
                     locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
@@ -2012,14 +2020,15 @@ function setupEventListeners() {
                         });
                     }
                 };
-            } catch (err) { // <-- ¡AQUÍ ESTÁ EL CATCH QUE FALTABA!
+            } catch (err) {
                 console.error('(Asignación) Error al buscar ubicaciones:', err);
                 Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al buscar las ubicaciones.' });
             }
         });
+        console.log('✅ Listener para ASIGNACIÓN configurado.');
     }
 
-    // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado) ---
+    // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
     const partNumberManualInput = document.getElementById('part-number');
     if (partNumberManualInput) {
         partNumberManualInput.addEventListener('blur', async function() {
@@ -2032,7 +2041,7 @@ function setupEventListeners() {
 
             console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
 
-            try { // <-- INICIO DEL TRY
+            try {
                 const { data, error } = await supabase.from('numerosinventario').select('descripcion, rack, location').eq('inventario_id', partNumber).limit(1).single();
 
                 if (error || !data) {
@@ -2045,21 +2054,27 @@ function setupEventListeners() {
 
                 console.log('(Registro Manual) Datos encontrados:', data);
 
+                // Asignación directa y robusta
                 descriptionInput.value = data.descripcion || '';
+                
+                // 1. Asignar el Rack. Esto funciona porque loadAllRacks() ya pobló el select.
                 rackSelect.value = data.rack || '';
 
-                locationSelect.innerHTML = '';
+                // 2. Crear y asignar la Ubicación directamente.
+                // Esto es más seguro que disparar un evento 'change'.
+                locationSelect.innerHTML = ''; // Limpiar por si acaso
                 const option = document.createElement('option');
                 option.value = data.location;
                 option.textContent = data.location;
                 locationSelect.appendChild(option);
-                locationSelect.value = data.location;
+                locationSelect.value = data.location; // Seleccionar la opción recién creada
 
-            } catch (err) { // <-- ¡Y AQUÍ ESTÁ EL OTRO CATCH QUE FALTABA!
+            } catch (err) {
                 console.error('(Registro Manual) Error al buscar datos:', err);
                 Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
             }
         });
+        console.log('✅ Listener para REGISTRO MANUAL configurado.');
     }
 }
 
