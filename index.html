@@ -2031,49 +2031,58 @@ function setupEventListeners() {
     }
 
     // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
-    const partNumberManualInput = document.getElementById('part-number');
-            if (partNumberManualInput) {
-                partNumberManualInput.addEventListener('blur', async function() {
-                    const partNumber = this.value.trim();
-                    const rackSelect = document.getElementById('rack'); // ✅ CORREGIDO
-                    const locationSelect = document.getElementById('location'); // ✅ CORREGIDO
-                    const descriptionInput = document.getElementById('description');
+// --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
+const partNumberManualInput = document.getElementById('part-number');
+if (partNumberManualInput) {
+    partNumberManualInput.addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        // Obtenemos los elementos, pero podrían ser null
+        const rackSelect = document.getElementById('rack');
+        const locationSelect = document.getElementById('location');
+        const descriptionInput = document.getElementById('description');
 
-                    if (!partNumber) return;
-
-                    try {
-                        const { data, error } = await supabase
-                            .from('numerosinventario')
-                            .select('descripcion, rack, location')
-                            .eq('inventario_id', partNumber)
-                            .limit(1)
-                            .single();
-
-                        if (error || !data) {
-                            descriptionInput.value = '';
-                            rackSelect.value = '';
-                            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                            Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
-                            return;
-                        }
-
-                        descriptionInput.value = data.descripcion || '';
-                        rackSelect.value = data.rack || '';
-
-                        locationSelect.innerHTML = '';
-                        const option = document.createElement('option');
-                        option.value = data.location;
-                        option.textContent = data.location;
-                        locationSelect.appendChild(option);
-                        locationSelect.value = data.location;
-
-                    } catch (err) {
-                        console.error('(Registro Manual) Error al buscar datos:', err);
-                        Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
-                    }
-                });
-            }
+        // ✅ Verificación: si alguno no existe, salimos
+        if (!rackSelect || !locationSelect || !descriptionInput) {
+            console.warn('(Registro Manual) Formulario no está cargado en el DOM. Ignorando autocompletado.');
+            return;
         }
+
+        if (!partNumber) return;
+
+        console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
+        try {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('descripcion, rack, location')
+                .eq('inventario_id', partNumber)
+                .limit(1)
+                .single();
+
+            if (error || !data) {
+                descriptionInput.value = '';
+                rackSelect.value = '';
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                return;
+            }
+
+            descriptionInput.value = data.descripcion || '';
+            rackSelect.value = data.rack || '';
+
+            locationSelect.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = data.location;
+            option.textContent = data.location;
+            locationSelect.appendChild(option);
+            locationSelect.value = data.location;
+
+        } catch (err) {
+            console.error('(Registro Manual) Error al buscar datos:', err);
+            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
+        }
+    });
+    console.log('✅ Listener para REGISTRO MANUAL configurado.');
+}
  } catch (error) {
         console.error('Error en la inicialización (autenticación):', error);
         Swal.fire({
