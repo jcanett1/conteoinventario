@@ -2031,14 +2031,12 @@ document.getElementById('part-number-assignment')?.addEventListener('input', asy
   const rackSelect = document.getElementById('rack-assignment');
   const locationSelect = document.getElementById('location-assignment');
 
-  // Resetear campos si está vacío
   if (!partNumber) {
     descriptionInput.value = '';
     return;
   }
 
   try {
-    // Buscar en Supabase el número de parte
     const { data, error } = await supabase
       .from('numerosinventario')
       .select('inventario_id, descripcion, rack, location')
@@ -2047,21 +2045,15 @@ document.getElementById('part-number-assignment')?.addEventListener('input', asy
 
     if (error || !data) {
       descriptionInput.value = '';
-      // Opcional: mostrar advertencia
-      // Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Número de parte no registrado.' });
       return;
     }
 
-    // Rellenar descripción
     descriptionInput.value = data.descripcion || '';
 
-    // Rellenar rack (si existe en los options)
     if (rackSelect.querySelector(`option[value="${data.rack}"]`)) {
       rackSelect.value = data.rack;
-      // Disparar evento 'change' para que se actualicen las ubicaciones
       rackSelect.dispatchEvent(new Event('change'));
       
-      // Esperar un instante y luego seleccionar la ubicación
       setTimeout(() => {
         if (locationSelect.querySelector(`option[value="${data.location}"]`)) {
           locationSelect.value = data.location;
@@ -2072,7 +2064,7 @@ document.getElementById('part-number-assignment')?.addEventListener('input', asy
     console.error('Error al autocompletar datos del número de parte:', err);
     descriptionInput.value = '';
   }
-   });
+});
 
 
     // --- Función para Carga Masiva ---
@@ -2215,31 +2207,22 @@ document.getElementById('part-number-assignment')?.addEventListener('input', asy
     }
 
     // Añadir evento para el formulario de carga masiva (fuera del DOMContentLoaded, pero se ejecutará cuando el DOM esté listo)
-    document.addEventListener('DOMContentLoaded', function() { // <-- Nuevo listener solo para el evento del formulario
-        document.getElementById('bulk-upload-form')?.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('excel-file');
-            if (fileInput.files.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Archivo no seleccionado',
-                    text: 'Por favor, selecciona un archivo Excel para subir.'
-                });
-                return;
-            }
-            const file = fileInput.files[0];
-            if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Tipo de archivo no válido',
-                    text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
-                });
-                return;
-            }
-            await handleBulkUpload(file);
-        });
-    }); // <-- Cierre del listener del formulario
-
- </script> <!-- AÑADIR ESTA ETIQUETA -->
+  document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('bulk-upload-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('excel-file');
+    if (fileInput.files.length === 0) {
+      Swal.fire({ icon: 'warning', title: 'Archivo no seleccionado', text: 'Por favor, selecciona un archivo Excel para subir.' });
+      return;
+    }
+    const file = fileInput.files[0];
+    if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+      Swal.fire({ icon: 'error', title: 'Tipo de archivo no válido', text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).' });
+      return;
+    }
+    await handleBulkUpload(file);
+  });
+});
+</script>
 </body>
 </html>
