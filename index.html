@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+script<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -569,184 +569,189 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script id="app-script">
+ <script id="app-script">
     // CONFIGURACIÓN SUPABASE (Repetida aquí para el script de autenticación)
-const SUPABASE_URL_AUTH = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
-const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
-// Inicializar cliente Supabase solo para autenticación
-const authSupabase = window.supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
-    auth: {
-        persistSession: true, // Muy importante para mantener la sesión
-        autoRefreshToken: true
+    const SUPABASE_URL_AUTH = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+    const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+    // Inicializar cliente Supabase solo para autenticación
+    const authSupabase = window.supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+        auth: {
+            persistSession: true, // Muy importante para mantener la sesión
+            autoRefreshToken: true
+        }
+    });
+
+    // FUNCIONES DE LA UI (showTab y otras funciones auxiliares)
+    function showTab(activeTab, activeContent, otherTabs, otherContents) {
+        // Ocultar contenido de otras pestañas
+        otherContents.forEach(content => content.classList.add('hidden'));
+        // Mostrar contenido de la pestaña activa
+        activeContent.classList.remove('hidden');
+
+        // Remover estilo activo de otras pestañas
+        otherTabs.forEach(tab => tab.classList.remove('border-navy', 'text-navy', 'border-b-2'));
+        // Aplicar estilo activo a la pestaña activa
+        activeTab.classList.add('border-navy', 'text-navy', 'border-b-2');
     }
-});
 
-// FUNCIONES DE LA UI (showTab y otras funciones auxiliares)
-function showTab(activeTab, activeContent, otherTabs, otherContents) {
-    // Ocultar contenido de otras pestañas
-    otherContents.forEach(content => content.classList.add('hidden'));
-    // Mostrar contenido de la pestaña activa
-    activeContent.classList.remove('hidden');
+    // CONFIGURACIÓN SUPABASE
+    const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+    // Inicializar Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Variables globales
+    let inventoryData = [];
+    let userData = []; // <-- Esta es la declaración original
+    const rackLocations = {
+      'A': 48, 'B': 48, 'C': 48, 'D': 42, 'E': 42, 'F': 21, 'G': 32
+    };
 
-    // Remover estilo activo de otras pestañas
-    otherTabs.forEach(tab => tab.classList.remove('border-navy', 'text-navy', 'border-b-2'));
-    // Aplicar estilo activo a la pestaña activa
-    activeTab.classList.add('border-navy', 'text-navy', 'border-b-2');
-}
+    // FUNCIONES DE SUPABASE PARA INVENTARIO
+    async function getAllInventoryRecords() {
+        console.log('Obteniendo registros de Supabase...');
+        try {
+            const { data, error } = await supabase
+                .from('conteoinventario')
+                .select('*')
+                .order('fecha_creacion', { ascending: false });
+            if (error) {
+                console.error('Error de Supabase:', error);
+                throw error;
+            }
+            console.log('Registros obtenidos:', data?.length || 0);
+            return data || [];
+        } catch (error) {
+            console.error('Error getting records:', error);
+            Swal.fire('Error', 'No se pudieron cargar los datos de la base de datos', 'error');
+            return [];
+        }
+    }
 
-// CONFIGURACIÓN SUPABASE
-const SUPABASE_URL = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
-// Inicializar Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// Variables globales
-let inventoryData = [];
-let userData = []; // <-- Esta es la declaración original
-const rackLocations = {
-  'A': 48, 'B': 48, 'C': 48, 'D': 42, 'E': 42, 'F': 21, 'G': 32
-};
-
-// FUNCIONES DE SUPABASE PARA INVENTARIO
-async function getAllInventoryRecords() {
-    console.log('Obteniendo registros de Supabase...');
-    try {
-        const { data, error } = await supabase
-            .from('conteoinventario')
-            .select('*')
-            .order('fecha_creacion', { ascending: false });
-        if (error) {
-            console.error('Error de Supabase:', error);
+    async function insertInventoryRecord(record) {
+        try {
+            const supabaseRecord = {
+                rack: record.rack,
+                ubicacion: record.location,
+                usuario_asignado: record.user,
+                numero_parte: record.partNumber,
+                descripcion: record.description,
+                cantidad: record.quantity
+            };
+            console.log('Insertando registro:', supabaseRecord);
+            const { data, error } = await supabase
+                .from('conteoinventario')
+                .insert([supabaseRecord])
+                .select();
+            if (error) throw error;
+            console.log('Registro insertado:', data[0]);
+            return { id: data[0].id, ...record, fecha_creacion: data[0].fecha_creacion };
+        } catch (error) {
+            console.error('Error inserting record:', error);
             throw error;
         }
-        console.log('Registros obtenidos:', data?.length || 0);
-        return data || [];
-    } catch (error) {
-        console.error('Error getting records:', error);
-        Swal.fire('Error', 'No se pudieron cargar los datos de la base de datos', 'error');
-        return [];
     }
-}
 
-async function insertInventoryRecord(record) {
-    try {
-        const supabaseRecord = {
-            rack: record.rack,
-            ubicacion: record.location,
-            usuario_asignado: record.user,
-            numero_parte: record.partNumber,
-            descripcion: record.description,
-            cantidad: record.quantity
-        };
-        console.log('Insertando registro:', supabaseRecord);
-        const { data, error } = await supabase
-            .from('conteoinventario')
-            .insert([supabaseRecord])
-            .select();
-        if (error) throw error;
-        console.log('Registro insertado:', data[0]);
-        return { id: data[0].id, ...record, fecha_creacion: data[0].fecha_creacion };
-    } catch (error) {
-        console.error('Error inserting record:', error);
-        throw error;
-    }
-}
-
-async function updateInventoryRecord(updatedRecord) {
-    try {
-        // Obtener el registro actual para comparar la cantidad
-        const { data: currentRecord, error: fetchError } = await supabase
-            .from('conteoinventario')
-            .select('cantidad, modificaciones')
-            .eq('id', updatedRecord.id)
-            .single();
-        if (fetchError) throw fetchError;
-
-        let newModificaciones = currentRecord.modificaciones || 0;
-        // Comparar cantidades y aumentar el contador si son diferentes
-        if (currentRecord.cantidad !== updatedRecord.quantity) {
-            newModificaciones += 1;
-        }
-
-        console.log('Actualizando registro con modificaciones:', newModificaciones);
-        const { data, error } = await supabase
-            .from('conteoinventario')
-            .update({
-                rack: updatedRecord.rack,
-                ubicacion: updatedRecord.location,
-                usuario_asignado: updatedRecord.user,
-                numero_parte: updatedRecord.partNumber,
-                descripcion: updatedRecord.description,
-                cantidad: updatedRecord.quantity,
-                modificaciones: newModificaciones,
-                fecha_actualizacion: new Date().toISOString()
-            })
-            .eq('id', updatedRecord.id);
-        if (error) throw error;
-        console.log('Registro actualizado:', data);
-        return data;
-    } catch (error) {
-        console.error('Error updating record:', error);
-        throw error;
-    }
-}
-
-async function deleteInventoryRecords(id) {
-    try {
-        if (id) {
-            const { error } = await supabase
+    async function updateInventoryRecord(updatedRecord) {
+        try {
+            // Obtener el registro actual para comparar la cantidad
+            const { data: currentRecord, error: fetchError } = await supabase
                 .from('conteoinventario')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
-        } else {
-            const { error } = await supabase
+                .select('cantidad, modificaciones')
+                .eq('id', updatedRecord.id)
+                .single();
+            if (fetchError) throw fetchError;
+
+            let newModificaciones = currentRecord.modificaciones || 0;
+            // Comparar cantidades y aumentar el contador si son diferentes
+            if (currentRecord.cantidad !== updatedRecord.quantity) {
+                newModificaciones += 1;
+            }
+
+            console.log('Actualizando registro con modificaciones:', newModificaciones);
+            const { data, error } = await supabase
                 .from('conteoinventario')
-                .delete()
-                .neq('id', 0); // Esto eliminará todos los registros, ten cuidado
+                .update({
+                    rack: updatedRecord.rack,
+                    ubicacion: updatedRecord.location,
+                    usuario_asignado: updatedRecord.user,
+                    numero_parte: updatedRecord.partNumber,
+                    descripcion: updatedRecord.description,
+                    cantidad: updatedRecord.quantity,
+                    modificaciones: newModificaciones,
+                    fecha_actualizacion: new Date().toISOString()
+                })
+                .eq('id', updatedRecord.id);
             if (error) throw error;
+            console.log('Registro actualizado:', data);
+            return data;
+        } catch (error) {
+            console.error('Error updating record:', error);
+            throw error;
         }
-        return { success: true };
-    } catch (error) {
-        console.error('Error deleting records:', error);
-        throw error;
     }
-}
+
+    async function deleteInventoryRecords(id) {
+        try {
+            if (id) {
+                const { error } = await supabase
+                    .from('conteoinventario')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('conteoinventario')
+                    .delete()
+                    .neq('id', 0); // Esto eliminará todos los registros, ten cuidado
+                if (error) throw error;
+            }
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting records:', error);
+            throw error;
+        }
+    }
 
 function updateUserRegistryTable() {
-    const tableBody = document.getElementById('user-registry');
-    if (!tableBody) return;
+  const tableBody = document.getElementById('user-registry');
+  if (!tableBody) return;
 
-    // Limpiar tabla
-    tableBody.innerHTML = '';
+  // Limpiar tabla
+  tableBody.innerHTML = '';
 
-    if (userData.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
-                    No hay usuarios registrados
-                </td>
-            </tr>
-        `;
-        return;
-    }
+  if (userData.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
+          No hay usuarios registrados
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
-    // Llenar con datos reales
-    userData.forEach(user => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${user.puesto}</div>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
+  // Llenar con datos reales
+  userData.forEach(user => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">${user.puesto}</div>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
 }
 
-// FUNCIONES DE SUPABASE PARA USUARIOS
-async function getAllUsers() {
+
+
+
+
+  
+    // FUNCIONES DE SUPABASE PARA USUARIOS
+   async function getAllUsers() {
     try {
         const { data, error } = await supabase
             .from('usuarioconteo')
@@ -760,69 +765,69 @@ async function getAllUsers() {
     }
 }
 
-async function insertUser(userData) {
-    try {
-        const { data, error } = await supabase
-            .from('usuarioconteo')
-            .insert([userData])
-            .select();
-        if (error) throw error;
-        return data[0];
-    } catch (error) {
-        console.error('Error inserting user:', error);
-        throw error;
-    }
-}
-
-// FUNCIONES PARA NÚMEROS DE PARTE Y DESCRIPCIÓN
-async function getPartDescription(partNumber) {
-    try {
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('descripcion')
-            .eq('inventario_id', partNumber) // Cambia 'numero_parte' por 'inventario_id'
-            .single();
-        if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+    async function insertUser(userData) {
+        try {
+            const { data, error } = await supabase
+                .from('usuarioconteo')
+                .insert([userData])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error('Error inserting user:', error);
             throw error;
         }
-        return data?.descripcion || '';
-    } catch (error) {
-        console.error('Error al buscar la descripción:', error);
-        return '';
     }
-}
 
-// Función para cargar números de inventario desde Supabase
-async function loadInventoryNumbers() {
-    try {
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('inventario_id, descripcion')
-            .order('inventario_id', { ascending: true });
-        if (error) throw error;
-        const select = document.getElementById('inventory-number');
-        select.innerHTML = '<option value="">Seleccione un número de inventario</option>';
-        data.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.inventario_id;
-            option.textContent = `${item.inventario_id} - ${item.descripcion}`;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error al cargar números de inventario:', error);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar los números de inventario' });
+    // FUNCIONES PARA NÚMEROS DE PARTE Y DESCRIPCIÓN
+    async function getPartDescription(partNumber) {
+        try {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('descripcion')
+                .eq('inventario_id', partNumber) // Cambia 'numero_parte' por 'inventario_id'
+                .single();
+            if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+                throw error;
+            }
+            return data?.descripcion || '';
+        } catch (error) {
+            console.error('Error al buscar la descripción:', error);
+            return '';
+        }
     }
-}
 
-// FUNCIONES DE LA UI
-function updateUI() {
-    updateRackSummary();
-    updateUserSummary();
-    updateInventoryRecords();
-    updateTotalByPartNumber(); // Agregar esta línea
-}
+    // Función para cargar números de inventario desde Supabase
+    async function loadInventoryNumbers() {
+        try {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('inventario_id, descripcion')
+                .order('inventario_id', { ascending: true });
+            if (error) throw error;
+            const select = document.getElementById('inventory-number');
+            select.innerHTML = '<option value="">Seleccione un número de inventario</option>';
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.inventario_id;
+                option.textContent = `${item.inventario_id} - ${item.descripcion}`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar números de inventario:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar los números de inventario' });
+        }
+    }
 
-// ACTUALIZAR RESUMEN POR RACK (CORREGIDA Y MODIFICADA PARA INCLUIR KITEO)
+    // FUNCIONES DE LA UI
+    function updateUI() {
+        updateRackSummary();
+        updateUserSummary();
+        updateInventoryRecords();
+        updateTotalByPartNumber(); // Agregar esta línea
+    }
+
+  // ACTUALIZAR RESUMEN POR RACK (CORREGIDA Y MODIFICADA PARA INCLUIR KITEO)
 function updateRackSummary() {
     console.log('--- Iniciando updateRackSummary ---');
     console.log('Longitud de inventoryData:', inventoryData ? inventoryData.length : 'inventoryData es undefined/null');
@@ -957,379 +962,481 @@ function updateRackSummary() {
          console.log('  ➖ Sin datos para KITEO (Área), fila omitida.');
     }
 
-    // 4. Mostrar mensaje si no hay datos para mostrar
-    if (!hasDataToShow) {
-        console.log('⚠️ No hay datos para mostrar en ningún rack/área.');
+    // 4. Mensaje si no hay datos en ningún lado (ya se manejó arriba si inventoryData está vacío)
+    // Este bloque solo se ejecutaría si inventoryData tiene datos pero ninguno coincide con los racks/áreas procesados.
+    if (hasDataToShow === false && inventoryData.length > 0) {
+        console.log('⚠️ inventoryData tiene elementos, pero ninguno corresponde a los racks/áreas definidos.');
         const noDataRow = document.createElement('tr');
-        noDataRow.innerHTML = `<td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de inventario registrados aún.</td>`;
+        noDataRow.innerHTML = `<td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de inventario para los racks/áreas definidos.</td>`;
         summaryTableBody.appendChild(noDataRow);
     }
 
+    console.log('✅ Resumen por rack actualizado.');
     console.log('--- Finalizando updateRackSummary ---');
 }
+// <-- Fin de la función updateRackSummary
 
-// FUNCIÓN PARA ACTUALIZAR RESUMEN DE USUARIOS (PLACEHOLDER)
-function updateUserSummary() {
-    // Implementación de resumen de usuarios
-    console.log('Actualizando resumen de usuarios...');
-}
+  
+    // ACTUALIZAR RESUMEN POR USUARIO
+ function updateUserSummary() {
+      const userSummary = document.getElementById('user-summary');
 
-// FUNCIÓN PARA ACTUALIZAR REGISTROS DE INVENTARIO (PLACEHOLDER)
-function updateInventoryRecords() {
-    // Implementación de actualización de registros
-    console.log('Actualizando registros de inventario...');
-}
+      let html = '';
 
-// Función para calcular y mostrar el total por número de parte
-function updateTotalByPartNumber() {
-    const totalByPartNumberBody = document.getElementById('total-by-part-number');
-    if (!totalByPartNumberBody) return;
+      if (inventoryData.length === 0) {
+        html = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos disponibles</td></tr>';
+      } else {
+        const users = [...new Set(inventoryData.map(item => item.usuario_asignado))];
 
-    if (inventoryData.length === 0) {
-        totalByPartNumberBody.innerHTML = `
-            <tr>
-                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td>
-            </tr>
-        `;
+        users.forEach(user => {
+          const userRacks = [...new Set(inventoryData.filter(item => item.usuario_asignado === user).map(item => item.rack))];
+
+          userRacks.forEach(rack => {
+            const rackItems = inventoryData.filter(item => item.usuario_asignado === user && item.rack === rack);
+            const totalItems = rackItems.length;
+            const totalQuantity = rackItems.reduce((sum, item) => sum + item.cantidad, 0);
+
+            const latestTimestamp = rackItems.reduce((latest, item) => {
+              return new Date(item.fecha_creacion) > new Date(latest) ? item.fecha_creacion : latest;
+            }, rackItems[0].fecha_creacion);
+
+            html += `
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">${user}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">Rack ${rack}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalItems}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${totalQuantity}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-500">${moment(latestTimestamp).format('DD/MM/YYYY HH:mm')}</div>
+                </td>
+              </tr>
+            `;
+          });
+        });
+      }
+
+      userSummary.innerHTML = html;
+    }
+    // ACTUALIZAR REGISTROS DE INVENTARIO
+  function updateInventoryRecords() {
+    console.log('- Iniciando updateInventoryRecords -');
+    console.log('Longitud de inventoryData:', inventoryData ? inventoryData.length : 'inventoryData es undefined/null');
+    
+    const tableBody = document.getElementById('inventory-table-body');
+    if (!tableBody) {
+        console.error('No se encontró el tbody #inventory-table-body');
+        return;
+    }
+    tableBody.innerHTML = '';
+
+    if (!inventoryData || inventoryData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td></tr>';
         return;
     }
 
-    // Crear un objeto para agrupar por número de parte
-    const totals = {};
-    inventoryData.forEach(record => {
-        const partNumber = record.numero_parte;
-        if (!totals[partNumber]) {
-            totals[partNumber] = {
-                descripcion: record.descripcion || 'Sin descripción',
-                total: 0
-            };
-        }
-        totals[partNumber].total += record.cantidad;
-    });
-
-    // Generar el HTML para la tabla
-    let html = '';
-    for (const partNumber in totals) {
-        const { descripcion, total } = totals[partNumber];
-        html += `
-            <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${partNumber}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${descripcion}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${total}</div>
-                </td>
-            </tr>
-        `;
+    const filteredData = inventoryData.filter(item => !item.es_asignacion && !item.es_reconteo);
+    if (filteredData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario general</td></tr>';
+        return;
     }
 
-    totalByPartNumberBody.innerHTML = html;
+    filteredData.forEach(item => {
+        const row = document.createElement('tr');
+        row.className = 'bg-white border-b hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 text-sm text-gray-700">
+                ${item.fecha_creacion ? new Date(item.fecha_creacion).toLocaleString('es-MX') : '—'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">${item.rack || '—'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">${item.ubicacion || '—'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700 font-mono">${item.numero_parte || '—'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">${item.descripcion || '—'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">${item.cantidad != null ? item.cantidad : '—'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">${item.usuario_asignado || '—'}</td>
+            <td class="px-6 py-4 text-sm">
+                <button onclick="editRecord(${item.id})" class="text-blue-600 hover:text-blue-900 mr-2">Editar</button>
+                <button onclick="deleteRecord(${item.id})" class="text-red-600 hover:text-red-900">Eliminar</button>
+                <button onclick="reconteoRecord(${item.id})" class="text-yellow-600 hover:text-yellow-900 ml-2">Recontar</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
 }
 
-// FUNCIONES GLOBALES PARA EDICIÓN Y ELIMINACIÓN
-window.editRecord = async function(id) {
-    const record = inventoryData.find(item => item.id === id);
-    if (!record) return;
+  // Función para calcular y mostrar el total por número de parte
+function updateTotalByPartNumber() {
+  const totalByPartNumberBody = document.getElementById('total-by-part-number');
+  if (!totalByPartNumberBody) return;
 
-    const { value: formValues } = await Swal.fire({
-        title: 'Editar Registro',
-        html: `<div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
-                        <input id="edit-rack" class="swal2-input" value="${record.rack}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                        <input id="edit-location" class="swal2-input" value="${record.ubicacion}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-                        <input id="edit-user" class="swal2-input" value="${record.usuario_asignado}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-                        <input id="edit-part-number" class="swal2-input" value="${record.numero_parte}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                        <input id="edit-description" class="swal2-input" value="${record.descripcion}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                        <input type="number" id="edit-quantity" class="swal2-input" value="${record.cantidad}">
-                    </div>
-               </div>`,
-        focusConfirm: false,
-        preConfirm: () => {
-            return {
-                rack: document.getElementById('edit-rack').value,
-                location: document.getElementById('edit-location').value,
-                user: document.getElementById('edit-user').value,
-                partNumber: document.getElementById('edit-part-number').value,
-                description: document.getElementById('edit-description').value,
-                quantity: parseInt(document.getElementById('edit-quantity').value)
-            };
-        }
-    });
+  if (inventoryData.length === 0) {
+    totalByPartNumberBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td>
+      </tr>
+    `;
+    return;
+  }
 
-    if (formValues) {
-        try {
-            await updateInventoryRecord({ id, ...formValues });
-            await loadInventoryData();
-            Swal.fire({
-                icon: 'success',
-                title: 'Éxito',
-                text: 'Registro actualizado correctamente',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } catch (error) {
-            console.error('Error al actualizar el registro:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo actualizar el registro'
-            });
-        }
+  // Crear un objeto para agrupar por número de parte
+  const totals = {};
+  inventoryData.forEach(record => {
+    const partNumber = record.numero_parte;
+    if (!totals[partNumber]) {
+      totals[partNumber] = {
+        descripcion: record.descripcion || 'Sin descripción',
+        total: 0
+      };
     }
-};
+    totals[partNumber].total += record.cantidad;
+  });
 
-window.deleteRecord = async function(id) {
-    const result = await Swal.fire({
-        title: '¿Eliminar registro?',
-        text: 'Esta acción no se puede deshacer',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    });
+  // Generar el HTML para la tabla
+  let html = '';
+  for (const partNumber in totals) {
+    const { descripcion, total } = totals[partNumber];
+    html += `
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900">${partNumber}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${descripcion}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${total}</div>
+        </td>
+      </tr>
+    `;
+  }
 
-    if (result.isConfirmed) {
-        try {
-            await deleteInventoryRecords(id);
-            await loadInventoryData();
-            Swal.fire({
-                icon: 'success',
-                title: 'Eliminado',
-                text: 'El registro ha sido eliminado',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } catch (error) {
-            console.error('Error al eliminar el registro:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo eliminar el registro'
-            });
+  totalByPartNumberBody.innerHTML = html;
+}
+
+
+    // FUNCIONES GLOBALES PARA EDICIÓN Y ELIMINACIÓN
+    window.editRecord = async function(id) {
+        const record = inventoryData.find(item => item.id === id);
+        if (!record) return;
+
+        const { value: formValues } = await Swal.fire({
+            title: 'Editar Registro',
+            html: `<div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+                            <input id="edit-rack" class="swal2-input" value="${record.rack}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                            <input id="edit-location" class="swal2-input" value="${record.ubicacion}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+                            <input id="edit-user" class="swal2-input" value="${record.usuario_asignado}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+                            <input id="edit-part-number" class="swal2-input" value="${record.numero_parte}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                            <input id="edit-description" class="swal2-input" value="${record.descripcion}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                            <input type="number" id="edit-quantity" class="swal2-input" value="${record.cantidad}">
+                        </div>
+                   </div>`,
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    rack: document.getElementById('edit-rack').value,
+                    location: document.getElementById('edit-location').value,
+                    user: document.getElementById('edit-user').value,
+                    partNumber: document.getElementById('edit-part-number').value,
+                    description: document.getElementById('edit-description').value,
+                    quantity: parseInt(document.getElementById('edit-quantity').value)
+                };
+            }
+        });
+
+        if (formValues) {
+            try {
+                await updateInventoryRecord({ id, ...formValues });
+                await loadInventoryData();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Éxito',
+                    text: 'Registro actualizado correctamente',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error al actualizar el registro:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo actualizar el registro'
+                });
+            }
         }
-    }
-};
+    };
 
-window.reconteoRecord = async function(id) {
-    const record = inventoryData.find(item => item.id === id);
-    if (!record) return;
+    window.deleteRecord = async function(id) {
+        const result = await Swal.fire({
+            title: '¿Eliminar registro?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
 
-    const result = await Swal.fire({
-        title: '¿Recontar este registro?',
-        text: `El registro será marcado como pendiente y aparecerá en "Asignaciones Pendientes" para que ${record.usuario_asignado} vuelva a ingresar la cantidad contada.`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, recontar',
-        cancelButtonText: 'Cancelar'
-    });
-
-    if (result.isConfirmed) {
-        try {
-            // Actualizar el registro en Supabase para marcarlo como pendiente
-            const { error } = await supabase
-                .from('conteoinventario')
-                .update({
-                    cantidad: 0, // Reiniciar la cantidad
-                    cantidad_contada: false, // Marcar como pendiente
-                    es_asignacion: true, // Marcar como asignación pendiente
-                    es_reconteo: true, // Marcar como reconteo (nuevo campo)
-                    fecha_actualizacion: new Date().toISOString()
-                })
-                .eq('id', id);
-            if (error) throw error;
-
-            // Recargar los datos
-            await loadAssignments();
-            await loadInventoryData();
-            Swal.fire({
-                icon: 'success',
-                title: 'Reconteo registrado',
-                text: 'El registro ha sido marcado como pendiente y aparecerá en "Asignaciones Pendientes".',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } catch (error) {
-            console.error('Error al registrar reconteo:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo registrar el reconteo'
-            });
+        if (result.isConfirmed) {
+            try {
+                await deleteInventoryRecords(id);
+                await loadInventoryData();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminado',
+                    text: 'El registro ha sido eliminado',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error al eliminar el registro:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo eliminar el registro'
+                });
+            }
         }
-    }
-};
+    };
+
+    window.reconteoRecord = async function(id) {
+        const record = inventoryData.find(item => item.id === id);
+        if (!record) return;
+
+        const result = await Swal.fire({
+            title: '¿Recontar este registro?',
+            text: `El registro será marcado como pendiente y aparecerá en "Asignaciones Pendientes" para que ${record.usuario_asignado} vuelva a ingresar la cantidad contada.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, recontar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // Actualizar el registro en Supabase para marcarlo como pendiente
+                const { error } = await supabase
+                    .from('conteoinventario')
+                    .update({
+                        cantidad: 0, // Reiniciar la cantidad
+                        cantidad_contada: false, // Marcar como pendiente
+                        es_asignacion: true, // Marcar como asignación pendiente
+                        es_reconteo: true, // Marcar como reconteo (nuevo campo)
+                        fecha_actualizacion: new Date().toISOString()
+                    })
+                    .eq('id', id);
+                if (error) throw error;
+
+                // Recargar los datos
+                await loadAssignments();
+                await loadInventoryData();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Reconteo registrado',
+                    text: 'El registro ha sido marcado como pendiente y aparecerá en "Asignaciones Pendientes".',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error al registrar reconteo:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo registrar el reconteo'
+                });
+            }
+        }
+    };
 
 async function loadPartNumbers(datalistId) {
-    try {
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('inventario_id, descripcion'); // Cambia 'numero_parte' por 'inventario_id'
+  try {
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('inventario_id, descripcion'); // Cambia 'numero_parte' por 'inventario_id'
 
-        if (error) throw error;
+    if (error) throw error;
 
-        const datalist = document.getElementById(datalistId);
-        datalist.innerHTML = '';
+    const datalist = document.getElementById(datalistId);
+    datalist.innerHTML = '';
 
-        data.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.inventario_id; // Cambia 'numero_parte' por 'inventario_id'
-            option.textContent = `${item.inventario_id} - ${item.descripcion}`;
-            datalist.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error al cargar números de parte:', error);
+    data.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.inventario_id; // Cambia 'numero_parte' por 'inventario_id'
+      option.textContent = `${item.inventario_id} - ${item.descripcion}`;
+      datalist.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar números de parte:', error);
+  }
+}
+
+
+
+
+
+
+  
+   // FUNCIONES PRINCIPALES DE CARGA DE DATOS
+    async function loadInventoryData() {
+      console.log('Cargando datos de inventario...');
+      inventoryData = await getAllInventoryRecords();
+      updateUI();
+      console.log('Datos cargados:', inventoryData.length, 'registros');
     }
+
+ async function loadUserData() {
+  console.log('Cargando datos de usuarios...');
+  userData = await getAllUsers();
+
+  // Mapeo de datalist IDs a los usuarios
+  const datalists = [
+    { id: 'user-list', element: document.getElementById('user-list') },
+    { id: 'user-list-inventory-numbers', element: document.getElementById('user-list-inventory-numbers') },
+    { id: 'user-list-inventory', element: document.getElementById('user-list-inventory') }
+  ];
+
+  datalists.forEach(({ element }) => {
+    if (element) {
+      element.innerHTML = ''; // Limpiar opciones anteriores
+      userData.forEach(user => {
+        const option = document.createElement('option');
+        option.value = `${user.nombre} (${user.puesto})`; // Mostrar nombre legible
+        // Opcional: si necesitas el ID en el backend, podrías guardarlo en un atributo data, 
+        // pero para el input solo necesitas el texto visible.
+        element.appendChild(option);
+      });
+    }
+  });
+// ✅ ACTUALIZAR LA TABLA DE REGISTRO DE USUARIOS
+  updateUserRegistryTable();
+  console.log('Usuarios cargados:', userData.length, 'usuarios');
 }
 
-// FUNCIONES PRINCIPALES DE CARGA DE DATOS
-async function loadInventoryData() {
-    console.log('Cargando datos de inventario...');
-    inventoryData = await getAllInventoryRecords();
-    updateUI();
-    console.log('Datos cargados:', inventoryData.length, 'registros');
-}
-
-async function loadUserData() {
-    console.log('Cargando datos de usuarios...');
-    userData = await getAllUsers();
-
-    // Mapeo de datalist IDs a los usuarios
-    const datalists = [
-        { id: 'user-list', element: document.getElementById('user-list') },
-        { id: 'user-list-inventory-numbers', element: document.getElementById('user-list-inventory-numbers') },
-        { id: 'user-list-inventory', element: document.getElementById('user-list-inventory') }
-    ];
-
-    datalists.forEach(({ element }) => {
-        if (element) {
-            element.innerHTML = ''; // Limpiar opciones anteriores
-            userData.forEach(user => {
-                const option = document.createElement('option');
-                option.value = `${user.nombre} (${user.puesto})`; // Mostrar nombre legible
-                // Opcional: si necesitas el ID en el backend, podrías guardarlo en un atributo data, 
-                // pero para el input solo necesitas el texto visible.
-                element.appendChild(option);
+    // FUNCIONES DE ASIGNACIONES
+    async function loadAssignments() {
+        try {
+            const { data, error } = await supabase
+                .from('conteoinventario')
+                .select('*')
+                .or('es_asignacion.eq.true,es_reconteo.eq.true') // Condición OR
+                .order('fecha_actualizacion', { ascending: false });
+            if (error) throw error;
+            console.log('Asignaciones y reconteos:', data);
+            updateAssignmentList(data);
+        } catch (error) {
+            console.error('Error al cargar asignaciones:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar las asignaciones'
             });
         }
-    });
-    // ✅ ACTUALIZAR LA TABLA DE REGISTRO DE USUARIOS
-    updateUserRegistryTable();
-    console.log('Usuarios cargados:', userData.length, 'usuarios');
-}
-
-// FUNCIONES DE ASIGNACIONES
-async function loadAssignments() {
-    try {
-        const { data, error } = await supabase
-            .from('conteoinventario')
-            .select('*')
-            .or('es_asignacion.eq.true,es_reconteo.eq.true') // Condición OR
-            .order('fecha_actualizacion', { ascending: false });
-        if (error) throw error;
-        console.log('Asignaciones y reconteos:', data);
-        updateAssignmentList(data);
-    } catch (error) {
-        console.error('Error al cargar asignaciones:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudieron cargar las asignaciones'
-        });
     }
-}
 
 // Función para exportar a Excel
 function exportToExcel() {
-    const table = document.getElementById('inventory-table-body');
-    if (!table || table.children.length === 0) {
-        Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
-        return;
-    }
+  const table = document.getElementById('inventory-table-body');
+  if (!table || table.children.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
+    return;
+  }
 
-    const rows = Array.from(table.querySelectorAll('tr')).map(row => {
-        return Array.from(row.querySelectorAll('td')).map(cell => {
-            // Extraer solo el texto visible (sin botones)
-            if (cell.querySelector('button')) return ''; // Opcional: omitir columna de acciones
-            return cell.textContent.trim();
-        });
+  const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+    return Array.from(row.querySelectorAll('td')).map(cell => {
+      // Extraer solo el texto visible (sin botones)
+      if (cell.querySelector('button')) return ''; // Opcional: omitir columna de acciones
+      return cell.textContent.trim();
     });
+  });
 
-    // Agregar encabezados
-    const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Cantidad', 'Usuario'];
-    const data = [headers, ...rows.filter(r => r.length > 0)];
+  // Agregar encabezados
+  const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Cantidad', 'Usuario'];
+  const data = [headers, ...rows.filter(r => r.length > 0)];
 
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-    XLSX.writeFile(wb, 'inventario_pxg.xlsx');
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  XLSX.writeFile(wb, 'inventario_pxg.xlsx');
 }
 
 // Función para exportar a PDF
 function exportToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-    doc.setFontSize(16);
-    doc.text('Registros de Inventario - PXG', 14, 20);
-    doc.setFontSize(10);
+  doc.setFontSize(16);
+  doc.text('Registros de Inventario - PXG', 14, 20);
+  doc.setFontSize(10);
 
-    const table = document.getElementById('inventory-table-body');
-    if (!table || table.children.length === 0) {
-        Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
-        return;
+  const table = document.getElementById('inventory-table-body');
+  if (!table || table.children.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar', 'warning');
+    return;
+  }
+
+  const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Núm. Parte', 'Descripción', 'Cantidad', 'Usuario'];
+  const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+    return Array.from(row.querySelectorAll('td')).map((cell, idx) => {
+      if (idx === 7) return ''; // Saltar columna de acciones
+      return cell.textContent.trim();
+    }).filter(cell => cell !== ''); // Eliminar columna vacía
+  }).filter(r => r.length > 0);
+
+  // Configurar tabla
+  doc.autoTable({
+    head: [headers],
+    body: rows,
+    startY: 30,
+    theme: 'grid',
+    styles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 25 },
+      1: { cellWidth: 15 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 40 },
+      5: { cellWidth: 15 },
+      6: { cellWidth: 25 }
     }
+  });
 
-    const headers = ['Fecha/Hora', 'Rack', 'Ubicación', 'Núm. Parte', 'Descripción', 'Cantidad', 'Usuario'];
-    const rows = Array.from(table.querySelectorAll('tr')).map(row => {
-        return Array.from(row.querySelectorAll('td')).map((cell, idx) => {
-            if (idx === 7) return ''; // Saltar columna de acciones
-            return cell.textContent.trim();
-        }).filter(cell => cell !== ''); // Eliminar columna vacía
-    }).filter(r => r.length > 0);
-
-    // Configurar tabla
-    doc.autoTable({
-        head: [headers],
-        body: rows,
-        startY: 30,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 15 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 40 },
-            5: { cellWidth: 15 },
-            6: { cellWidth: 25 }
-        }
-    });
-
-    doc.save('inventario_pxg.pdf');
+  doc.save('inventario_pxg.pdf');
 }
+
+
+
+
+
+
+  
+
+
 
 function filterInventoryRecords() {
     const userFilter = document.getElementById('filter-user')?.value.toLowerCase().trim() || '';
@@ -1358,123 +1465,606 @@ function filterInventoryRecords() {
     });
 }
 
-function updateAssignmentList(assignments) {
-    const assignmentList = document.getElementById('assignment-list');
-    if (!assignmentList) {
-        console.error('No se encontró el tbody #assignment-list');
-        return;
+
+
+
+
+
+
+  
+    function updateAssignmentList(assignments) {
+        const assignmentList = document.getElementById('assignment-list');
+        if (!assignmentList) {
+            console.error('No se encontró el tbody #assignment-list');
+            return;
+        }
+        assignmentList.innerHTML = ''; // Limpiar contenido anterior
+
+        if (!assignments || assignments.length === 0) {
+            assignmentList.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes para conteo o reconteo</td></tr>';
+            return;
+        }
+
+        assignments.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            row.setAttribute('data-assignment-id', item.id); // Añadir ID como atributo de datos
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm text-gray-700">
+                    <div>Rack ${item.rack}</div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-700">
+                    <div>${item.ubicacion}</div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-700">${item.numero_parte}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${item.descripcion}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${item.usuario_asignado}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">
+                    <input type="number" min="0" class="count-input w-20 px-2 py-1 border border-gray-300 rounded" placeholder="Cantidad">
+                </td>
+                <td class="px-6 py-4 text-sm">
+                    <button onclick="registerCount(${item.id})" class="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600">Registrar Conteo</button>
+                </td>
+            `;
+            assignmentList.appendChild(row);
+        });
     }
-    assignmentList.innerHTML = ''; // Limpiar contenido anterior
 
-    if (!assignments || assignments.length === 0) {
-        assignmentList.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes para conteo o reconteo</td></tr>';
-        return;
-    }
+    window.registerCount = async function(id) {
+        const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
+        if (!row) return;
 
-    assignments.forEach(item => {
-        const row = document.createElement('tr');
-        row.className = 'bg-white border-b hover:bg-gray-50';
-        row.setAttribute('data-assignment-id', item.id); // Añadir ID como atributo de datos
-        row.innerHTML = `
-            <td class="px-6 py-4 text-sm text-gray-700">
-                <div>Rack ${item.rack}</div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-                <div>${item.ubicacion}</div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-700">${item.numero_parte}</td>
-            <td class="px-6 py-4 text-sm text-gray-700">${item.descripcion}</td>
-            <td class="px-6 py-4 text-sm text-gray-700">${item.usuario_asignado}</td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-                <input type="number" min="0" class="count-input w-20 px-2 py-1 border border-gray-300 rounded" placeholder="Cantidad">
-            </td>
-            <td class="px-6 py-4 text-sm">
-                <button onclick="registerCount(${item.id})" class="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600">Registrar Conteo</button>
-            </td>
-        `;
-        assignmentList.appendChild(row);
-    });
-}
+        const countInput = row.querySelector('.count-input');
+        const quantity = parseInt(countInput.value);
 
-window.registerCount = async function(id) {
-    const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
-    if (!row) return;
+        if (!quantity || quantity <= 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ingresa una cantidad válida mayor a cero'
+            });
+            return;
+        }
 
-    const rack = row.cells[0].querySelector('div').textContent.replace('Rack ', '');
-    const location = row.cells[1].querySelector('div').textContent;
-    const partNumber = row.cells[2].textContent;
-    const description = row.cells[3].textContent;
-    const user = row.cells[4].textContent;
+        try {
+            const button = row.querySelector('button');
+            button.disabled = true;
+            button.textContent = 'Procesando...';
 
-    // Marcar la fila como en proceso (opcional)
-    row.classList.add('bg-gray-100');
+            // Actualizar el registro en Supabase
+            const { error } = await supabase
+                .from('conteoinventario')
+                .update({
+                    cantidad: quantity,
+                    cantidad_contada: true, // Marcar como contado
+                    es_asignacion: false, // Desmarcar como asignación pendiente
+                    es_reconteo: false, // Desmarcar como reconteo
+                    fecha_actualizacion: new Date().toISOString()
+                })
+                .eq('id', id);
+            if (error) throw error;
 
-    // Crear un objeto para el nuevo registro de conteo
-    const newRecord = {
-        rack: rack,
-        location: location,
-        user: user,
-        partNumber: partNumber,
-        description: description,
-        quantity: 0 // Se inicializa en 0, se actualizará con el input
+            // Recargar los datos
+            await loadAssignments();
+            await loadInventoryData();
+            Swal.fire({
+                icon: 'success',
+                title: 'Conteo registrado',
+                text: 'La cantidad ha sido registrada correctamente',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (error) {
+            console.error('Error al registrar conteo:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo registrar el conteo'
+            });
+        } finally {
+            const button = row.querySelector('button');
+            button.disabled = false;
+            button.textContent = 'Registrar Conteo';
+        }
     };
 
-    // Obtener la entrada de cantidad
-    const countInput = row.querySelector('.count-input');
-    const quantity = parseInt(countInput.value);
+    window.startCountingAssignment = async function(id) {
+        const row = document.querySelector(`tr[data-assignment-id="${id}"]`);
+        if (!row) return;
 
-    if (!quantity || quantity <= 0) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Ingresa una cantidad válida mayor a cero'
-        });
-        row.classList.remove('bg-gray-100');
+        const rack = row.cells[0].querySelector('div').textContent.replace('Rack ', '');
+        const location = row.cells[1].querySelector('div').textContent;
+        const partNumber = row.cells[2].textContent;
+        const description = row.cells[3].textContent;
+        const user = row.cells[4].textContent;
+
+        // Marcar la fila como en proceso (opcional)
+        row.classList.add('bg-gray-100');
+
+        // Crear un objeto para el nuevo registro de conteo
+        const newRecord = {
+            rack: rack,
+            location: location,
+            user: user,
+            partNumber: partNumber,
+            description: description,
+            quantity: 0 // Se inicializa en 0, se actualizará con el input
+        };
+
+        // Obtener la entrada de cantidad
+        const countInput = row.querySelector('.count-input');
+        const quantity = parseInt(countInput.value);
+
+        if (!quantity || quantity <= 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ingresa una cantidad válida mayor a cero'
+            });
+            row.classList.remove('bg-gray-100');
+            return;
+        }
+
+        newRecord.quantity = quantity;
+
+        try {
+            const button = row.querySelector('button');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Procesando...';
+
+            await insertInventoryRecord(newRecord);
+            countInput.value = '';
+            await loadInventoryData(); // Recargar inventario general
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Conteo registrado correctamente',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (error) {
+            console.error('Error saving inventory record:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al guardar el registro de inventario'
+            });
+        } finally {
+            row.classList.remove('bg-gray-100');
+            const button = row.querySelector('button');
+            button.disabled = false;
+            button.textContent = 'Registrar Conteo';
+        }
+    };
+
+    // Manejar el envío del formulario de números de inventario
+    document.getElementById('inventory-numbers-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('inventory-numbers-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Procesando...';
+
+        const formData = {
+            inventario_id: document.getElementById('inventory-number').value,
+            rack: document.getElementById('inventory-rack').value,
+            location: document.getElementById('inventory-location').value,
+            user: document.getElementById('inventory-user').value,
+            quantity: parseInt(document.getElementById('inventory-quantity').value),
+        };
+
+        try {
+            // Insertar en la tabla de conteo de inventario
+            const { error } = await supabase
+                .from('conteoinventario')
+                .insert([
+                    {
+                        rack: formData.rack,
+                        ubicacion: formData.location,
+                        usuario_asignado: formData.user,
+                        numero_parte: formData.inventario_id,
+                        descripcion: document.querySelector(`#inventory-number option[value="${formData.inventario_id}"]`).textContent.split(' - ')[1],
+                        cantidad: formData.quantity,
+                        cantidad_contada: true,
+                        es_asignacion: false,
+                    }
+                ]);
+            if (error) throw error;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Número de inventario registrado correctamente',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            this.reset();
+            await loadInventoryData();
+        } catch (error) {
+            console.error('Error al registrar número de inventario:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo registrar el número de inventario'
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Registrar Número de Inventario';
+        }
+    });
+
+    // Manejar cierre de sesión
+    document.getElementById('logout-btn')?.addEventListener('click', async function () {
+        try {
+            console.log('🚪 Cerrando sesión...');
+            const { error } = await authSupabase.auth.signOut(); // Usar el cliente de autenticación
+            if (error) throw error;
+            console.log('✅ Sesión cerrada correctamente.');
+            // Limpiar datos de sesión almacenados localmente si es necesario
+            // sessionStorage.removeItem('currentUser'); // Si lo usaste
+            // Redirigir al login
+            window.location.href = 'login_completo.html';
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error.message);
+            Swal.fire('Error', 'No se pudo cerrar la sesión.', 'error');
+        }
+    });
+
+    // INICIALIZACIÓN DEL DOCUMENTO (COMBINADO)
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🔐 Verificando sesión de usuario y cargando datos iniciales...');
+        try {
+            // --- 1. Verificar sesión de usuario ---
+            const { data: { session }, error } = await authSupabase.auth.getSession();
+            if (error) {
+                console.error('Error obteniendo sesión:', error.message);
+                window.location.href = 'login_completo.html';
+                return;
+            }
+            if (!session) {
+                console.warn('⚠️ No hay sesión activa. Redirigiendo al login...');
+                window.location.href = 'login_completo.html';
+                return;
+            }
+            console.log('✅ Usuario autenticado:', session.user.email);
+
+            // --- 2. Verificar rol del usuario ---
+            const { data: userDataFromDB, error: userError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('email', session.user.email)
+                .single();
+
+            if (userError || !userDataFromDB) {
+                console.error('Error al obtener el rol del usuario:', userError);
+                return;
+            }
+
+            // Aplicar clase al body según el rol
+            if (userDataFromDB.role === 'admin') {
+                document.body.classList.add('is-admin');
+                console.log('✅ Usuario es administrador. Mostrando todas las opciones.');
+            } else {
+                document.body.classList.remove('is-admin');
+                console.log('ℹ️ Usuario es "viewer". Restringiendo acceso a pestañas.');
+            }
+
+            // --- 3. Configurar pestañas según el rol ---
+            const tabAdmin = document.getElementById('tab-admin');
+            const tabInventory = document.getElementById('tab-inventory');
+            const tabView = document.getElementById('tab-view');
+            const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
+            const tabBulkUpload = document.getElementById('tab-bulk-upload'); // Añadir esta línea
+
+            const contentAdmin = document.getElementById('content-admin');
+            const contentInventory = document.getElementById('content-inventory');
+            const contentView = document.getElementById('content-view');
+            const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
+            const contentBulkUpload = document.getElementById('content-bulk-upload'); // Añadir esta línea
+
+            // Si el usuario es "viewer", ocultar las pestañas de admin
+            if (userDataFromDB.role !== 'admin') {
+                tabAdmin.style.display = 'none';
+                tabInventory.style.display = 'none';
+                tabInventoryNumbers.style.display = 'none'; // Añadir esta línea
+                tabBulkUpload.style.display = 'none'; // Añadir esta línea
+            }
+
+            // --- 4. Mostrar la pestaña adecuada según el rol ---
+            if (userDataFromDB.role === 'admin') {
+                // Mostrar la pestaña de Administración por defecto
+                showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload], [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+            } else {
+                // Mostrar la pestaña de Vista de Asignaciones por defecto
+                showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+                loadAssignments();
+            }
+
+            // --- 5. Configurar los eventos de clic para las pestañas ---
+            tabAdmin?.addEventListener('click', function() {
+                if (!document.body.classList.contains('is-admin')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Acceso denegado',
+                        text: 'No tienes permiso para acceder a esta sección.',
+                    });
+                    return;
+                }
+                showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload], [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+            });
+            tabInventory?.addEventListener('click', function() {
+                if (!document.body.classList.contains('is-admin')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Acceso denegado',
+                        text: 'No tienes permiso para acceder a esta sección.',
+                    });
+                    return;
+                }
+                showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+            });
+            tabView?.addEventListener('click', function() {
+                showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload], [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+                loadAssignments();
+            });
+            tabInventoryNumbers?.addEventListener('click', function() {
+                showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView, tabBulkUpload], [contentAdmin, contentInventory, contentView, contentBulkUpload]); // Añadir tabBulkUpload y contentBulkUpload
+                loadInventoryNumbers();
+                loadUserData();
+            });
+            tabBulkUpload?.addEventListener('click', function() { // Añadir este bloque
+                showTab(tabBulkUpload, contentBulkUpload, [tabAdmin, tabInventory, tabView, tabInventoryNumbers], [contentAdmin, contentInventory, contentView, contentInventoryNumbers]); // Añadir tabBulkUpload y contentBulkUpload
+                // Opcional: Limpiar el formulario y resultados anteriores
+                document.getElementById('bulk-upload-form').reset();
+                document.getElementById('upload-result').classList.add('hidden');
+                document.getElementById('upload-messages').innerHTML = '';
+            });
+
+            // CONFIGURACIÓN DE PESTAÑAS (dentro del DOMContentLoaded)
+            function setupLocationSelects(rackSelectId, locationSelectId) {
+                const rackSelect = document.getElementById(rackSelectId);
+                const locationSelect = document.getElementById(locationSelectId);
+                rackSelect.addEventListener('change', function() {
+                    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                    const selectedRack = this.value;
+                    if (selectedRack === 'AREA_KITEO') {
+                        // Caso especial para AREA KITEO
+                        const ubicacionesKiteo = ['area piking', 'area kiteo'];
+                        ubicacionesKiteo.forEach(ubicacion => {
+                            const option = document.createElement('option');
+                            option.value = ubicacion; // O un ID único si prefieres
+                            option.textContent = ubicacion;
+                            locationSelect.appendChild(option);
+                        });
+                    } else if (selectedRack && rackLocations[selectedRack]) {
+                        // Lógica original para los racks A-G
+                        for (let i = 1; i <= rackLocations[selectedRack]; i++) {
+                            const option = document.createElement('option');
+                            // Formato: Rack-Ubicacion (e.g., A-1, B-12)
+                            option.value = `${selectedRack}-${i}`;
+                            option.textContent = `${selectedRack}-${i}`;
+                            locationSelect.appendChild(option);
+                        }
+                    }
+                    // Si no se selecciona nada o rack no reconocido, deja solo la opción por defecto
+                });
+            }
+
+            // Configurar ambos pares de selects
+            setupLocationSelects('rack', 'location');
+            setupLocationSelects('rack-assignment', 'location-assignment');
+            setupLocationSelects('inventory-rack', 'inventory-location');
+
+            // FORMULARIO DE INVENTARIO
+            document.getElementById('inventory-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submit-btn');
+                const submitText = document.getElementById('submit-text');
+                const submitLoader = document.getElementById('submit-loader');
+                // Mostrar loading
+                submitText.textContent = 'Procesando...';
+                submitLoader.classList.remove('hidden');
+                submitBtn.disabled = true;
+                const formData = {
+                    rack: document.getElementById('rack').value,
+                    location: document.getElementById('location').value,
+                    user: document.getElementById('user').value,
+                    partNumber: document.getElementById('part-number').value,
+                    description: document.getElementById('description').value,
+                    quantity: parseInt(document.getElementById('quantity').value)
+                };
+                try {
+                    await insertInventoryRecord(formData);
+                    await loadInventoryData();
+                    this.reset();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: 'Conteo registrado correctamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo guardar el registro: ' + error.message
+                    });
+                } finally {
+                    submitText.textContent = 'Registrar Conteo';
+                    submitLoader.classList.add('hidden');
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // FORMULARIO DE REGISTRO DE USUARIOS
+            document.getElementById('user-register-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const userName = document.getElementById('new-user-name').value;
+                const userArea = document.getElementById('new-user-area').value;
+                if (userName && userArea) {
+                    try {
+                        const newUser = {
+                            nombre: userName,
+                            puesto: userArea
+                        };
+                        await insertUser(newUser);
+                        await loadUserData();
+                        this.reset();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Usuario Registrado',
+                            text: 'El usuario ha sido agregado correctamente',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo registrar el usuario'
+                        });
+                    }
+                }
+            });
+
+            // FORMULARIO DE ASIGNACIONES
+            document.getElementById('assignment-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const user = document.getElementById('user-assignment').value.trim();
+                const rack = document.getElementById('rack-assignment').value.trim();
+                const location = document.getElementById('location-assignment').value.trim();
+                const partNumber = document.getElementById('part-number-assignment').value.trim();
+                const esAsignacion = document.querySelector('input[name="es_asignacion"]:checked').value === 'true';
+                console.log('Usuario:', user);
+                console.log('Rack:', rack);
+                console.log('Ubicación:', location);
+                console.log('Número de parte:', partNumber);
+                console.log('¿Es asignación pendiente?:', esAsignacion);
+                if (!user || !rack || !location || !partNumber) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Todos los campos son obligatorios'
+                    });
+                    return;
+                }
+                const description = await getPartDescription(partNumber);
+                console.log('Descripción:', description);
+                try {
+                    const { error } = await supabase
+                        .from('conteoinventario')
+                        .insert([
+                            {
+                                rack: rack,
+                                ubicacion: location,
+                                usuario_asignado: user,
+                                numero_parte: partNumber,
+                                descripcion: description,
+                                cantidad: 0,
+                                cantidad_contada: false,
+                                es_asignacion: true
+                            }
+                        ]);
+                    if (error) throw error;
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Asignación registrada',
+                        text: `Se asignó a ${user} para contar el rack ${rack}, ubicación ${location}, parte ${partNumber}`,
+                        confirmButtonColor: '#0a192f'
+                    });
+                    await loadAssignments();
+                    this.reset();
+                } catch (error) {
+                    console.error('Error al registrar asignación:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo registrar la asignación'
+                    });
+                }
+            });
+
+            // CARGAR DATOS INICIALES
+            loadInventoryData();
+            loadUserData();
+            // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
+            loadPartNumbers('part-number-list');
+            loadPartNumbers('part-number-list-assignment');
+
+            // AUTOCOMPLETAR DESCRIPCIÓN AL SELECCIONAR NÚMERO DE PARTE
+            document.getElementById('part-number').addEventListener('blur', async function() {
+                const partNumber = this.value.trim();
+                if (partNumber) {
+                    const description = await getPartDescription(partNumber);
+                    if (!description) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Número de parte no encontrado',
+                            text: 'El número de parte ingresado no existe en la base de datos.',
+                        });
+                        document.getElementById('description').value = '';
+                    } else {
+                        document.getElementById('description').value = description;
+                    }
+                }
+            });
+
+            // Event Listeners para filtros
+            document.getElementById('filter-user').addEventListener('input', filterInventoryRecords);
+            document.getElementById('filter-part').addEventListener('input', filterInventoryRecords);
+            document.getElementById('clear-filters-btn').addEventListener('click', function() {
+                document.getElementById('filter-user').value = '';
+                document.getElementById('filter-part').value = '';
+                filterInventoryRecords();
+            });
+
+            // Event Listeners para exportar
+            document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+            document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
+
+            // Event Listeners para autocompletar
+// Autocompletar rack, ubicación y descripción al seleccionar número de parte en ASIGNACIÓN
+document.getElementById('part-number-assignment')?.addEventListener('input', async function () {
+    const partNumber = this.value.trim();
+    const descriptionInput = document.getElementById('part-description-assignment');
+    const rackSelect = document.getElementById('rack-assignment');
+    const locationSelect = document.getElementById('location-assignment');
+
+    if (!partNumber) {
+        descriptionInput.value = '';
         return;
     }
 
-    newRecord.quantity = quantity;
-
     try {
-        const button = row.querySelector('button');
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Procesando...';
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('inventario_id, descripcion, rack, location')
+            .eq('inventario_id', partNumber)
+            .single();
 
-        await insertInventoryRecord(newRecord);
-        countInput.value = '';
-        await loadInventoryData(); // Recargar inventario general
-        Swal.fire({
-            icon: 'success',
-            title: 'Éxito',
-            text: 'Conteo registrado correctamente',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    } catch (error) {
-        console.error('Error saving inventory record:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error al guardar el registro de inventario'
-        });
-    } finally {
-        row.classList.remove('bg-gray-100');
-        const button = row.querySelector('button');
-        button.disabled = false;
-        button.textContent = 'Registrar Conteo';
+        if (error || !data) {
+            descriptionInput.value = '';
+            return;
+        }
+
+        descriptionInput.value = data.descripcion || '';
+
+        if (rackSelect.querySelector(`option[value="${data.rack}"]`)) {
+            rackSelect.value = data.rack;
+            rackSelect.dispatchEvent(new Event('change'));
+            
+            setTimeout(() => {
+                if (locationSelect.querySelector(`option[value="${data.location}"]`)) {
+                    locationSelect.value = data.location;
+                }
+            }, 10);
+        }
+    } catch (err) {
+        console.error('Error al autocompletar datos del número de parte:', err);
+        descriptionInput.value = '';
     }
-};
-
-// Función auxiliar para leer archivo
-function readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsArrayBuffer(file);
-    });
-}
+});
 
 // Función para Carga Masiva
 async function handleBulkUpload(file) {
@@ -1485,9 +2075,9 @@ async function handleBulkUpload(file) {
     let errorCount = 0;
     let messages = [];
 
-    if (resultDiv) resultDiv.classList.remove('hidden');
-    if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
-    if (submitBtn) submitBtn.disabled = true;
+    resultDiv.classList.remove('hidden');
+    messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
+    submitBtn.disabled = true;
 
     try {
         const data = await readFileAsArrayBuffer(file);
@@ -1498,7 +2088,7 @@ async function handleBulkUpload(file) {
 
         if (jsonData.length === 0) {
             messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
-            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            messagesDiv.innerHTML = messages.join('');
             return;
         }
 
@@ -1510,7 +2100,7 @@ async function handleBulkUpload(file) {
         const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
         if (missingHeaders.length > 0) {
             messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
-            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            messagesDiv.innerHTML = messages.join('');
             return;
         }
 
@@ -1574,7 +2164,7 @@ async function handleBulkUpload(file) {
 
         // Mostrar resultados finales
         messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
-        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+        messagesDiv.innerHTML = messages.join('');
         console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
 
         // Recargar la vista si se insertaron registros exitosos
@@ -1585,53 +2175,47 @@ async function handleBulkUpload(file) {
 
     } catch (error) {
         console.error('Error general al procesar el archivo:', error);
-        if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
+        messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
     } finally {
-        if (submitBtn) submitBtn.disabled = false;
+        submitBtn.disabled = false;
     }
 }
 
-console.log('Código JavaScript cargado correctamente');
-
-    // Función auxiliar para leer archivo
-    function readFileAsArrayBuffer(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = (e) => reject(e);
-            reader.readAsArrayBuffer(file);
-        });
-    }
-
-    // Event listener para el formulario de carga masiva
-    document.addEventListener('DOMContentLoaded', function() {
-        const bulkUploadForm = document.getElementById('bulk-upload-form');
-        if (bulkUploadForm) {
-            bulkUploadForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const fileInput = document.getElementById('excel-file');
-                if (!fileInput || fileInput.files.length === 0) {
-                    Swal.fire({ 
-                        icon: 'warning', 
-                        title: 'Archivo no seleccionado', 
-                        text: 'Por favor, selecciona un archivo Excel para subir.' 
-                    });
-                    return;
-                }
-                const file = fileInput.files[0];
-                if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-                    Swal.fire({ 
-                        icon: 'error', 
-                        title: 'Tipo de archivo no válido', 
-                        text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).' 
-                    });
-                    return;
-                }
-                await handleBulkUpload(file);
-            });
-        }
+// Función auxiliar para leer archivo
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsArrayBuffer(file);
     });
+}
 
+// Event listener para el formulario de carga masiva
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('bulk-upload-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('excel-file');
+        if (fileInput.files.length === 0) {
+            Swal.fire({ 
+                icon: 'warning', 
+                title: 'Archivo no seleccionado', 
+                text: 'Por favor, selecciona un archivo Excel para subir.' 
+            });
+            return;
+        }
+        const file = fileInput.files[0];
+        if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Tipo de archivo no válido', 
+                text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).' 
+            });
+            return;
+        }
+        await handleBulkUpload(file);
+    });
+});
 </script>
 </body>
 </html>
