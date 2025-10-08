@@ -1963,6 +1963,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
+
+function setupEventListeners() {
+    console.log('Configurando todos los event listeners...');
+      
         // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
     const partNumberAssignmentInput = document.getElementById('part-number-assignment');
     if (partNumberAssignmentInput) {
