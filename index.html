@@ -2024,32 +2024,55 @@ function filterInventoryRecords() {
             document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
 
             // Event Listeners para autocompletar
-            document.getElementById('part-number-assignment').addEventListener('blur', async function() {
-                const partNumber = this.value.trim();
-                if (partNumber) {
-                    const description = await getPartDescription(partNumber);
-                    if (!description) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Número de parte no encontrado',
-                            text: 'El número de parte ingresado no existe en la base de datos.',
-                        });
-                        document.getElementById('description').value = '';
-                    }
-                }
-            });
+           // Autocompletar rack, ubicación y descripción al seleccionar número de parte en ASIGNACIÓN
+document.getElementById('part-number-assignment')?.addEventListener('input', async function () {
+  const partNumber = this.value.trim();
+  const descriptionInput = document.getElementById('part-description-assignment');
+  const rackSelect = document.getElementById('rack-assignment');
+  const locationSelect = document.getElementById('location-assignment');
 
-            // --- 6. Cargar datos iniciales ---
-            loadInventoryData();
-            loadUserData();
-            loadPartNumbers('part-number-list');
-            loadPartNumbers('part-number-list-assignment');
+  // Resetear campos si está vacío
+  if (!partNumber) {
+    descriptionInput.value = '';
+    return;
+  }
 
-        } catch (err) {
-            console.error('Error inesperado al cargar la página:', err);
-            Swal.fire('Error', 'Ocurrió un error al cargar la aplicación.', 'error');
+  try {
+    // Buscar en Supabase el número de parte
+    const { data, error } = await supabase
+      .from('numerosinventario')
+      .select('inventario_id, descripcion, rack, location')
+      .eq('inventario_id', partNumber)
+      .single();
+
+    if (error || !data) {
+      descriptionInput.value = '';
+      // Opcional: mostrar advertencia
+      // Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Número de parte no registrado.' });
+      return;
+    }
+
+    // Rellenar descripción
+    descriptionInput.value = data.descripcion || '';
+
+    // Rellenar rack (si existe en los options)
+    if (rackSelect.querySelector(`option[value="${data.rack}"]`)) {
+      rackSelect.value = data.rack;
+      // Disparar evento 'change' para que se actualicen las ubicaciones
+      rackSelect.dispatchEvent(new Event('change'));
+      
+      // Esperar un instante y luego seleccionar la ubicación
+      setTimeout(() => {
+        if (locationSelect.querySelector(`option[value="${data.location}"]`)) {
+          locationSelect.value = data.location;
         }
-    }); // <-- CIERRE DEL ÚNICO document.addEventListener('DOMContentLoaded', ...)
+      }, 10);
+    }
+  } catch (err) {
+    console.error('Error al autocompletar datos del número de parte:', err);
+    descriptionInput.value = '';
+  }
+}); // <-- CIERRE DEL ÚNICO document.addEventListener('DOMContentLoaded', ...)
 
     // --- Función para Carga Masiva ---
     async function handleBulkUpload(file) {
