@@ -1963,7 +1963,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
-       // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
+        // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
     const partNumberAssignmentInput = document.getElementById('part-number-assignment');
     if (partNumberAssignmentInput) {
         partNumberAssignmentInput.addEventListener('blur', async function() {
@@ -1975,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             console.log(`(Asignación) Buscando ubicaciones para: ${partNumber}`);
 
-            try {
+            try { // <-- INICIO DEL TRY
                 const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
                 if (error) throw error;
 
@@ -2008,14 +2008,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                         });
                     }
                 };
-            } catch (err) {
+            } catch (err) { // <-- ¡AQUÍ ESTÁ EL CATCH QUE FALTABA!
                 console.error('(Asignación) Error al buscar ubicaciones:', err);
+                Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al buscar las ubicaciones.' });
             }
         });
     }
 
- // --- INICIO: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE DE UBICACIONES ---
- const partNumberManualInput = document.getElementById('part-number');
+    // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado) ---
+    const partNumberManualInput = document.getElementById('part-number');
     if (partNumberManualInput) {
         partNumberManualInput.addEventListener('blur', async function() {
             const partNumber = this.value.trim();
@@ -2027,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
 
-            try {
+            try { // <-- INICIO DEL TRY
                 const { data, error } = await supabase.from('numerosinventario').select('descripcion, rack, location').eq('inventario_id', partNumber).limit(1).single();
 
                 if (error || !data) {
@@ -2041,7 +2042,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('(Registro Manual) Datos encontrados:', data);
 
                 descriptionInput.value = data.descripcion || '';
-                rackSelect.value = data.rack || ''; // Esto ahora funcionará
+                rackSelect.value = data.rack || '';
 
                 locationSelect.innerHTML = '';
                 const option = document.createElement('option');
@@ -2050,13 +2051,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 locationSelect.appendChild(option);
                 locationSelect.value = data.location;
 
-            } catch (err) {
+            } catch (err) { // <-- ¡Y AQUÍ ESTÁ EL OTRO CATCH QUE FALTABA!
                 console.error('(Registro Manual) Error al buscar datos:', err);
+                Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
             }
         });
     }
 }
-// --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
 // --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL CORREGIDA) ---
 const partNumberManualInput = document.getElementById('part-number');
