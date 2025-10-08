@@ -2031,7 +2031,6 @@ function setupEventListeners() {
     }
 
     // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
-// --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
 const partNumberManualInput = document.getElementById('part-number');
 if (partNumberManualInput) {
     partNumberManualInput.addEventListener('blur', async function() {
@@ -2080,9 +2079,10 @@ if (partNumberManualInput) {
             console.error('(Registro Manual) Error al buscar datos:', err);
             Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
         }
-    });
-    console.log('✅ Listener para REGISTRO MANUAL configurado.');
-}
+                });
+            }
+        }
+      
  } catch (error) {
         console.error('Error en la inicialización (autenticación):', error);
         Swal.fire({
