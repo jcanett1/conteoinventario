@@ -811,20 +811,26 @@ async function insertUser(userData) {
 }
 
 // FUNCIONES PARA NÚMEROS DE PARTE Y DESCRIPCIÓN
+// --- VERSIÓN CORREGIDA DE getPartDescription ---
 async function getPartDescription(partNumber) {
     try {
         const { data, error } = await supabase
             .from('numerosinventario')
             .select('descripcion')
-            .eq('inventario_id', partNumber) // Cambia 'numero_parte' por 'inventario_id'
-            .single();
-        if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+            .eq('inventario_id', partNumber)
+            .limit(1) // <-- ¡LA SOLUCIÓN! Tomamos solo el primer resultado.
+            .single(); // Ahora .single() no fallará.
+        
+        // Si hay un error (y no es el de "no encontrado"), lo lanzamos.
+        if (error && error.code !== 'PGRST116') { 
             throw error;
         }
+        
+        // Devolvemos la descripción encontrada o una cadena vacía.
         return data?.descripcion || '';
     } catch (error) {
-        console.error('Error al buscar la descripción:', error);
-        return '';
+        console.error(`Error al buscar la descripción para "${partNumber}":`, error);
+        return ''; // En caso de error, devolvemos una cadena vacía para no romper la UI.
     }
 }
 
