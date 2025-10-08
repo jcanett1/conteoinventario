@@ -1963,156 +1963,110 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
         if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 
-// --- INICIO: FUNCIÓN REUTILIZABLE PARA LÓGICA DE AUTOCOMPLETADO ---
-
-/**
- * Configura la lógica de autocompletado para un formulario específico.
- * @param {string} partNumberInputId - El ID del input del número de parte.
- * @param {string} rackSelectId - El ID del select del rack.
- * @param {string} locationSelectId - El ID del select de la ubicación.
- * @param {string} descriptionInputId - (Opcional) El ID del input de la descripción.
- */
-function setupAutocompleteLogic(partNumberInputId, rackSelectId, locationSelectId, descriptionInputId = null) {
-    
-    const partNumberInput = document.getElementById(partNumberInputId);
-    const rackSelect = document.getElementById(rackSelectId);
-    const locationSelect = document.getElementById(locationSelectId);
-    const descriptionInput = descriptionInputId ? document.getElementById(descriptionInputId) : null;
-
-    // Si alguno de los elementos principales no existe, no continuamos.
-    if (!partNumberInput || !rackSelect || !locationSelect) {
-        console.error(`Error al inicializar autocompletado: No se encontraron todos los elementos para ${partNumberInputId}.`);
-        return;
-    }
-
-    partNumberInput.addEventListener('blur', async function() {
+ // --- INICIO: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE DE UBICACIONES ---
+const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+if (partNumberAssignmentInput) {
+    partNumberAssignmentInput.addEventListener('blur', async function() {
         const partNumber = this.value.trim();
+        const rackSelect = document.getElementById('rack-assignment');
+        const locationSelect = document.getElementById('location-assignment');
 
-        // Si el campo está vacío, no hacemos nada.
+        // Función para limpiar y reiniciar los selects
+        const resetSelects = () => {
+            rackSelect.innerHTML = `
+                <option value="">Seleccione un Rack</option>
+                <option value="A">Rack A</option>
+                <option value="B">Rack B</option>
+                <option value="C">Rack C</option>
+                <option value="D">Rack D</option>
+                <option value="E">Rack E</option>
+                <option value="F">Rack F</option>
+                <option value="G">Rack G</option>
+                <option value="AREA_KITEO">AREA KITEO</option>
+            `;
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        };
+
+        // Si el campo de número de parte está vacío, reiniciamos los selects a su estado original
         if (!partNumber) {
+            resetSelects();
             return;
         }
 
-        console.log(`Buscando datos para el número de parte: ${partNumber} (Formulario: ${partNumberInputId})`);
+        console.log(`Buscando ubicaciones para el número de parte: ${partNumber}`);
 
         try {
-            // Usamos .limit(1).single() para tomar el primer resultado, ideal para el registro manual.
-            // Para la asignación, donde el usuario debe elegir, se ajustará la lógica más abajo.
+            // 1. Buscamos TODAS las ubicaciones para ese número de parte.
+            // Ya no usamos .single() porque esperamos múltiples resultados.
             const { data, error } = await supabase
                 .from('numerosinventario')
-                .select('descripcion, rack, location')
-                .eq('inventario_id', partNumber)
-                .limit(1)
-                .single();
+                .select('rack, location') // Solo necesitamos el rack y la ubicación
+                .eq('inventario_id', partNumber);
 
-            if (error || !data) {
-                console.warn(`No se encontró el número de parte ${partNumber} o hubo un error:`, error);
+            // Si hay un error en la consulta
+            if (error) {
+                throw error;
+            }
+
+            // Si no se encuentra ninguna ubicación para ese número de parte
+            if (!data || data.length === 0) {
+                console.warn('No se encontró el número de parte.');
                 Swal.fire({
                     icon: 'warning',
                     title: 'Número de parte no encontrado',
-                    text: 'Este número de parte no existe en la base de datos.',
+                    text: 'Este número de parte no existe en la base de datos de inventario.',
                     timer: 3000,
                     showConfirmButton: false
                 });
+                resetSelects(); // Reiniciamos los selects
                 return;
             }
 
-            console.log('Datos encontrados:', data);
+            console.log('Ubicaciones encontradas:', data);
 
-            // --- Lógica de Autocompletado ---
+            // 2. Filtramos los racks únicos y los poblamos en el select de Rack
+            const uniqueRacks = [...new Set(data.map(item => item.rack))];
+            rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>'; // Limpiamos
+            uniqueRacks.forEach(rack => {
+                const option = document.createElement('option');
+                option.value = rack;
+                // Mostramos un nombre más amigable si es un rack estándar
+                option.textContent = rack.startsWith('AREA') ? rack : `Rack ${rack}`;
+                rackSelect.appendChild(option);
+            });
 
-            // 1. Autocompletar Descripción (si el campo existe)
-            if (descriptionInput && data.descripcion) {
-                descriptionInput.value = data.descripcion;
-            }
+            // 3. Limpiamos el select de ubicación, se llenará cuando el usuario elija un rack
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
 
-            // 2. Autocompletar Rack
-            if (data.rack) {
-                rackSelect.value = data.rack;
-                // Disparamos el evento 'change' para que se actualicen las ubicaciones
-                rackSelect.dispatchEvent(new Event('change'));
-            }
+            // 4. Modificamos el comportamiento del 'change' del rack para usar los datos que ya tenemos
+            rackSelect.onchange = () => {
+                const selectedRack = rackSelect.value;
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>'; // Limpiar al cambiar
 
-            // 3. Autocompletar Ubicación (con un pequeño retraso)
-            setTimeout(() => {
-                if (data.location) {
-                    locationSelect.value = data.location;
-                    console.log(`Ubicación establecida a: "${data.location}"`);
+                if (selectedRack) {
+                    // Filtramos las ubicaciones que corresponden al rack seleccionado de los datos que ya obtuvimos
+                    const locationsForRack = data.filter(item => item.rack === selectedRack);
+                    locationsForRack.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.location;
+                        option.textContent = item.location;
+                        locationSelect.appendChild(option);
+                    });
                 }
-            }, 100);
+            };
 
         } catch (err) {
-            // Este catch se activará si .single() falla por múltiples resultados (error 406)
-            // lo que nos indica que debemos mostrar opciones al usuario (lógica del formulario de asignación).
-            if (err.message.includes('406')) {
-                console.log('Múltiples ubicaciones encontradas. Activando modo de selección...');
-                handleMultipleLocations(partNumber, rackSelect, locationSelect);
-            } else {
-                console.error('Error al buscar datos del número de parte:', err);
-            }
-        }
-    });
-}
-
-/**
- * Maneja el caso donde un número de parte tiene múltiples ubicaciones.
- * Actualiza los selects de rack y ubicación para que el usuario elija.
- * @param {string} partNumber 
- * @param {HTMLElement} rackSelect 
- * @param {HTMLElement} locationSelect 
- */
-async function handleMultipleLocations(partNumber, rackSelect, locationSelect) {
-    const { data, error } = await supabase
-        .from('numerosinventario')
-        .select('rack, location')
-        .eq('inventario_id', partNumber);
-
-    if (error || !data) {
-        console.error('Error al re-buscar múltiples ubicaciones:', error);
-        return;
-    }
-
-    // Llenar el select de racks con opciones únicas
-    const uniqueRacks = [...new Set(data.map(item => item.rack))];
-    rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>';
-    uniqueRacks.forEach(rack => {
-        const option = document.createElement('option');
-        option.value = rack;
-        option.textContent = rack.startsWith('AREA') ? rack : `Rack ${rack}`;
-        rackSelect.appendChild(option);
-    });
-
-    // Limpiar ubicaciones y esperar a que el usuario elija un rack
-    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-
-    // Cuando el usuario elija un rack, llenar las ubicaciones correspondientes
-    rackSelect.onchange = () => {
-        const selectedRack = rackSelect.value;
-        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-        if (selectedRack) {
-            const locationsForRack = data.filter(item => item.rack === selectedRack);
-            locationsForRack.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.location;
-                option.textContent = item.location;
-                locationSelect.appendChild(option);
+            console.error('Error al buscar ubicaciones:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Búsqueda',
+                text: 'Ocurrió un problema al buscar las ubicaciones para el número de parte.'
             });
+            resetSelects(); // En caso de error, reiniciamos todo
         }
-    };
+    });
 }
-
-
-// --- LLAMADAS A LA FUNCIÓN REUTILIZABLE ---
-
-// 1. Configurar para el formulario de "Asignación de Usuario"
-// (Este es el que tiene la lógica de selección múltiple)
-setupAutocompleteLogic('part-number-assignment', 'rack-assignment', 'location-assignment');
-
-// 2. Configurar para el formulario de "Registro Manual de Inventario"
-// (Este autocompleta directamente y necesita el ID de la descripción)
-setupAutocompleteLogic('part-number', 'rack', 'location', 'description');
-
-// --- FIN: FUNCIÓN REUTILIZABLE PARA LÓGICA DE AUTOCOMPLETADO ---
+// --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
 
 
