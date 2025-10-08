@@ -2001,7 +2001,7 @@ function setupEventListeners() {
                uniqueRacks.forEach(rack => {
     const option = document.createElement('option');
     option.value = rack;
-    option.textContent = ...;
+    option.textContent = isNaN(rack) ? rack : `Rack ${rack}`;
     rackSelect.appendChild(option);
 });
 
