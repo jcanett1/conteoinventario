@@ -1744,41 +1744,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
         // CONFIGURACIÓN DE PESTAÑAS (dentro del DOMContentLoaded)
-        function setupLocationSelects(rackSelectId, locationSelectId) {
-            const rackSelect = document.getElementById(rackSelectId);
-            const locationSelect = document.getElementById(locationSelectId);
-            if (!rackSelect || !locationSelect) return;
-            
-            rackSelect.addEventListener('change', function() {
-                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                const selectedRack = this.value;
-                if (selectedRack === 'AREA_KITEO') {
-                    // Caso especial para AREA KITEO
-                    const ubicacionesKiteo = ['area piking', 'area kiteo'];
-                    ubicacionesKiteo.forEach(ubicacion => {
-                        const option = document.createElement('option');
-                        option.value = ubicacion; // O un ID único si prefieres
-                        option.textContent = ubicacion;
-                        locationSelect.appendChild(option);
-                    });
-                } else if (selectedRack && rackLocations[selectedRack]) {
-                    // Lógica original para los racks A-G
-                    for (let i = 1; i <= rackLocations[selectedRack]; i++) {
-                        const option = document.createElement('option');
-                        // Formato: Rack-Ubicacion (e.g., A-1, B-12)
-                        option.value = `${selectedRack}-${i}`;
-                        option.textContent = `${selectedRack}-${i}`;
-                        locationSelect.appendChild(option);
-                    }
-                }
-                // Si no se selecciona nada o rack no reconocido, deja solo la opción por defecto
-            });
-        }
-
-        // Configurar ambos pares de selects
-        setupLocationSelects('rack', 'location');
-        setupLocationSelects('rack-assignment', 'location-assignment');
-        setupLocationSelects('inventory-rack', 'inventory-location');
+      
 
         // FORMULARIO DE INVENTARIO
         const inventoryForm = document.getElementById('inventory-form');
@@ -2068,72 +2034,57 @@ if (partNumberAssignmentInput) {
 }
 // --- FIN: CÓDIGO PARA AUTOCOMPLETADO INTELIGENTE ---
 
-// --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL ---
-const partNumberManualInput = document.getElementById('part-number'); // <-- CAMBIO 1
+// --- INICIO: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL) ---
+const partNumberManualInput = document.getElementById('part-number');
 if (partNumberManualInput) {
     partNumberManualInput.addEventListener('blur', async function() {
         const partNumber = this.value.trim();
-        const rackSelect = document.getElementById('rack'); // <-- CAMBIO 2
-        const locationSelect = document.getElementById('location'); // <-- CAMBIO 3
-        const descriptionInput = document.getElementById('description'); // <-- CAMBIO 4: Añadido
+        const rackSelect = document.getElementById('rack');
+        const locationSelect = document.getElementById('location');
+        const descriptionInput = document.getElementById('description');
 
-        if (!partNumber) {
-            return;
-        }
+        if (!partNumber) return;
 
-        console.log(`(Registro Manual) Buscando datos para el número de parte: ${partNumber}`);
+        console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
 
         try {
-            // Buscamos la información. Usamos .limit(1).single() para tomar solo el primer resultado.
             const { data, error } = await supabase
                 .from('numerosinventario')
-                .select('descripcion, rack, location') // <-- CAMBIO 5: Añadido 'descripcion'
+                .select('descripcion, rack, location')
                 .eq('inventario_id', partNumber)
                 .limit(1)
                 .single();
 
             if (error || !data) {
-                console.warn('(Registro Manual) No se encontró el número de parte o hubo un error:', error);
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Número de parte no encontrado',
-                    text: 'Este número de parte no existe en la base de datos.',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
+                // Limpiar campos si no se encuentra
+                descriptionInput.value = '';
+                rackSelect.value = '';
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
                 return;
             }
 
             console.log('(Registro Manual) Datos encontrados:', data);
 
-            // --- Lógica de Autocompletado Directo ---
-            
-            // 1. Asignar Descripción
+            // --- Lógica de Autocompletado Directo (Mejorada) ---
             descriptionInput.value = data.descripcion || '';
-
-            // 2. Asignar Rack
             rackSelect.value = data.rack || '';
-            
-            // 3. Disparar evento para que se carguen las ubicaciones del rack
-            rackSelect.dispatchEvent(new Event('change'));
 
-            // 4. Asignar Ubicación (con un pequeño retraso para dar tiempo a que se cargue el select)
-            setTimeout(() => {
-                locationSelect.value = data.location || '';
-                console.log(`(Registro Manual) Ubicación establecida a: "${data.location}"`);
-            }, 100);
+            // Como ya sabemos la ubicación, la creamos y la añadimos directamente.
+            // Esto es más robusto que disparar un evento 'change'.
+            locationSelect.innerHTML = ''; // Limpiamos opciones viejas
+            const option = document.createElement('option');
+            option.value = data.location;
+            option.textContent = data.location;
+            locationSelect.appendChild(option);
+            locationSelect.value = data.location; // La seleccionamos
 
         } catch (err) {
             console.error('(Registro Manual) Error al buscar datos:', err);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de Búsqueda',
-                text: 'Ocurrió un problema al buscar la información para el autocompletado.'
-            });
         }
     });
 }
-// --- FIN: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL ---
+// --- FIN: CÓDIGO PARA AUTOCOMPLETAR FORMULARIO DE REGISTRO MANUAL (VERSIÓN FINAL) ---
 
 
 
