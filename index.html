@@ -2068,158 +2068,146 @@ if (partNumberAssignmentInput) {
 }
 
 // Función para Carga Masiva
-async function handleBulkUpload(file) {
-    const resultDiv = document.getElementById('upload-result');
-    const messagesDiv = document.getElementById('upload-messages');
-    const submitBtn = document.getElementById('upload-submit-btn');
-    let successCount = 0;
-    let errorCount = 0;
-    let messages = [];
+ async function handleBulkUpload(file) {
+            const resultDiv = document.getElementById('upload-result');
+            const messagesDiv = document.getElementById('upload-messages');
+            const submitBtn = document.getElementById('upload-submit-btn');
+            let successCount = 0;
+            let errorCount = 0;
+            let messages = [];
 
-    if (resultDiv) resultDiv.classList.remove('hidden');
-    if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
-    if (submitBtn) submitBtn.disabled = true;
+            if (resultDiv) resultDiv.classList.remove('hidden');
+            if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
+            if (submitBtn) submitBtn.disabled = true;
 
-    try {
-        const data = await readFileAsArrayBuffer(file);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            try {
+                const data = await readFileAsArrayBuffer(file);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        if (jsonData.length === 0) {
-            messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
-            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-            return;
-        }
-
-        // Validar columnas
-        const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado'];
-        const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
-        console.log('Headers encontrados en el archivo:', fileHeaders);
-
-        const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
-        if (missingHeaders.length > 0) {
-            messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
-            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-            return;
-        }
-
-        // Procesar filas
-        for (let i = 0; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            let rowSuccess = true;
-            let errorMsg = '';
-
-            // Mapear columnas del Excel
-            const rack = row['Rack']?.toString().trim();
-            const ubicacion = row['Ubicación']?.toString().trim();
-            const numeroParte = row['Número de Parte']?.toString().trim();
-            const descripcion = row['Descripción']?.toString().trim();
-            const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
-
-            // Validaciones básicas
-            if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
-                errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
-                rowSuccess = false;
-            } else if (rack.length !== 1 && rack !== 'AREA_KITEO') {
-                errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
-                rowSuccess = false;
-            }
-
-            if (rowSuccess) {
-                try {
-                    const { error } = await supabase
-                        .from('conteoinventario')
-                        .insert([
-                            {
-                                rack: rack,
-                                ubicacion: ubicacion,
-                                numero_parte: numeroParte,
-                                descripcion: descripcion,
-                                usuario_asignado: usuarioAsignado,
-                                cantidad: 0,
-                                cantidad_contada: false,
-                                es_asignacion: true,
-                                es_reconteo: false,
-                                fecha_actualizacion: new Date().toISOString()
-                            }
-                        ]);
-
-                    if (error) {
-                        throw error;
-                    }
-                    successCount++;
-                } catch (insertError) {
-                    console.error('Error al insertar fila:', i + 2, insertError);
-                    errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
-                    rowSuccess = false;
+                if (jsonData.length === 0) {
+                    messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
+                    if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+                    return;
                 }
-            }
 
-            if (!rowSuccess) {
-                errorCount++;
-                messages.push(`<p class="text-red-500">${errorMsg}</p>`);
+                const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado'];
+                const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
+                const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
+
+                if (missingHeaders.length > 0) {
+                    messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
+                    if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+                    return;
+                }
+
+                for (let i = 0; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    let rowSuccess = true;
+                    let errorMsg = '';
+
+                    const rack = row['Rack']?.toString().trim();
+                    const ubicacion = row['Ubicación']?.toString().trim();
+                    const numeroParte = row['Número de Parte']?.toString().trim();
+                    const descripcion = row['Descripción']?.toString().trim();
+                    const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
+
+                    if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
+                        errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
+                        rowSuccess = false;
+                    } else if (rack.length !== 1 && rack !== 'AREA_KITEO') {
+                        errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
+                        rowSuccess = false;
+                    }
+
+                    if (rowSuccess) {
+                        try {
+                            const { error } = await supabase
+                                .from('conteoinventario')
+                                .insert([{
+                                    rack: rack,
+                                    ubicacion: ubicacion,
+                                    numero_parte: numeroParte,
+                                    descripcion: descripcion,
+                                    usuario_asignado: usuarioAsignado,
+                                    cantidad: 0,
+                                    cantidad_contada: false,
+                                    es_asignacion: true,
+                                    es_reconteo: false,
+                                    fecha_actualizacion: new Date().toISOString()
+                                }]);
+
+                            if (error) throw error;
+                            successCount++;
+                        } catch (insertError) {
+                            console.error('Error al insertar fila:', i + 2, insertError);
+                            errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
+                            rowSuccess = false;
+                        }
+                    }
+
+                    if (!rowSuccess) {
+                        errorCount++;
+                        messages.push(`<p class="text-red-500">${errorMsg}</p>`);
+                    }
+                }
+
+                messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
+                if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+                console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
+
+                if (successCount > 0) {
+                    await loadAssignments();
+                    await loadInventoryData();
+                }
+            } catch (error) {
+                console.error('Error general al procesar el archivo:', error);
+                if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
 
-        // Mostrar resultados finales
-        messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
-        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-        console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
-
-        // Recargar la vista si se insertaron registros exitosos
-        if (successCount > 0) {
-            await loadAssignments();
-            await loadInventoryData();
+        // Función auxiliar para leer archivo
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsArrayBuffer(file);
+            });
         }
 
-    } catch (error) {
-        console.error('Error general al procesar el archivo:', error);
-        if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
-    } finally {
-        if (submitBtn) submitBtn.disabled = false;
-    }
-}
-
-// Función auxiliar para leer archivo
-function readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsArrayBuffer(file);
-    });
-}
-
-// Event listener para el formulario de carga masiva
-document.addEventListener('DOMContentLoaded', function() {
-   const bulkUploadForm = document.getElementById('bulk-upload-form');
-    if (bulkUploadForm) {
-        bulkUploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('excel-file');
-            if (!fileInput || fileInput.files.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Archivo no seleccionado',
-                    text: 'Por favor, selecciona un archivo Excel para subir.'
+        // Event listener para el formulario de carga masiva
+        document.addEventListener('DOMContentLoaded', function() {
+            const bulkUploadForm = document.getElementById('bulk-upload-form');
+            if (bulkUploadForm) {
+                bulkUploadForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const fileInput = document.getElementById('excel-file');
+                    if (!fileInput || fileInput.files.length === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Archivo no seleccionado',
+                            text: 'Por favor, selecciona un archivo Excel para subir.'
+                        });
+                        return;
+                    }
+                    const file = fileInput.files[0];
+                    if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Tipo de archivo no válido',
+                            text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
+                        });
+                        return;
+                    }
+                    await handleBulkUpload(file);
                 });
-                return;
             }
-            const file = fileInput.files[0];
-            if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Tipo de archivo no válido',
-                    text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
-                });
-                return;
-            }
-            await handleBulkUpload(file);
-        });
-    }
-});
-</script>
+        }); // Cierre del DOMContentLoaded
+    </script>
 </body>
 </html>
