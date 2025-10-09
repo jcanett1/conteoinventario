@@ -98,8 +98,8 @@
       <i class="fas fa-tasks"></i> Vista de Asignaciones
     </button>
     <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
-  <i class="fas fa-list"></i> Números de Inventario
-</button>
+      <i class="fas fa-list"></i> Números de Inventario
+    </button>
     <button id="tab-bulk-upload" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
       <i class="fas fa-file-upload"></i> Carga Masiva
     </button>
@@ -532,7 +532,11 @@ async function checkAuthentication() {
         currentUser = userData;
         isAdmin = userData.role === 'admin';
         
+        // Configurar usuario de conteo vinculado
+        currentUser.usuarioConteoVinculado = userData.usuario_conteo_vinculado || userData.full_name;
+        
         console.log('👤 Usuario autenticado:', userData.full_name, '- Rol:', userData.role);
+        console.log('🔗 Usuario de conteo vinculado:', currentUser.usuarioConteoVinculado);
         
         // Actualizar UI según el rol
         updateUIForUser();
@@ -625,20 +629,35 @@ function setupTabs() {
         }
     });
     
-    // Activar primera pestaña por defecto
-    const firstTab = document.getElementById('tab-admin');
-    if (firstTab) firstTab.click();
+    // Activar primera pestaña por defecto según el rol
+    if (isAdmin) {
+        const firstTab = document.getElementById('tab-admin');
+        if (firstTab) firstTab.click();
+    } else {
+        const viewTab = document.getElementById('tab-view');
+        if (viewTab) viewTab.click();
+    }
 }
 
 // Cargar datos iniciales
 async function loadInitialData() {
+    console.log('🔄 [DEBUG] Iniciando carga de datos iniciales...');
+    console.log('🔄 [DEBUG] currentUser al inicio:', currentUser);
+    console.log('🔄 [DEBUG] isAdmin al inicio:', isAdmin);
+    
     await loadUserData();
     await loadPartNumbers('part-number-list-assignment');
     await loadPartNumbers('part-number-list');
     await loadAllRacks();
+    
+    console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
+    console.log('🔄 [DEBUG] Antes de loadAssignments - isAdmin:', isAdmin);
     await loadAssignments();
+    
     await loadInventoryData();
     await loadInventoryNumbers();
+    
+    console.log('✅ [DEBUG] Carga de datos iniciales completada');
 }
 
 // Configurar event listeners
@@ -1170,6 +1189,10 @@ async function loadAllRacks() {
 
 async function loadAssignments() {
     try {
+        console.log('🔍 [DEBUG] Iniciando loadAssignments...');
+        console.log('🔍 [DEBUG] isAdmin:', isAdmin);
+        console.log('🔍 [DEBUG] currentUser:', currentUser);
+        
         let query = supabase
             .from('conteoinventario')
             .select('*')
@@ -1177,11 +1200,22 @@ async function loadAssignments() {
         
         // Si no es admin, filtrar solo las asignaciones del usuario actual
         if (!isAdmin && currentUser) {
-            query = query.eq('usuario_asignado', currentUser.full_name);
-            console.log('👁️ Filtrando asignaciones para usuario:', currentUser.full_name);
+            const usuarioParaFiltrar = currentUser.usuarioConteoVinculado;
+            console.log('👁️ [DEBUG] Filtrando asignaciones para usuario de conteo:', usuarioParaFiltrar);
+            console.log('👁️ [DEBUG] Usuario de login:', currentUser.full_name);
+            query = query.eq('usuario_asignado', usuarioParaFiltrar);
+        } else if (isAdmin) {
+            console.log('🔧 [DEBUG] Usuario admin - mostrando todas las asignaciones');
+        } else {
+            console.log('⚠️ [DEBUG] No hay currentUser definido');
         }
         
         const { data, error } = await query.order('fecha_actualizacion', { ascending: false });
+        
+        console.log('📊 [DEBUG] Resultado de la consulta:');
+        console.log('📊 [DEBUG] Error:', error);
+        console.log('📊 [DEBUG] Data length:', data ? data.length : 'null');
+        console.log('📊 [DEBUG] Data:', data);
         
         if (error) throw error;
         
