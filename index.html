@@ -1655,23 +1655,6 @@ document.getElementById('logout-btn')?.addEventListener('click', async function 
 });
 
 
-// Función para cargar todos los datos iniciales
-async function loadInitialData() {
-    try {
-        await loadAllRacks();
-        await loadInventoryData();
-        await loadUserData();
-        loadPartNumbers('part-number-list');
-        loadPartNumbers('part-number-list-assignment');
-    } catch (error) {
-        console.error('Error al cargar datos iniciales:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudieron cargar los datos iniciales'
-        });
-    }
-}
 
    
 
