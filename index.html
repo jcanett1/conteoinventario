@@ -2194,32 +2194,32 @@ function readFileAsArrayBuffer(file) {
 
 // Event listener para el formulario de carga masiva
 document.addEventListener('DOMContentLoaded', function() {
-    const bulkUploadForm = document.getElementById('bulk-upload-form');
+   const bulkUploadForm = document.getElementById('bulk-upload-form');
     if (bulkUploadForm) {
         bulkUploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const fileInput = document.getElementById('excel-file');
             if (!fileInput || fileInput.files.length === 0) {
-                Swal.fire({ 
-                    icon: 'warning', 
-                    title: 'Archivo no seleccionado', 
-                    text: 'Por favor, selecciona un archivo Excel para subir.' 
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Archivo no seleccionado',
+                    text: 'Por favor, selecciona un archivo Excel para subir.'
                 });
                 return;
             }
             const file = fileInput.files[0];
             if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Tipo de archivo no válido', 
-                    text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).' 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tipo de archivo no válido',
+                    text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
                 });
                 return;
             }
             await handleBulkUpload(file);
         });
     }
-});
+});  // Cierre del DOMContentLoaded
 </script>
 </body>
 </html>
