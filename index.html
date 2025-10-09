@@ -2068,146 +2068,431 @@ if (partNumberAssignmentInput) {
 }
 
 // Función para Carga Masiva
- async function handleBulkUpload(file) {
-            const resultDiv = document.getElementById('upload-result');
-            const messagesDiv = document.getElementById('upload-messages');
-            const submitBtn = document.getElementById('upload-submit-btn');
-            let successCount = 0;
-            let errorCount = 0;
-            let messages = [];
+async function handleBulkUpload(file) {
+    const resultDiv = document.getElementById('upload-result');
+    const messagesDiv = document.getElementById('upload-messages');
+    const submitBtn = document.getElementById('upload-submit-btn');
+    let successCount = 0;
+    let errorCount = 0;
+    let messages = [];
+    if (resultDiv) resultDiv.classList.remove('hidden');
+    if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+        const data = await readFileAsArrayBuffer(file);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        if (jsonData.length === 0) {
+            messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
+            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            return;
+        }
+        const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado'];
+        const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
+        const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
+        if (missingHeaders.length > 0) {
+            messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
+            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            return;
+        }
+        for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            let rowSuccess = true;
+            let errorMsg = '';
+            const rack = row['Rack']?.toString().trim();
+            const ubicacion = row['Ubicación']?.toString().trim();
+            const numeroParte = row['Número de Parte']?.toString().trim();
+            const descripcion = row['Descripción']?.toString().trim();
+            const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
+            if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
+                errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
+                rowSuccess = false;
+            } else if (rack.length !== 1 && rack !== 'AREA_KITEO') {
+                errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
+                rowSuccess = false;
+            }
+            if (rowSuccess) {
+                try {
+                    const { error } = await supabase
+                        .from('conteoinventario')
+                        .insert([{
+                            rack: rack,
+                            ubicacion: ubicacion,
+                            numero_parte: numeroParte,
+                            descripcion: descripcion,
+                            usuario_asignado: usuarioAsignado,
+                            cantidad: 0,
+                            cantidad_contada: false,
+                            es_asignacion: true,
+                            es_reconteo: false,
+                            fecha_actualizacion: new Date().toISOString()
+                        }]);
+                    if (error) throw error;
+                    successCount++;
+                } catch (insertError) {
+                    console.error('Error al insertar fila:', i + 2, insertError);
+                    errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
+                    rowSuccess = false;
+                }
+            }
+            if (!rowSuccess) {
+                errorCount++;
+                messages.push(`<p class="text-red-500">${errorMsg}</p>`);
+            }
+        }
+        messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
+        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+        console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
+        if (successCount > 0) {
+            await loadAssignments();
+            await loadInventoryData();
+        }
+    } catch (error) {
+        console.error('Error general al procesar el archivo:', error);
+        if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
 
-            if (resultDiv) resultDiv.classList.remove('hidden');
-            if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
-            if (submitBtn) submitBtn.disabled = true;
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsArrayBuffer(file);
+    });
+}
 
-            try {
-                const data = await readFileAsArrayBuffer(file);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+// === INICIALIZACIÓN PRINCIPAL ===
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🔐 Verificando sesión de usuario y cargando datos iniciales...');
+    try {
+        // --- 1. Verificar sesión de usuario ---
+        const { data: { session }, error } = await authSupabase.auth.getSession();
+        if (error) {
+            console.error('Error obteniendo sesión:', error.message);
+            window.location.href = 'login_completo.html';
+            return;
+        }
+        if (!session) {
+            console.warn('⚠️ No hay sesión activa. Redirigiendo al login...');
+            window.location.href = 'login_completo.html';
+            return;
+        }
+        console.log('✅ Usuario autenticado:', session.user.email);
 
-                if (jsonData.length === 0) {
-                    messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
-                    if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-                    return;
+        // --- 2. Verificar rol del usuario ---
+        const { data: userDataFromDB, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('email', session.user.email)
+            .single();
+        if (userError || !userDataFromDB) {
+            console.error('Error al obtener el rol del usuario:', userError);
+            return;
+        }
+
+        if (userDataFromDB.role === 'admin') {
+            document.body.classList.add('is-admin');
+            console.log('✅ Usuario es administrador.');
+        } else {
+            document.body.classList.remove('is-admin');
+            console.log('ℹ️ Usuario es "viewer".');
+        }
+
+        // --- 3. Configurar pestañas según el rol ---
+        const tabAdmin = document.getElementById('tab-admin');
+        const tabInventory = document.getElementById('tab-inventory');
+        const tabView = document.getElementById('tab-view');
+        const tabInventoryNumbers = document.getElementById('tab-inventory-numbers');
+        const tabBulkUpload = document.getElementById('tab-bulk-upload');
+        const contentAdmin = document.getElementById('content-admin');
+        const contentInventory = document.getElementById('content-inventory');
+        const contentView = document.getElementById('content-view');
+        const contentInventoryNumbers = document.getElementById('content-inventory-numbers');
+        const contentBulkUpload = document.getElementById('content-bulk-upload');
+
+        if (userDataFromDB.role !== 'admin') {
+            if (tabAdmin) tabAdmin.style.display = 'none';
+            if (tabInventory) tabInventory.style.display = 'none';
+            if (tabInventoryNumbers) tabInventoryNumbers.style.display = 'none';
+            if (tabBulkUpload) tabBulkUpload.style.display = 'none';
+        }
+
+        // --- 4. Mostrar pestaña inicial ---
+        if (userDataFromDB.role === 'admin') {
+            if (tabAdmin && contentAdmin) {
+                showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
+            }
+        } else {
+            if (tabView && contentView) {
+                showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
+                loadAssignments();
+            }
+        }
+
+        // --- 5. Eventos de pestañas ---
+        tabAdmin?.addEventListener('click', function() {
+            if (!document.body.classList.contains('is-admin')) {
+                Swal.fire({ icon: 'error', title: 'Acceso denegado', text: 'No tienes permiso.' });
+                return;
+            }
+            if (contentAdmin) {
+                showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
+            }
+        });
+
+        tabInventory?.addEventListener('click', function() {
+            if (!document.body.classList.contains('is-admin')) {
+                Swal.fire({ icon: 'error', title: 'Acceso denegado', text: 'No tienes permiso.' });
+                return;
+            }
+            if (contentInventory) {
+                showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
+
+                const partNumberManualInput = document.getElementById('part-number');
+                const rackSelect = document.getElementById('rack');
+                const locationSelect = document.getElementById('location');
+                const descriptionInput = document.getElementById('description');
+
+                if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
+                    partNumberManualInput.addEventListener('blur', async function() {
+                        const partNumber = this.value.trim();
+                        if (!partNumber) return;
+                        try {
+                            const { data, error } = await supabase
+                                .from('numerosinventario')
+                                .select('descripcion, rack, location')
+                                .eq('inventario_id', partNumber)
+                                .limit(1)
+                                .single();
+                            if (error) throw error;
+                            if (!data) {
+                                descriptionInput.value = '';
+                                rackSelect.value = '';
+                                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                                return;
+                            }
+                            descriptionInput.value = data.descripcion || '';
+                            rackSelect.value = data.rack || '';
+                            locationSelect.innerHTML = '';
+                            const option = document.createElement('option');
+                            option.value = data.location;
+                            option.textContent = data.location;
+                            locationSelect.appendChild(option);
+                            locationSelect.value = data.location;
+                        } catch (err) {
+                            console.error('Error al buscar datos:', err);
+                            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
+                        }
+                    });
+                    partNumberManualInput.dataset.listenerAttached = 'true';
+                    console.log('✅ Listener para REGISTRO MANUAL activado.');
                 }
 
-                const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado'];
-                const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
-                const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
+                // FORMULARIO DE INVENTARIO
+                const inventoryForm = document.getElementById('inventory-form');
+                if (inventoryForm) {
+                    inventoryForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const submitBtn = document.getElementById('submit-btn');
+                        const submitText = document.getElementById('submit-text');
+                        const submitLoader = document.getElementById('submit-loader');
+                        if (submitText) submitText.textContent = 'Procesando...';
+                        if (submitLoader) submitLoader.classList.remove('hidden');
+                        if (submitBtn) submitBtn.disabled = true;
 
-                if (missingHeaders.length > 0) {
-                    messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
-                    if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-                    return;
+                        const formData = {
+                            rack: document.getElementById('rack')?.value,
+                            location: document.getElementById('location')?.value,
+                            user: document.getElementById('user')?.value,
+                            partNumber: document.getElementById('part-number')?.value,
+                            description: document.getElementById('description')?.value,
+                            quantity: parseInt(document.getElementById('quantity')?.value)
+                        };
+
+                        try {
+                            await insertInventoryRecord(formData);
+                            await loadInventoryData();
+                            this.reset();
+                            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Conteo registrado correctamente', timer: 2000, showConfirmButton: false });
+                        } catch (error) {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el registro: ' + error.message });
+                        } finally {
+                            if (submitText) submitText.textContent = 'Registrar Conteo';
+                            if (submitLoader) submitLoader.classList.add('hidden');
+                            if (submitBtn) submitBtn.disabled = false;
+                        }
+                    });
                 }
 
-                for (let i = 0; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    let rowSuccess = true;
-                    let errorMsg = '';
+                // FORMULARIO DE REGISTRO DE USUARIOS
+                const userRegisterForm = document.getElementById('user-register-form');
+                if (userRegisterForm) {
+                    userRegisterForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const userName = document.getElementById('user-name')?.value.trim();
+                        const userPosition = document.getElementById('user-position')?.value.trim();
+                        if (!userName || !userPosition) {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'Por favor, completa todos los campos' });
+                            return;
+                        }
+                        try {
+                            const userData = { nombre: userName, puesto: userPosition };
+                            await insertUser(userData);
+                            await loadUserData();
+                            this.reset();
+                            Swal.fire({ icon: 'success', title: 'Éxito', text: 'Usuario registrado correctamente', timer: 2000, showConfirmButton: false });
+                        } catch (error) {
+                            console.error('Error al registrar usuario:', error);
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar el usuario' });
+                        }
+                    });
+                }
 
-                    const rack = row['Rack']?.toString().trim();
-                    const ubicacion = row['Ubicación']?.toString().trim();
-                    const numeroParte = row['Número de Parte']?.toString().trim();
-                    const descripcion = row['Descripción']?.toString().trim();
-                    const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
+                // FORMULARIO DE ASIGNACIONES
+                const assignmentForm = document.getElementById('assignment-form');
+                if (assignmentForm) {
+                    assignmentForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const user = document.getElementById('user-assignment')?.value.trim();
+                        const rack = document.getElementById('rack-assignment')?.value.trim();
+                        const location = document.getElementById('location-assignment')?.value.trim();
+                        const partNumber = document.getElementById('part-number-assignment')?.value.trim();
+                        const esAsignacion = document.querySelector('input[name="es_asignacion"]:checked')?.value === 'true';
 
-                    if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
-                        errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
-                        rowSuccess = false;
-                    } else if (rack.length !== 1 && rack !== 'AREA_KITEO') {
-                        errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
-                        rowSuccess = false;
-                    }
+                        if (!user || !rack || !location || !partNumber) {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'Todos los campos son obligatorios' });
+                            return;
+                        }
 
-                    if (rowSuccess) {
+                        const description = await getPartDescription(partNumber);
                         try {
                             const { error } = await supabase
                                 .from('conteoinventario')
                                 .insert([{
                                     rack: rack,
-                                    ubicacion: ubicacion,
-                                    numero_parte: numeroParte,
-                                    descripcion: descripcion,
-                                    usuario_asignado: usuarioAsignado,
+                                    ubicacion: location,
+                                    usuario_asignado: user,
+                                    numero_parte: partNumber,
+                                    descripcion: description,
                                     cantidad: 0,
                                     cantidad_contada: false,
-                                    es_asignacion: true,
-                                    es_reconteo: false,
-                                    fecha_actualizacion: new Date().toISOString()
+                                    es_asignacion: true
                                 }]);
-
                             if (error) throw error;
-                            successCount++;
-                        } catch (insertError) {
-                            console.error('Error al insertar fila:', i + 2, insertError);
-                            errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
-                            rowSuccess = false;
+                            Swal.fire({ icon: 'success', title: 'Asignación registrada', text: `Se asignó a ${user}...`, confirmButtonColor: '#0a192f' });
+                            await loadAssignments();
+                            this.reset();
+                        } catch (error) {
+                            console.error('Error al registrar asignación:', error);
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar la asignación' });
                         }
-                    }
-
-                    if (!rowSuccess) {
-                        errorCount++;
-                        messages.push(`<p class="text-red-500">${errorMsg}</p>`);
-                    }
+                    });
                 }
 
-                messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
-                if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-                console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
-
-                if (successCount > 0) {
-                    await loadAssignments();
-                    await loadInventoryData();
+                // FILTROS Y EXPORTACIÓN
+                const filterUser = document.getElementById('filter-user');
+                const filterPart = document.getElementById('filter-part');
+                const clearFiltersBtn = document.getElementById('clear-filters-btn');
+                if (filterUser) filterUser.addEventListener('input', filterInventoryRecords);
+                if (filterPart) filterPart.addEventListener('input', filterInventoryRecords);
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', function() {
+                        if (filterUser) filterUser.value = '';
+                        if (filterPart) filterPart.value = '';
+                        filterInventoryRecords();
+                    });
                 }
-            } catch (error) {
-                console.error('Error general al procesar el archivo:', error);
-                if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
-            } finally {
-                if (submitBtn) submitBtn.disabled = false;
+
+                const exportExcelBtn = document.getElementById('export-excel-btn');
+                const exportPdfBtn = document.getElementById('export-pdf-btn');
+                if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
+                if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
+
+                // CARGAR DATOS INICIALES
+                loadInventoryData();
+                loadUserData();
+                loadPartNumbers('part-number-list');
+                loadPartNumbers('part-number-list-assignment');
+
+                const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+                if (partNumberAssignmentInput) {
+                    partNumberAssignmentInput.addEventListener('blur', async function() {
+                        const partNumber = this.value.trim();
+                        const rackSelect = document.getElementById('rack-assignment');
+                        const locationSelect = document.getElementById('location-assignment');
+                        if (!partNumber) {
+                            await loadAllRacks();
+                            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                            return;
+                        }
+                        try {
+                            const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
+                            if (error) throw error;
+                            if (!data || data.length === 0) {
+                                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                                return;
+                            }
+                            const uniqueRacks = [...new Set(data.map(item => item.rack))];
+                            rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>';
+                            uniqueRacks.forEach(rack => {
+                                const option = document.createElement('option');
+                                option.value = rack;
+                                option.textContent = isNaN(rack) ? rack : `Rack ${rack}`;
+                                rackSelect.appendChild(option);
+                            });
+                            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                            rackSelect.onchange = () => {
+                                const selectedRack = rackSelect.value;
+                                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                                if (selectedRack) {
+                                    const locationsForRack = data.filter(item => item.rack === selectedRack);
+                                    locationsForRack.forEach(item => {
+                                        const option = document.createElement('option');
+                                        option.value = item.location;
+                                        option.textContent = item.location;
+                                        locationSelect.appendChild(option);
+                                    });
+                                }
+                            };
+                        } catch (err) {
+                            console.error('(Asignación) Error al buscar ubicaciones:', err);
+                            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al buscar las ubicaciones.' });
+                        }
+                    });
+                    console.log('✅ Listener para ASIGNACIÓN configurado.');
+                }
             }
-        }
+        });
 
-        // Función auxiliar para leer archivo
-        function readFileAsArrayBuffer(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(e);
-                reader.readAsArrayBuffer(file);
+        // === CONFIGURAR EL FORMULARIO DE CARGA MASIVA ===
+        const bulkUploadForm = document.getElementById('bulk-upload-form');
+        if (bulkUploadForm) {
+            bulkUploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('excel-file');
+                if (!fileInput || fileInput.files.length === 0) {
+                    Swal.fire({ icon: 'warning', title: 'Archivo no seleccionado' });
+                    return;
+                }
+                const file = fileInput.files[0];
+                if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+                    Swal.fire({ icon: 'error', title: 'Tipo de archivo no válido' });
+                    return;
+                }
+                await handleBulkUpload(file);
             });
         }
+
+    } catch (error) {
+        console.error('Error en inicialización:', error);
+    }
 });
-        // Event listener para el formulario de carga masiva
-        document.addEventListener('DOMContentLoaded', function() {
-            const bulkUploadForm = document.getElementById('bulk-upload-form');
-            if (bulkUploadForm) {
-                bulkUploadForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const fileInput = document.getElementById('excel-file');
-                    if (!fileInput || fileInput.files.length === 0) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Archivo no seleccionado',
-                            text: 'Por favor, selecciona un archivo Excel para subir.'
-                        });
-                        return;
-                    }
-                    const file = fileInput.files[0];
-                    if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Tipo de archivo no válido',
-                            text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
-                        });
-                        return;
-                    }
-                    await handleBulkUpload(file);
-                });
-            }
-  }); // Cierre del DOMContentLoaded
 </script>
 </body>
 </html>
