@@ -1755,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-     if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
+    if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
     partNumberManualInput.addEventListener('blur', async function() { // <-- `async` aquí
         const partNumber = this.value.trim();
         if (!partNumber) return;
