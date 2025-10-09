@@ -1755,46 +1755,56 @@ document.addEventListener('DOMContentLoaded', async function() {
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-        if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
-            partNumberManualInput.addEventListener('blur', async function() {
-                const partNumber = this.value.trim();
-                if (!partNumber) return;
+      if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
+    partNumberManualInput.addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        if (!partNumber) return;
 
-                try {
-                    const { data, error } = await supabase
-                        .from('numerosinventario')
-                        .select('descripcion, rack, location')
-                        .eq('inventario_id', partNumber)
-                        .limit(1)
-                        .single();
+        try {
+            console.log(`Buscando datos para el número de parte: ${partNumber}`);
 
-                    if (error || !data) {
-                        descriptionInput.value = '';
-                        rackSelect.value = '';
-                        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                        Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
-                        return;
-                    }
-                    descriptionInput.value = data.descripcion || '';
-                    rackSelect.value = data.rack || '';
-                    locationSelect.innerHTML = '';
-                    const option = document.createElement('option');
-                    option.value = data.location;
-                    option.textContent = data.location;
-                    locationSelect.appendChild(option);
-                    locationSelect.value = data.location;
-                } catch (err) {
-                    console.error('(Registro Manual) Error al buscar datos:', err);
-                    Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
-                }
-            });
-            partNumberManualInput.dataset.listenerAttached = 'true';
-            console.log('✅ Listener para REGISTRO MANUAL activado.');
-        } else {
-            console.warn('(Registro Manual) Uno o más elementos del formulario no están en el DOM o el listener ya está registrado.');
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('descripcion, rack, location')
+                .eq('inventario_id', partNumber)
+                .limit(1)
+                .single();
+
+            console.log('Datos retornados por Supabase:', data);
+            console.log('Error de Supabase:', error);
+
+            if (error) throw error;
+            if (!data) {
+                descriptionInput.value = '';
+                rackSelect.value = '';
+                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                return;
+            }
+
+            // Llenar los campos con los datos
+            descriptionInput.value = data.descripcion || '';
+            rackSelect.value = data.rack || '';
+
+            // Limpiar y reconstruir el select de location
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+            const option = document.createElement('option');
+            option.value = data.location;
+            option.textContent = data.location;
+            locationSelect.appendChild(option);
+            locationSelect.value = data.location;
+
+        } catch (err) {
+            console.error('Error al buscar datos:', err);
+            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
         }
-    }
-});
+    });
+    partNumberManualInput.dataset.listenerAttached = 'true';
+    console.log('✅ Listener para REGISTRO MANUAL activado.');
+} else {
+    console.warn('(Registro Manual) Uno o más elementos del formulario no están en el DOM o el listener ya está registrado.');
+}
+
 
         // CONFIGURACIÓN DE PESTAÑAS (dentro del DOMContentLoaded)
       
