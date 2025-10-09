@@ -2062,54 +2062,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
   // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
-const partNumberManualInput = document.getElementById('part-number');
-if (partNumberManualInput) {
-    partNumberManualInput.addEventListener('blur', async function() {
-        const partNumber = this.value.trim();
-        const rackSelect = document.getElementById('rack');
-        const locationSelect = document.getElementById('location');
-        const descriptionInput = document.getElementById('description');
 
-        if (!rackSelect || !locationSelect || !descriptionInput) {
-            console.warn('(Registro Manual) Formulario no está en el DOM');
-            return;
-        }
-
-        if (!partNumber) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('numerosinventario')
-                .select('descripcion, rack, location')
-                .eq('inventario_id', partNumber)
-                .limit(1)
-                .single();
-
-            if (error || !data) {
-                descriptionInput.value = '';
-                rackSelect.value = '';
-                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
-                return;
-            }
-
-            descriptionInput.value = data.descripcion || '';
-            rackSelect.value = data.rack || '';
-
-            locationSelect.innerHTML = '';
-            const option = document.createElement('option');
-            option.value = data.location;
-            option.textContent = data.location;
-            locationSelect.appendChild(option);
-            locationSelect.value = data.location;
-
-        } catch (err) {
-            console.error('(Registro Manual) Error al buscar datos:', err);
-            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
-        }
-    });
-    console.log('✅ Listener DIRECTO para REGISTRO MANUAL configurado.');
-}
       
  } catch (error) {
         console.error('Error en la inicialización (autenticación):', error);
