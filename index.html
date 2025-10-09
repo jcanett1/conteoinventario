@@ -1965,8 +1965,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // CARGAR NÚMEROS DE PARTE PARA AUTOCOMPLETAR
         loadPartNumbers('part-number-list');
         loadPartNumbers('part-number-list-assignment');
-       // Configurar listeners para autocompletado
-        setupEventListeners();
+    
 
 
 
@@ -2033,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('✅ Listener para ASIGNACIÓN configurado.');
     }
 
-   // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
+  // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
 const partNumberManualInput = document.getElementById('part-number');
 if (partNumberManualInput) {
     partNumberManualInput.addEventListener('blur', async function() {
@@ -2042,7 +2041,6 @@ if (partNumberManualInput) {
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-        // Verificación: si alguno no existe, salimos
         if (!rackSelect || !locationSelect || !descriptionInput) {
             console.warn('(Registro Manual) Formulario no está en el DOM');
             return;
