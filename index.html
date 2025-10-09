@@ -2073,7 +2073,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
 
       
- } catch (error) {
+ } catch (error) { // <-- `catch` dentro del `try`
         console.error('Error en la inicialización (autenticación):', error);
         Swal.fire({
             icon: 'error',
@@ -2081,10 +2081,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             text: 'Ocurrió un error al cargar la aplicación'
         });
     }
-
 }); // ← CIERRE DEL DOMContentLoaded
-
-
 
 
    
