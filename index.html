@@ -1737,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
             }
         });
-  tabInventory?.addEventListener('click', function() {
+ tabInventory?.addEventListener('click', function() {
     if (!document.body.classList.contains('is-admin')) {
         Swal.fire({
             icon: 'error',
@@ -1749,22 +1749,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (contentInventory) {
         showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
 
-        // ✅ Registrar el listener SOLO al entrar a la pestaña
+        // ✅ Verificar existencia de elementos antes de registrar el listener
         const partNumberManualInput = document.getElementById('part-number');
         const rackSelect = document.getElementById('rack');
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-        if (partNumberManualInput && !partNumberManualInput.dataset.listenerAttached) {
+        if (partNumberManualInput && rackSelect && locationSelect && descriptionInput && !partNumberManualInput.dataset.listenerAttached) {
             partNumberManualInput.addEventListener('blur', async function() {
                 const partNumber = this.value.trim();
                 if (!partNumber) return;
-
-                // ✅ Verificación robusta: si alguno es null, salir
-                if (!rackSelect || !locationSelect || !descriptionInput) {
-                    console.warn('(Registro Manual) Formulario no está en el DOM');
-                    return;
-                }
 
                 try {
                     const { data, error } = await supabase
@@ -1781,28 +1775,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                         Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
                         return;
                     }
-
                     descriptionInput.value = data.descripcion || '';
                     rackSelect.value = data.rack || '';
-
                     locationSelect.innerHTML = '';
                     const option = document.createElement('option');
                     option.value = data.location;
                     option.textContent = data.location;
                     locationSelect.appendChild(option);
                     locationSelect.value = data.location;
-
                 } catch (err) {
                     console.error('(Registro Manual) Error al buscar datos:', err);
                     Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
                 }
             });
-
             partNumberManualInput.dataset.listenerAttached = 'true';
             console.log('✅ Listener para REGISTRO MANUAL activado.');
+        } else {
+            console.warn('(Registro Manual) Uno o más elementos del formulario no están en el DOM o el listener ya está registrado.');
         }
     }
 });
+
         // CONFIGURACIÓN DE PESTAÑAS (dentro del DOMContentLoaded)
       
 
