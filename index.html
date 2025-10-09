@@ -971,6 +971,7 @@ async function handleInventoryNumbersSubmit(e) {
     }
 }
 
+// Función para manejar el submit del formulario de carga masiva (sin cambios)
 async function handleBulkUploadSubmit(e) {
     e.preventDefault();
     const fileInput = document.getElementById('excel-file');
@@ -1023,14 +1024,15 @@ async function handleBulkUpload(file) {
             return;
         }
 
-        // Validar columnas
-        const requiredHeaders = ['Rack', 'Ubicación', 'Número de Parte', 'Descripción', 'Usuario Asignado'];
+        // Validar columnas - FORMATO MODIFICADO PARA VISTA DE ASIGNACIONES
+        const requiredHeaders = ['Usuario', 'Rack', 'Ubicación', 'Número de Parte', 'Descripción'];
         const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
         console.log('Headers encontrados en el archivo:', fileHeaders);
 
         const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
         if (missingHeaders.length > 0) {
             messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
+            messages.push(`<p class="text-blue-500">Formato esperado: Usuario, Rack, Ubicación, Número de Parte, Descripción</p>`);
             if (messagesDiv) messagesDiv.innerHTML = messages.join('');
             return;
         }
@@ -1041,32 +1043,43 @@ async function handleBulkUpload(file) {
             let rowSuccess = true;
             let errorMsg = '';
 
-            // Mapear columnas del Excel
+            // Mapear columnas del Excel - ORDEN MODIFICADO
+            const usuarioAsignado = row['Usuario']?.toString().trim();
             const rack = row['Rack']?.toString().trim();
             const ubicacion = row['Ubicación']?.toString().trim();
             const numeroParte = row['Número de Parte']?.toString().trim();
             const descripcion = row['Descripción']?.toString().trim();
-            const usuarioAsignado = row['Usuario Asignado']?.toString().trim();
 
             // Validaciones básicas
-            if (!rack || !ubicacion || !numeroParte || !descripcion || !usuarioAsignado) {
-                errorMsg = `Fila ${i + 2}: Uno o más campos obligatorios están vacíos.`;
+            if (!usuarioAsignado || !rack || !ubicacion || !numeroParte || !descripcion) {
                 rowSuccess = false;
-            } else if (rack.length !== 1 && rack !== 'AREA_KITEO') {
-                errorMsg = `Fila ${i + 2}: El Rack '${rack}' no es válido.`;
+                const camposFaltantes = [];
+                if (!usuarioAsignado) camposFaltantes.push('Usuario');
+                if (!rack) camposFaltantes.push('Rack');
+                if (!ubicacion) camposFaltantes.push('Ubicación');
+                if (!numeroParte) camposFaltantes.push('Número de Parte');
+                if (!descripcion) camposFaltantes.push('Descripción');
+                errorMsg = `Campos obligatorios faltantes: ${camposFaltantes.join(', ')}`;
+            }
+
+            // Validar rack
+            const racksValidos = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
+            if (rack && !racksValidos.includes(rack.toUpperCase())) {
                 rowSuccess = false;
+                errorMsg += (errorMsg ? '; ' : '') + `Rack inválido: ${rack}. Valores permitidos: ${racksValidos.join(', ')}`;
             }
 
             if (rowSuccess) {
                 try {
-                    const { error } = await supabase
+                    // Insertar en la base de datos
+                    const { error: insertError } = await supabase
                         .from('conteoinventario')
                         .insert([{
-                            rack: rack,
+                            usuario_asignado: usuarioAsignado,
+                            rack: rack.toUpperCase(),
                             ubicacion: ubicacion,
                             numero_parte: numeroParte,
                             descripcion: descripcion,
-                            usuario_asignado: usuarioAsignado,
                             cantidad: 0,
                             cantidad_contada: false,
                             es_asignacion: true,
@@ -1074,30 +1087,49 @@ async function handleBulkUpload(file) {
                             fecha_actualizacion: new Date().toISOString()
                         }]);
 
-                    if (error) {
-                        throw error;
+                    if (insertError) {
+                        throw insertError;
                     }
+
                     successCount++;
-                } catch (insertError) {
-                    console.error('Error al insertar fila:', i + 2, insertError);
-                    errorMsg = `Fila ${i + 2}: Error al insertar en la base de datos: ${insertError.message}`;
+                    console.log(`✅ Fila ${i + 1} procesada correctamente`);
+
+                } catch (dbError) {
                     rowSuccess = false;
+                    errorCount++;
+                    errorMsg = `Error de base de datos: ${dbError.message}`;
+                    console.error(`❌ Error en fila ${i + 1}:`, dbError);
                 }
+            } else {
+                errorCount++;
             }
 
+            // Agregar mensaje de resultado para esta fila
             if (!rowSuccess) {
-                errorCount++;
-                messages.push(`<p class="text-red-500">${errorMsg}</p>`);
+                messages.push(`<p class="text-red-500">Fila ${i + 1}: ${errorMsg}</p>`);
             }
         }
 
-        // Mostrar resultados finales
-        messages.unshift(`<p class="text-green-500">Carga completada. Éxito: ${successCount}, Errores: ${errorCount}</p>`);
-        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
-        console.log(`Carga masiva finalizada. Éxito: ${successCount}, Errores: ${errorCount}`);
+        // Mostrar resumen final
+        messages.unshift(`<p class="text-green-500">✅ Registros procesados exitosamente: ${successCount}</p>`);
+        if (errorCount > 0) {
+            messages.unshift(`<p class="text-red-500">❌ Registros con errores: ${errorCount}</p>`);
+        }
+        messages.unshift(`<p class="text-blue-500">📊 Total de filas procesadas: ${jsonData.length}</p>`);
 
-        // Recargar la vista si se insertaron registros exitosos
+        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+
+        // Mostrar notificación de éxito
         if (successCount > 0) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Carga masiva completada',
+                text: `Se procesaron ${successCount} registros correctamente${errorCount > 0 ? ` (${errorCount} errores)` : ''}`,
+                timer: 4000,
+                showConfirmButton: false
+            });
+
+            // Recargar datos
             await loadAssignments();
             await loadInventoryData();
         }
@@ -1110,7 +1142,8 @@ async function handleBulkUpload(file) {
     }
 }
 
-// Función auxiliar para leer archivo
+
+// Función auxiliar para leer archivo (sin cambios)
 function readFileAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
