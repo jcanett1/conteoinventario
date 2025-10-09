@@ -1062,11 +1062,31 @@ async function handleBulkUpload(file) {
                 errorMsg = `Campos obligatorios faltantes: ${camposFaltantes.join(', ')}`;
             }
 
-            // Validar rack
-            const racksValidos = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
-            if (rack && !racksValidos.includes(rack.toUpperCase())) {
-                rowSuccess = false;
-                errorMsg += (errorMsg ? '; ' : '') + `Rack inválido: ${rack}. Valores permitidos: ${racksValidos.join(', ')}`;
+            // VALIDACIÓN DE RACK MODIFICADA - Ahora acepta letras, números y AREA_KITEO
+            if (rack && rowSuccess) {
+                const rackUpper = rack.toUpperCase();
+                
+                // Validar que el rack sea:
+                // 1. Una letra (A-Z)
+                // 2. Un número (1-999)
+                // 3. AREA_KITEO
+                const esLetra = /^[A-Z]$/.test(rackUpper);
+                const esNumero = /^\d+$/.test(rack);
+                const esAreaKiteo = rackUpper === 'AREA_KITEO';
+                
+                if (!esLetra && !esNumero && !esAreaKiteo) {
+                    rowSuccess = false;
+                    errorMsg += (errorMsg ? '; ' : '') + `Rack inválido: ${rack}. Debe ser una letra (A-Z), un número (1-999) o AREA_KITEO`;
+                }
+                
+                // Validar que los números estén en un rango razonable (1-999)
+                if (esNumero) {
+                    const numeroRack = parseInt(rack);
+                    if (numeroRack < 1 || numeroRack > 999) {
+                        rowSuccess = false;
+                        errorMsg += (errorMsg ? '; ' : '') + `Rack numérico fuera de rango: ${rack}. Debe estar entre 1 y 999`;
+                    }
+                }
             }
 
             if (rowSuccess) {
@@ -1076,7 +1096,7 @@ async function handleBulkUpload(file) {
                         .from('conteoinventario')
                         .insert([{
                             usuario_asignado: usuarioAsignado,
-                            rack: rack.toUpperCase(),
+                            rack: rack, // Mantener el formato original (no convertir a mayúsculas los números)
                             ubicacion: ubicacion,
                             numero_parte: numeroParte,
                             descripcion: descripcion,
@@ -1092,7 +1112,7 @@ async function handleBulkUpload(file) {
                     }
 
                     successCount++;
-                    console.log(`✅ Fila ${i + 1} procesada correctamente`);
+                    console.log(`✅ Fila ${i + 1} procesada correctamente - Rack: ${rack}`);
 
                 } catch (dbError) {
                     rowSuccess = false;
@@ -1213,15 +1233,32 @@ async function loadPartNumbers(datalistId) {
 
 async function loadAllRacks() {
     const rackSelects = ['rack-assignment', 'rack'];
-    const racks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'AREA_KITEO'];
+    
+    // Racks con letras
+    const racksLetras = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    
+    // Racks numéricos (puedes ajustar el rango según tus necesidades)
+    const racksNumericos = [];
+    for (let i = 1; i <= 20; i++) { // Ajusta el rango según tus racks
+        racksNumericos.push(i.toString());
+    }
+    
+    // Combinar todos los racks
+    const todosLosRacks = [...racksLetras, ...racksNumericos, 'AREA_KITEO'];
     
     rackSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (select) {
             select.innerHTML = '<option value="">Seleccione un Rack</option>' +
-                racks.map(rack => 
-                    `<option value="${rack}">${rack === 'AREA_KITEO' ? rack : `Rack ${rack}`}</option>`
-                ).join('');
+                todosLosRacks.map(rack => {
+                    if (rack === 'AREA_KITEO') {
+                        return `<option value="${rack}">AREA_KITEO</option>`;
+                    } else if (/^\d+$/.test(rack)) {
+                        return `<option value="${rack}">Rack ${rack}</option>`;
+                    } else {
+                        return `<option value="${rack}">Rack ${rack}</option>`;
+                    }
+                }).join('');
         }
     });
 }
