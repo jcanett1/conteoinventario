@@ -1737,45 +1737,74 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
             }
         });
-        tabInventory?.addEventListener('click', function() {
-            if (!document.body.classList.contains('is-admin')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Acceso denegado',
-                    text: 'No tienes permiso para acceder a esta sección.',
-                });
-                return;
-            }
-            if (contentInventory) {
-                showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
-            }
+       tabInventory?.addEventListener('click', function() {
+    if (!document.body.classList.contains('is-admin')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Acceso denegado',
+            text: 'No tienes permiso para acceder a esta sección.',
         });
-        tabView?.addEventListener('click', function() {
-            if (contentView) {
-                showTab(tabView, contentView, [tabAdmin, tabInventory, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentInventory, contentInventoryNumbers, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
-                loadAssignments();
-            }
-        });
-        tabInventoryNumbers?.addEventListener('click', function() {
-            if (contentInventoryNumbers) {
-                showTab(tabInventoryNumbers, contentInventoryNumbers, [tabAdmin, tabInventory, tabView, tabBulkUpload].filter(Boolean), [contentAdmin, contentInventory, contentView, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
-                loadInventoryNumbers();
-                loadUserData();
-            }
-        });
-        tabBulkUpload?.addEventListener('click', function() { // Añadir este bloque
-            if (contentBulkUpload) {
-                showTab(tabBulkUpload, contentBulkUpload, [tabAdmin, tabInventory, tabView, tabInventoryNumbers].filter(Boolean), [contentAdmin, contentInventory, contentView, contentInventoryNumbers].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
-                // Opcional: Limpiar el formulario y resultados anteriores
-                const form = document.getElementById('bulk-upload-form');
-                const result = document.getElementById('upload-result');
-                const messages = document.getElementById('upload-messages');
-                if (form) form.reset();
-                if (result) result.classList.add('hidden');
-                if (messages) messages.innerHTML = '';
-            }
-        });
+        return;
+    }
+    if (contentInventory) {
+        showTab(tabInventory, contentInventory, [tabAdmin, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentAdmin, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean));
 
+        // ✅ Registrar el listener SOLO al entrar a la pestaña
+        const partNumberManualInput = document.getElementById('part-number');
+        const rackSelect = document.getElementById('rack');
+        const locationSelect = document.getElementById('location');
+        const descriptionInput = document.getElementById('description');
+
+        // Evitar registrar el listener múltiples veces
+        if (partNumberManualInput && !partNumberManualInput.dataset.listenerAttached) {
+            partNumberManualInput.addEventListener('blur', async function() {
+                const partNumber = this.value.trim();
+                if (!partNumber) return;
+
+                // Verificación adicional (aunque ya debería existir)
+                if (!rackSelect || !locationSelect || !descriptionInput) {
+                    console.warn('(Registro Manual) Formulario no está en el DOM');
+                    return;
+                }
+
+                try {
+                    const { data, error } = await supabase
+                        .from('numerosinventario')
+                        .select('descripcion, rack, location')
+                        .eq('inventario_id', partNumber)
+                        .limit(1)
+                        .single();
+
+                    if (error || !data) {
+                        descriptionInput.value = '';
+                        rackSelect.value = '';
+                        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+                        Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
+                        return;
+                    }
+
+                    descriptionInput.value = data.descripcion || '';
+                    rackSelect.value = data.rack || '';
+
+                    locationSelect.innerHTML = '';
+                    const option = document.createElement('option');
+                    option.value = data.location;
+                    option.textContent = data.location;
+                    locationSelect.appendChild(option);
+                    locationSelect.value = data.location;
+
+                } catch (err) {
+                    console.error('(Registro Manual) Error al buscar datos:', err);
+                    Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
+                }
+            });
+
+            // Marcar que ya se registró el listener
+            partNumberManualInput.dataset.listenerAttached = 'true';
+            console.log('✅ Listener para REGISTRO MANUAL configurado (al entrar a la pestaña).');
+        }
+    }
+});
         // CONFIGURACIÓN DE PESTAÑAS (dentro del DOMContentLoaded)
       
 
