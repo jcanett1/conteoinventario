@@ -2010,71 +2010,74 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 
     // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
-    const partNumberAssignmentInput = document.getElementById('part-number-assignment');
-    if (partNumberAssignmentInput) {
-        partNumberAssignmentInput.addEventListener('blur', async function() {
-            const partNumber = this.value.trim();
-            const rackSelect = document.getElementById('rack-assignment');
-            const locationSelect = document.getElementById('location-assignment');
+const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+if (partNumberAssignmentInput) {
+    partNumberAssignmentInput.addEventListener('blur', async function() {
+        const partNumber = this.value.trim();
+        const rackSelect = document.getElementById('rack-assignment');
+        const locationSelect = document.getElementById('location-assignment');
 
-            if (!partNumber) {
-                // Si se borra el número de parte, restauramos la lista completa de racks
-                await loadAllRacks(); // Vuelve a cargar todos los racks
-                locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        if (!partNumber) {
+            // Si se borra el número de parte, restauramos la lista completa de racks
+            await loadAllRacks(); // Vuelve a cargar todos los racks
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+            return;
+        }
+
+        console.log(`(Asignación) Buscando ubicaciones para: ${partNumber}`);
+
+        try {
+            const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
                 return;
             }
 
-            console.log(`(Asignación) Buscando ubicaciones para: ${partNumber}`);
+            // Lógica para mostrar opciones múltiples
+            const uniqueRacks = [...new Set(data.map(item => item.rack))];
+            rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>';
 
-            try {
-                const { data, error } = await supabase.from('numerosinventario').select('rack, location').eq('inventario_id', partNumber);
-                if (error) throw error;
+            uniqueRacks.forEach(rack => {
+                const option = document.createElement('option');
+                option.value = rack;
+                option.textContent = isNaN(rack) ? rack : `Rack ${rack}`;
+                rackSelect.appendChild(option);
+            });
 
-                if (!data || data.length === 0) {
-                    Swal.fire({ icon: 'warning', title: 'Número de parte no encontrado', timer: 2000, showConfirmButton: false });
-                    return;
-                }
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
 
-                // Lógica para mostrar opciones múltiples
-                const uniqueRacks = [...new Set(data.map(item => item.rack))];
-                rackSelect.innerHTML = '<option value="">Seleccione un Rack</option>'; // Limpiamos y ponemos el default
-               uniqueRacks.forEach(rack => {
-    const option = document.createElement('option');
-    option.value = rack;
-    option.textContent = isNaN(rack) ? rack : `Rack ${rack}`;
-    rackSelect.appendChild(option);
-});
-
+            // Limpiamos cualquier listener 'onchange' anterior y asignamos uno nuevo
+            rackSelect.onchange = null;
+            rackSelect.onchange = () => {
+                const selectedRack = rackSelect.value;
                 locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
 
-                // Limpiamos cualquier listener 'onchange' anterior y asignamos uno nuevo
-                rackSelect.onchange = null; 
-                rackSelect.onchange = () => {
-                    const selectedRack = rackSelect.value;
-                    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-                    if (selectedRack) {
-                        const locationsForRack = data.filter(item => item.rack === selectedRack);
-                        locationsForRack.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item.location;
-                            option.textContent = item.location;
-                            locationSelect.appendChild(option);
-                        });
-                    }
-                };
-            } catch (err) {
-                console.error('(Asignación) Error al buscar ubicaciones:', err);
-                Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al buscar las ubicaciones.' });
-            }
-        });
-        console.log('✅ Listener para ASIGNACIÓN configurado.');
-    }
+                if (selectedRack) {
+                    const locationsForRack = data.filter(item => item.rack === selectedRack);
+                    locationsForRack.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.location;
+                        option.textContent = item.location;
+                        locationSelect.appendChild(option);
+                    });
+                }
+            };
+        } catch (err) {
+            console.error('(Asignación) Error al buscar ubicaciones:', err);
+            Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al buscar las ubicaciones.' });
+        }
+    });
+    console.log('✅ Listener para ASIGNACIÓN configurado.');
+}
 
-  // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
+// --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
+// (Aquí puedes agregar el código para el listener de REGISTRO MANUAL si es necesario)
 
-      
+// Cierre del DOMContentLoaded
+});
 
-}); // ← CIERRE DEL DOMContentLoaded
 
 
    
