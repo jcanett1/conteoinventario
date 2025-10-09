@@ -1737,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showTab(tabAdmin, contentAdmin, [tabInventory, tabView, tabInventoryNumbers, tabBulkUpload].filter(Boolean), [contentInventory, contentView, contentInventoryNumbers, contentBulkUpload].filter(Boolean)); // Añadir tabBulkUpload y contentBulkUpload
             }
         });
-       tabInventory?.addEventListener('click', function() {
+     tabInventory?.addEventListener('click', function() {
     if (!document.body.classList.contains('is-admin')) {
         Swal.fire({
             icon: 'error',
@@ -1755,13 +1755,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-        // Evitar registrar el listener múltiples veces
+        // Evitar registrar múltiples veces
         if (partNumberManualInput && !partNumberManualInput.dataset.listenerAttached) {
             partNumberManualInput.addEventListener('blur', async function() {
                 const partNumber = this.value.trim();
                 if (!partNumber) return;
 
-                // Verificación adicional (aunque ya debería existir)
+                // Verificación: si los elementos no existen (aunque raro aquí), salir
                 if (!rackSelect || !locationSelect || !descriptionInput) {
                     console.warn('(Registro Manual) Formulario no está en el DOM');
                     return;
