@@ -70,11 +70,15 @@
           <i class="fas fa-warehouse text-white text-3xl mr-3"></i>
           <h1 class="text-2xl font-bold text-white">Sistema de Conteo de Inventario PXG</h1>
         </div>
-        <div>
+        <div class="flex items-center space-x-4">
+          <div id="user-info" class="text-white text-sm">
+            <span id="user-name" class="font-medium"></span>
+            <span id="user-role" class="text-gray-300 ml-2"></span>
+          </div>
           <button id="logout-btn" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded-md text-sm transition-all">
-        <i class="fas fa-sign-out-alt mr-1"></i>Cerrar Sesión
-    </button>
-          <button id="reset-data-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all">
+            <i class="fas fa-sign-out-alt mr-1"></i>Cerrar Sesión
+          </button>
+          <button id="reset-data-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all admin-only">
             <i class="fas fa-trash-alt mr-2"></i>Reiniciar Datos
           </button>
         </div>
@@ -491,14 +495,98 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Función para verificar autenticación
 async function checkAuthentication() {
-    // Aquí iría la lógica de autenticación
-    // Por ahora, simulamos un usuario admin
-    currentUser = 'admin';
-    isAdmin = true;
+    try {
+        console.log('🔍 Verificando autenticación...');
+        
+        // Obtener sesión actual
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+            console.error('Error obteniendo sesión:', error);
+            redirectToLogin();
+            return;
+        }
+        
+        if (!session) {
+            console.log('❌ No hay sesión activa, redirigiendo al login');
+            redirectToLogin();
+            return;
+        }
+        
+        console.log('✅ Sesión activa encontrada para:', session.user.email);
+        
+        // Obtener datos del usuario desde la tabla users
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+        
+        if (userError || !userData) {
+            console.error('Error obteniendo datos del usuario:', userError);
+            redirectToLogin();
+            return;
+        }
+        
+        // Configurar usuario actual
+        currentUser = userData;
+        isAdmin = userData.role === 'admin';
+        
+        console.log('👤 Usuario autenticado:', userData.full_name, '- Rol:', userData.role);
+        
+        // Actualizar UI según el rol
+        updateUIForUser();
+        
+        // Configurar listener para cambios de autenticación
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                redirectToLogin();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error en verificación de autenticación:', error);
+        redirectToLogin();
+    }
+}
+
+// Función para actualizar UI según el usuario
+function updateUIForUser() {
+    // Mostrar información del usuario en el header
+    const userNameElement = document.getElementById('user-name');
+    const userRoleElement = document.getElementById('user-role');
     
+    if (userNameElement) {
+        userNameElement.textContent = currentUser.full_name;
+    }
+    
+    if (userRoleElement) {
+        const roleText = isAdmin ? '(Administrador)' : '(Usuario)';
+        userRoleElement.textContent = roleText;
+    }
+    
+    // Mostrar/ocultar elementos según el rol
     if (isAdmin) {
         document.body.classList.add('is-admin');
+        console.log('🔧 Mostrando elementos de administrador');
+    } else {
+        document.body.classList.remove('is-admin');
+        console.log('👁️ Ocultando elementos de administrador');
+        
+        // Para usuarios no admin, mostrar solo Vista de Asignaciones
+        setTimeout(() => {
+            const viewTab = document.getElementById('tab-view');
+            if (viewTab) {
+                viewTab.click();
+            }
+        }, 100);
     }
+}
+
+// Función para redirigir al login
+function redirectToLogin() {
+    console.log('🔄 Redirigiendo al login...');
+    window.location.href = 'login_completo.html';
 }
 
 // Configuración de pestañas
@@ -1082,11 +1170,18 @@ async function loadAllRacks() {
 
 async function loadAssignments() {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('conteoinventario')
             .select('*')
-            .eq('cantidad_contada', false) // Solo mostrar pendientes
-            .order('fecha_actualizacion', { ascending: false });
+            .eq('cantidad_contada', false); // Solo mostrar pendientes
+        
+        // Si no es admin, filtrar solo las asignaciones del usuario actual
+        if (!isAdmin && currentUser) {
+            query = query.eq('usuario_asignado', currentUser.full_name);
+            console.log('👁️ Filtrando asignaciones para usuario:', currentUser.full_name);
+        }
+        
+        const { data, error } = await query.order('fecha_actualizacion', { ascending: false });
         
         if (error) throw error;
         
@@ -2231,9 +2326,32 @@ async function registerQuantity(assignmentId) {
     }
 }
 
-function handleLogout() {
-    // Implementar lógica de cierre de sesión
-    window.location.reload();
+async function handleLogout() {
+    try {
+        console.log('🚪 Cerrando sesión...');
+        
+        // Cerrar sesión en Supabase
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error('Error al cerrar sesión:', error);
+            throw error;
+        }
+        
+        console.log('✅ Sesión cerrada correctamente');
+        
+        // Limpiar variables globales
+        currentUser = null;
+        isAdmin = false;
+        
+        // Redirigir al login
+        window.location.href = 'login_completo.html';
+        
+    } catch (error) {
+        console.error('Error en logout:', error);
+        // En caso de error, forzar redirección al login
+        window.location.href = 'login_completo.html';
+    }
 }
 
 console.log('Script cargado correctamente');
