@@ -781,10 +781,16 @@ function setupEventListeners() {
 // Funciones de manejo de eventos
 async function handleAssignmentSubmit(e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
+const formData = new FormData(e.target);
     
     const partNumber = formData.get('part-number-assignment');
     let descripcion = '';
+
+    const userAssignmentValue = formData.get('user-assignment');
+    let usuarioAsignado = userAssignmentValue;
+    if (userAssignmentValue && userAssignmentValue.includes('(')) {
+        usuarioAsignado = userAssignmentValue.split('(')[0].trim();
+    }
     
     try {
         // Primero, obtener la descripción del número de parte
@@ -800,7 +806,7 @@ async function handleAssignmentSubmit(e) {
             console.warn('Error al obtener descripción:', partError);
         } else if (partData && partData.length > 0) {
             descripcion = partData[0].descripcion || '';
-            console.log(`✅ Descripción encontrada: "${descripcion}"`);
+            console.log(`✅ Descripción encontrada: \"${descripcion}\"`);
         } else {
             console.warn(`⚠️ No se encontró descripción para el número de parte: ${partNumber}`);
         }
@@ -813,7 +819,7 @@ async function handleAssignmentSubmit(e) {
                 ubicacion: formData.get('location-assignment'),
                 numero_parte: partNumber,
                 descripcion: descripcion,
-                usuario_asignado: formData.get('user-assignment'),
+                usuario_asignado: usuarioAsignado,
                 cantidad: 0,
                 cantidad_contada: false,
                 es_asignacion: formData.get('es_asignacion') === 'true',
