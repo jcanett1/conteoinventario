@@ -1970,8 +1970,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 
 
-function setupEventListeners() {
-    console.log('Configurando todos los event listeners...');
+
 
     // --- Listener para el formulario de ASIGNACIÓN (Lógica de selección) ---
     const partNumberAssignmentInput = document.getElementById('part-number-assignment');
@@ -2034,25 +2033,23 @@ function setupEventListeners() {
         console.log('✅ Listener para ASIGNACIÓN configurado.');
     }
 
-    // --- Listener para el formulario de REGISTRO MANUAL (Lógica de autocompletado directo) ---
+   // --- Listener DIRECTO para REGISTRO MANUAL (sin función envolvente) ---
 const partNumberManualInput = document.getElementById('part-number');
 if (partNumberManualInput) {
     partNumberManualInput.addEventListener('blur', async function() {
         const partNumber = this.value.trim();
-        // Obtenemos los elementos, pero podrían ser null
         const rackSelect = document.getElementById('rack');
         const locationSelect = document.getElementById('location');
         const descriptionInput = document.getElementById('description');
 
-        // ✅ Verificación: si alguno no existe, salimos
+        // Verificación: si alguno no existe, salimos
         if (!rackSelect || !locationSelect || !descriptionInput) {
-            console.warn('(Registro Manual) Formulario no está cargado en el DOM. Ignorando autocompletado.');
+            console.warn('(Registro Manual) Formulario no está en el DOM');
             return;
         }
 
         if (!partNumber) return;
 
-        console.log(`(Registro Manual) Buscando datos para: ${partNumber}`);
         try {
             const { data, error } = await supabase
                 .from('numerosinventario')
@@ -2083,9 +2080,9 @@ if (partNumberManualInput) {
             console.error('(Registro Manual) Error al buscar datos:', err);
             Swal.fire({ icon: 'error', title: 'Error de Búsqueda', text: 'Ocurrió un problema al autocompletar los datos.' });
         }
-                });
-            }
-        }
+    });
+    console.log('✅ Listener DIRECTO para REGISTRO MANUAL configurado.');
+}
       
  } catch (error) {
         console.error('Error en la inicialización (autenticación):', error);
