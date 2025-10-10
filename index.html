@@ -2376,23 +2376,41 @@ async function recountInventoryItem(id) {
     }
 }
 
-// Función para registrar cantidad desde Vista de Asignaciones
-async function registerQuantity(assignmentId) {
-    const quantityInput = document.getElementById(`quantity-${assignmentId}`);
-    const quantity = parseInt(quantityInput.value);
-    
-    // Validar que se haya ingresado una cantidad válida
-    if (!quantity || quantity <= 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Cantidad requerida',
-            text: 'Por favor ingresa una cantidad válida mayor a 0',
-            timer: 3000,
-            showConfirmButton: false
+  // Función para registrar cantidad desde Vista de Asignaciones - MODIFICADA CON ALERTA DE CONFIRMACIÓN
+    async function registerQuantity(assignmentId) {
+        const quantityInput = document.getElementById(`quantity-${assignmentId}`);
+        const quantity = parseInt(quantityInput.value);
+        
+        // Validar que se haya ingresado una cantidad válida
+        if (!quantity || quantity <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cantidad requerida',
+                text: 'Por favor ingresa una cantidad válida mayor a 0',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            quantityInput.focus();
+            return;
+        }
+        
+        // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
+        const result = await Swal.fire({
+            title: '¿Confirmar registro?',
+            text: `¿Estás seguro que deseas registrar la cantidad ${quantity}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0a192f',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, registrar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
         });
-        quantityInput.focus();
-        return;
-    }
+        
+        // Si el usuario cancela, no continuar con el registro
+        if (!result.isConfirmed) {
+            return;
+        
     
     try {
         // Actualizar el registro para marcarlo como contado
