@@ -2376,7 +2376,25 @@ async function recountInventoryItem(id) {
     }
 }
 
-  // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
+ // Función para registrar cantidad desde Vista de Asignaciones - MODIFICADA CON ALERTA DE CONFIRMACIÓN
+    async function registerQuantity(assignmentId) {
+        const quantityInput = document.getElementById(`quantity-${assignmentId}`);
+        const quantity = parseInt(quantityInput.value);
+        
+        // Validar que se haya ingresado una cantidad válida
+        if (!quantity || quantity <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cantidad requerida',
+                text: 'Por favor ingresa una cantidad válida mayor a 0',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            quantityInput.focus();
+            return;
+        }
+        
+        // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
         const result = await Swal.fire({
             title: '¿Confirmar registro?',
             text: `¿Estás seguro que deseas registrar la cantidad ${quantity}?`,
