@@ -2376,25 +2376,7 @@ async function recountInventoryItem(id) {
     }
 }
 
-  // Función para registrar cantidad desde Vista de Asignaciones - MODIFICADA CON ALERTA DE CONFIRMACIÓN
-    async function registerQuantity(assignmentId) {
-        const quantityInput = document.getElementById(`quantity-${assignmentId}`);
-        const quantity = parseInt(quantityInput.value);
-        
-        // Validar que se haya ingresado una cantidad válida
-        if (!quantity || quantity <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Cantidad requerida',
-                text: 'Por favor ingresa una cantidad válida mayor a 0',
-                timer: 3000,
-                showConfirmButton: false
-            });
-            quantityInput.focus();
-            return;
-        }
-        
-        // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
+  // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
         const result = await Swal.fire({
             title: '¿Confirmar registro?',
             text: `¿Estás seguro que deseas registrar la cantidad ${quantity}?`,
@@ -2410,50 +2392,49 @@ async function recountInventoryItem(id) {
         // Si el usuario cancela, no continuar con el registro
         if (!result.isConfirmed) {
             return;
-        
-    
-    try {
-        // Actualizar el registro para marcarlo como contado
-        const { error } = await supabase
-            .from('conteoinventario')
-            .update({
-                cantidad: quantity,
-                cantidad_contada: true,
-                fecha_actualizacion: new Date().toISOString()
-            })
-            .eq('id', assignmentId);
-        
-        if (error) throw error;
-        
-        // Mostrar mensaje de éxito
-        Swal.fire({
-            icon: 'success',
-            title: 'Cantidad registrada',
-            text: `Se registró la cantidad ${quantity} correctamente`,
-            timer: 2000,
-            showConfirmButton: false
-        });
-        
-        // Remover la fila de la tabla de asignaciones
-        const row = document.getElementById(`assignment-row-${assignmentId}`);
-        if (row) {
-            row.remove();
         }
         
-        // Recargar las tablas para reflejar los cambios
-        await loadAssignments(); // Recargar asignaciones pendientes
-        await loadInventoryData(); // Recargar registros de inventario
-        
-    } catch (error) {
-        console.error('Error al registrar cantidad:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo registrar la cantidad: ' + error.message
-        });
+        try {
+            // Actualizar el registro para marcarlo como contado
+            const { error } = await supabase
+                .from('conteoinventario')
+                .update({
+                    cantidad: quantity,
+                    cantidad_contada: true,
+                    fecha_actualizacion: new Date().toISOString()
+                })
+                .eq('id', assignmentId);
+            
+            if (error) throw error;
+            
+            // Mostrar mensaje de éxito
+            Swal.fire({
+                icon: 'success',
+                title: 'Cantidad registrada',
+                text: `Se registró la cantidad ${quantity} correctamente`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // Remover la fila de la tabla de asignaciones
+            const row = document.getElementById(`assignment-row-${assignmentId}`);
+            if (row) {
+                row.remove();
+            }
+            
+            // Recargar las tablas para reflejar los cambios
+            await loadAssignments(); // Recargar asignaciones pendientes
+            await loadInventoryData(); // Recargar registros de inventario
+            
+        } catch (error) {
+            console.error('Error al registrar cantidad:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo registrar la cantidad: ' + error.message
+            });
+        }
     }
-}
-
 async function handleLogout() {
     try {
         console.log('🚪 Cerrando sesión...');
