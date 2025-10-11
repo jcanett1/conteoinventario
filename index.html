@@ -78,9 +78,7 @@
           <button id="logout-btn" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded-md text-sm transition-all">
             <i class="fas fa-sign-out-alt mr-1"></i>Cerrar Sesión
           </button>
-          <button id="reset-data-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all admin-only">
-            <i class="fas fa-trash-alt mr-2"></i>Reiniciar Datos
-          </button>
+         
         </div>
       </div>
     </div>
@@ -709,11 +707,7 @@ function setupEventListeners() {
         searchFilter.addEventListener('input', filterAssignments);
     }
     
-    // Botón de reiniciar datos
-    const resetDataBtn = document.getElementById('reset-data-btn');
-    if (resetDataBtn) {
-        resetDataBtn.addEventListener('click', handleResetData);
-    }
+    
     
     // Botón de cerrar sesión
     const logoutBtn = document.getElementById('logout-btn');
@@ -2254,18 +2248,7 @@ function filterAssignments() {
     });
 }
 
-// Funciones de utilidad
-async function handleResetData() {
-    const result = await Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Esta acción eliminará todos los datos. No se puede deshacer.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar todo',
-        cancelButtonText: 'Cancelar'
-    });
+
     
     if (result.isConfirmed) {
         try {
