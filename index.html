@@ -1569,12 +1569,11 @@ async function loadInventoryNumbers() {
         
         if (error) throw error;
         
-        const inventoryNumberSelect = document.getElementById('inventory-number');
-        if (inventoryNumberSelect) {
-            inventoryNumberSelect.innerHTML = '<option value="">Seleccione un número de inventario</option>' +
-                data.map(item => 
-                    `<option value="${item.inventario_id}">${item.inventario_id}</option>`
-                ).join('');
+        const inventoryNumberList = document.getElementById('inventory-number-list');
+        if (inventoryNumberList) {
+            inventoryNumberList.innerHTML = data.map(item => 
+                `<option value="${item.inventario_id}">`
+            ).join('');
         }
         
     } catch (error) {
