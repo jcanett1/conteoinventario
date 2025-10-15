@@ -393,11 +393,18 @@
         <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro de Números de Inventario</h2>
         <form id="inventory-numbers-form" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="inventory-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Inventario</label>
-              <input type="text" id="inventory-number" name="inventory-number" list="inventory-number-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Escriba o seleccione un número de inventario">
-              <datalist id="inventory-number-list"></datalist>
+ <div>
+              <label for="inventory-part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+              <input type="text" id="inventory-part-number" name="inventory-part-number" list="part-number-list-inventory-numbers" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese número de parte">
+              <datalist id="part-number-list-inventory-numbers"></datalist>
             </div>
+          </div>
+          <div>
+            <label for="inventory-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <input type="text" id="inventory-description" name="inventory-description" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
+          </div>
+
+            
             <div>
               <label for="inventory-rack" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
               <select id="inventory-rack" name="inventory-rack" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -421,16 +428,6 @@
                 <option value="">Seleccione ubicación</option>
               </select>
             </div>
-            <div>
-              <label for="inventory-part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input type="text" id="inventory-part-number" name="inventory-part-number" list="part-number-list-inventory-numbers" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese número de parte">
-              <datalist id="part-number-list-inventory-numbers"></datalist>
-            </div>
-          </div>
-          <div>
-            <label for="inventory-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <input type="text" id="inventory-description" name="inventory-description" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
-          </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label for="inventory-user" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
