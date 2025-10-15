@@ -1362,21 +1362,45 @@ async function loadRealLocationsForSelects() {
     try {
         console.log('📍 [DEBUG] Cargando ubicaciones reales...');
         
-        // Obtener ubicaciones únicas de la tabla numerosinventario
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('location')
-            .order('location');
+        // Obtener TODAS las ubicaciones sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
         
-        if (error) {
-            console.error('❌ Error al consultar numerosinventario:', error);
-            throw error;
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('location')
+                .range(from, from + pageSize - 1)
+                .order('location');
+            
+            if (error) {
+                console.error('❌ Error al consultar numerosinventario:', error);
+                throw error;
+            }
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                console.log(`📄 [DEBUG] Página cargada: ${data.length} registros (total acumulado: ${allData.length})`);
+                
+                // Si obtuvimos menos registros que el tamaño de página, ya no hay más
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    from += pageSize;
+                }
+            } else {
+                hasMore = false;
+            }
         }
         
-        console.log('📊 [DEBUG] Datos obtenidos de numerosinventario:', data);
+        console.log('📊 [DEBUG] Total de registros obtenidos de numerosinventario:', allData.length);
+        const data = allData;
         
         // Obtener ubicaciones únicas y filtrar valores vacíos o null
-        const uniqueLocations = [...new Set(data.map(item => item.location).filter(loc => loc && loc.trim() !== ''))];
+        const uniqueLocations = [...new Set(allData.map(item => item.location).filter(loc => loc && loc.trim() !== ''))];
+        uniqueLocations.sort(); // Ordenar alfabéticamente
         
         console.log('📍 [DEBUG] Ubicaciones únicas encontradas:', uniqueLocations);
         console.log('📍 [DEBUG] Total de ubicaciones:', uniqueLocations.length);
