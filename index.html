@@ -95,7 +95,7 @@
     <button id="tab-view" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
       <i class="fas fa-tasks"></i> Vista de Asignaciones
     </button>
-    <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+    <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
       <i class="fas fa-list"></i> Números de Inventario
     </button>
     <button id="tab-bulk-upload" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
@@ -422,14 +422,25 @@
               </select>
             </div>
             <div>
+              <label for="inventory-part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+              <input type="text" id="inventory-part-number" name="inventory-part-number" list="part-number-list-inventory-numbers" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese número de parte">
+              <datalist id="part-number-list-inventory-numbers"></datalist>
+            </div>
+          </div>
+          <div>
+            <label for="inventory-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <input type="text" id="inventory-description" name="inventory-description" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <label for="inventory-user" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
               <input type="text" id="inventory-user" name="inventory-user" list="user-list-inventory-numbers" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese usuario">
               <datalist id="user-list-inventory-numbers"></datalist>
             </div>
-          </div>
-          <div>
-            <label for="inventory-quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-            <input type="number" id="inventory-quantity" name="inventory-quantity" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad">
+            <div>
+              <label for="inventory-quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+              <input type="number" id="inventory-quantity" name="inventory-quantity" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad">
+            </div>
           </div>
           <div class="pt-2">
             <button type="submit" id="inventory-numbers-submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
@@ -648,6 +659,7 @@ async function loadInitialData() {
     await loadUserData();
     await loadPartNumbers('part-number-list-assignment');
     await loadPartNumbers('part-number-list');
+    await loadPartNumbers('part-number-list-inventory-numbers');
     await loadAllRacks();
     
     console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
@@ -745,6 +757,12 @@ function setupEventListeners() {
     const partNumberInventoryInput = document.getElementById('part-number');
     if (partNumberInventoryInput) {
         partNumberInventoryInput.addEventListener('blur', handlePartNumberInventoryBlur);
+    }
+    
+    // Listener para número de parte en números de inventario
+    const partNumberInventoryNumbersInput = document.getElementById('inventory-part-number');
+    if (partNumberInventoryNumbersInput) {
+        partNumberInventoryNumbersInput.addEventListener('blur', handlePartNumberInventoryNumbersBlur);
     }
     
     // Listeners para filtros de inventario
@@ -940,8 +958,8 @@ async function handleInventoryNumbersSubmit(e) {
             .insert([{
                 rack: rack,
                 ubicacion: ubicacion,
-                numero_parte: formData.get('inventory-number'),
-                descripcion: '',
+                numero_parte: formData.get('inventory-part-number'),
+                descripcion: formData.get('inventory-description') || '',
                 usuario_asignado: formData.get('inventory-user'),
                 cantidad: parseInt(formData.get('inventory-quantity')),
                 cantidad_contada: true,
@@ -2024,6 +2042,50 @@ async function handlePartNumberInventoryBlur() {
         rackSelect.value = '';
         locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
         descriptionInput.value = '';
+    }
+}
+
+// Función para autocompletar descripción en números de inventario
+async function handlePartNumberInventoryNumbersBlur() {
+    const partNumberInput = document.getElementById('inventory-part-number');
+    const descriptionInput = document.getElementById('inventory-description');
+    
+    if (!partNumberInput || !descriptionInput) {
+        console.error('No se encontraron los elementos del DOM necesarios para números de inventario');
+        return;
+    }
+    
+    const partNumber = partNumberInput.value.trim();
+    
+    if (!partNumber) {
+        descriptionInput.value = '';
+        return;
+    }
+    
+    console.log(`🔍 [Números Inventario] Buscando descripción para: ${partNumber}`);
+    
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('descripcion')
+            .eq('inventario_id', partNumber)
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            console.warn(`⚠️ [Números Inventario] Número de parte ${partNumber} no encontrado`);
+            descriptionInput.value = 'No encontrado';
+            return;
+        }
+        
+        const description = data[0].descripcion || 'Sin descripción';
+        descriptionInput.value = description;
+        console.log(`✅ [Números Inventario] Descripción cargada: ${description}`);
+        
+    } catch (error) {
+        console.error('❌ [Números Inventario] Error al buscar descripción:', error);
+        descriptionInput.value = 'Error al cargar';
     }
 }
 
