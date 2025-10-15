@@ -329,10 +329,11 @@
               <tr>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación Teórica</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación Real</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -340,7 +341,7 @@
             </thead>
             <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200">
               <tr>
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">Cargando registros...</td>
+                <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">Cargando registros...</td>
               </tr>
             </tbody>
           </table>
@@ -1597,7 +1598,7 @@ async function loadInventoryData() {
             if (data.length === 0) {
                 inventoryTableBody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td>
+                        <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td>
                     </tr>
                 `;
             } else {
@@ -1609,6 +1610,7 @@ async function loadInventoryData() {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion_real || 'N/A'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             ${getStatusBadge(item)}
@@ -1639,7 +1641,7 @@ async function loadInventoryData() {
         if (inventoryTableBody) {
             inventoryTableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td>
+                    <td colspan="10" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td>
                 </tr>
             `;
         }
