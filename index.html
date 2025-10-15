@@ -948,7 +948,7 @@ async function handleInventoryNumbersSubmit(e) {
             .insert([{
                 rack: rack,
                 ubicacion: ubicacion,
-                ubicacion: ubicacion_real,
+                ubicacion_real: ubicacion,
                 numero_parte: formData.get('inventory-part-number'),
                 descripcion: formData.get('inventory-description') || '',
                 usuario_asignado: formData.get('inventory-user'),
