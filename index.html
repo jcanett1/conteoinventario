@@ -478,8 +478,8 @@
   </main>
 
   <!-- Modal de Selección de Número de Parte -->
-  <div id="part-number-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+ <div class="flex-1 overflow-y-auto p-4">
+  <div id="part-number-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       <!-- Header del Modal -->
       <div class="flex justify-between items-center p-6 border-b">
         <h3 class="text-xl font-semibold text-navy">
@@ -514,7 +514,7 @@
               </th>
             </tr>
           </thead>
-          <tbody id="part-number-table-body" class="bg-white divide-y divide-gray-200">
+          <tbody id="part-number-grid" class="bg-white divide-y divide-gray-200">
             <!-- Los datos se cargarán dinámicamente -->
           </tbody>
         </table>
@@ -2893,7 +2893,7 @@ async function loadAllPartNumbersForModal() {
         console.log('📊 Cargando números de parte para el modal...');
         
         // Mostrar indicador de carga
-        const tableBody = document.getElementById('part-number-table-body');
+        const tableBody = document.getElementById('part-number-grid');
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
@@ -2943,7 +2943,7 @@ async function loadAllPartNumbersForModal() {
         
     } catch (error) {
         console.error('Error al cargar números de parte:', error);
-        const tableBody = document.getElementById('part-number-table-body');
+        const tableBody = document.getElementById('part-number-grid');
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
@@ -2958,7 +2958,7 @@ async function loadAllPartNumbersForModal() {
 
 // Función para renderizar la tabla de números de parte
 function renderPartNumberTable(partNumbers) {
-    const tableBody = document.getElementById('part-number-table-body');
+    const tableBody = document.getElementById('part-number-grid');
     const countElement = document.getElementById('part-number-count');
     
     if (!tableBody) return;
