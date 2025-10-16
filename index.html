@@ -642,6 +642,96 @@ function setupTabs() {
     }
 }
 
+
+
+  
+
+let currentSort = {
+    column: null,
+    direction: 'asc' // 'asc' or 'desc'
+};
+
+function sortAssignmentsTable(column) {
+    const table = document.getElementById('assignments-table');
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const icon = document.getElementById(`sort-icon-${column}`);
+    
+    // Remove sort icons from all columns
+    document.querySelectorAll('[id^="sort-icon-"]').forEach(icon => {
+        icon.className = 'fas fa-sort ml-1';
+    });
+    
+    // Determine sort direction
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+    
+    // Update sort icon
+    if (currentSort.direction === 'asc') {
+        icon.className = 'fas fa-sort-up ml-1';
+    } else {
+        icon.className = 'fas fa-sort-down ml-1';
+    }
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const aValue = getCellValue(a, column);
+        const bValue = getCellValue(b, column);
+        
+        if (currentSort.direction === 'asc') {
+            return compareValues(aValue, bValue);
+        } else {
+            return compareValues(bValue, aValue);
+        }
+    });
+    
+    // Clear and re-append sorted rows
+    while (table.firstChild) {
+        table.removeChild(table.firstChild);
+    }
+    
+    rows.forEach(row => table.appendChild(row));
+}
+
+function getCellValue(row, column) {
+    const cells = row.querySelectorAll('td');
+    let index;
+    
+    switch (column) {
+        case 'ubicacion':
+            index = 0; // Adjust this index based on your actual column order
+            break;
+        // Add more cases for other sortable columns
+        // case 'partNumber':
+        //     index = 1;
+        //     break;
+        default:
+            index = 0;
+    }
+    
+    return cells[index] ? cells[index].textContent.trim() : '';
+}
+
+function compareValues(a, b) {
+    // Try to compare as numbers first
+    const numA = parseFloat(a.replace(/[^\d.-]/g, ''));
+    const numB = parseFloat(b.replace(/[^\d.-]/g, ''));
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+    }
+    
+    // Fall back to string comparison
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+
+
+  
+
 // Cargar datos iniciales
 async function loadInitialData() {
     console.log('🔄 [DEBUG] Iniciando carga de datos iniciales...');
