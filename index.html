@@ -3058,13 +3058,13 @@ async function handleLogout() {
                 .from("numerosinventario")
                 .select("descripcion")
                 .eq("inventario_id", partNumber)
-                .single();
+                .limit(1);
 
             if (error) throw error;
 
             const descriptionInput = document.getElementById("inventory-description");
-            if (descriptionInput && data) {
-                descriptionInput.value = data.descripcion || "";
+            if (descriptionInput && data && data.length > 0) {
+                descriptionInput.value = data[0].descripcion || "";
             }
         } catch (error) {
             console.error("Error al obtener la descripción del número de parte:", error);
