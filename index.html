@@ -59,6 +59,12 @@
         transform: rotate(360deg);
       }
     }
+    .cursor-pointer {
+      cursor: pointer;
+    }
+    th.cursor-pointer:hover {
+      background-color: #e5e7eb !important;
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -641,96 +647,6 @@ function setupTabs() {
         if (viewTab) viewTab.click();
     }
 }
-
-
-
-  
-
-let currentSort = {
-    column: null,
-    direction: 'asc' // 'asc' or 'desc'
-};
-
-function sortAssignmentsTable(column) {
-    const table = document.getElementById('assignments-table');
-    const rows = Array.from(table.querySelectorAll('tr'));
-    const icon = document.getElementById(`sort-icon-${column}`);
-    
-    // Remove sort icons from all columns
-    document.querySelectorAll('[id^="sort-icon-"]').forEach(icon => {
-        icon.className = 'fas fa-sort ml-1';
-    });
-    
-    // Determine sort direction
-    if (currentSort.column === column) {
-        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSort.column = column;
-        currentSort.direction = 'asc';
-    }
-    
-    // Update sort icon
-    if (currentSort.direction === 'asc') {
-        icon.className = 'fas fa-sort-up ml-1';
-    } else {
-        icon.className = 'fas fa-sort-down ml-1';
-    }
-    
-    // Sort rows
-    rows.sort((a, b) => {
-        const aValue = getCellValue(a, column);
-        const bValue = getCellValue(b, column);
-        
-        if (currentSort.direction === 'asc') {
-            return compareValues(aValue, bValue);
-        } else {
-            return compareValues(bValue, aValue);
-        }
-    });
-    
-    // Clear and re-append sorted rows
-    while (table.firstChild) {
-        table.removeChild(table.firstChild);
-    }
-    
-    rows.forEach(row => table.appendChild(row));
-}
-
-function getCellValue(row, column) {
-    const cells = row.querySelectorAll('td');
-    let index;
-    
-    switch (column) {
-        case 'ubicacion':
-            index = 0; // Adjust this index based on your actual column order
-            break;
-        // Add more cases for other sortable columns
-        // case 'partNumber':
-        //     index = 1;
-        //     break;
-        default:
-            index = 0;
-    }
-    
-    return cells[index] ? cells[index].textContent.trim() : '';
-}
-
-function compareValues(a, b) {
-    // Try to compare as numbers first
-    const numA = parseFloat(a.replace(/[^\d.-]/g, ''));
-    const numB = parseFloat(b.replace(/[^\d.-]/g, ''));
-    
-    if (!isNaN(numA) && !isNaN(numB)) {
-        return numA - numB;
-    }
-    
-    // Fall back to string comparison
-    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-}
-
-
-
-  
 
 // Cargar datos iniciales
 async function loadInitialData() {
@@ -1474,52 +1390,11 @@ async function loadAssignments() {
         
         if (error) throw error;
         
-        const assignmentsTable = document.getElementById('assignments-table');
-        if (assignmentsTable) {
-            if (data.length === 0) {
-                assignmentsTable.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes</td>
-                    </tr>
-                `;
-            } else {
-                assignmentsTable.innerHTML = data.map(item => `
-                    <tr id="assignment-row-${item.id}">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="number" 
-                                   id="quantity-${item.id}" 
-                                   min="0" 
-                                   step="1" 
-                                   placeholder="Cantidad"
-                                   class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <select id="real-location-${item.id}" 
-                                    class="w-40 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Seleccionar ubicación</option>
-                            </select>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button onclick="registerQuantity(${item.id})" 
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
-                                Registrar
-                            </button>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
-                
-                // Cargar las ubicaciones en los selectores después de que el DOM se actualice
-                setTimeout(async () => {
-                    await loadRealLocationsForSelects();
-                }, 100);
-            }
-        }
+        // Guardar los datos en la variable global
+        assignmentsData = data || [];
+        
+        // Renderizar la tabla usando la función de renderizado
+        renderAssignmentsTable();
         
     } catch (error) {
         console.error('Error al cargar asignaciones:', error);
@@ -2739,9 +2614,123 @@ async function recountInventoryItem(id) {
             });
         }
     }
+// Variables para controlar el ordenamiento
+let currentSortColumn = null;
+let currentSortDirection = 'asc'; // 'asc' o 'desc'
+let assignmentsData = []; // Array para almacenar los datos de las asignaciones
+
+// Función para ordenar la tabla de asignaciones
+function sortAssignmentsTable(column) {
+    console.log('🔄 Ordenando por:', column);
+    
+    // Si es la misma columna, cambiar dirección
+    if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        // Si es una columna diferente, empezar en ascendente
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
+    }
+    
+    // Actualizar iconos
+    updateSortIcons(column, currentSortDirection);
+    
+    // Ordenar los datos
+    assignmentsData.sort((a, b) => {
+        let valueA = a[column] || '';
+        let valueB = b[column] || '';
+        
+        // Convertir a string para comparación
+        valueA = valueA.toString().toLowerCase();
+        valueB = valueB.toString().toLowerCase();
+        
+        if (currentSortDirection === 'asc') {
+            return valueA.localeCompare(valueB, 'es', { numeric: true });
+        } else {
+            return valueB.localeCompare(valueA, 'es', { numeric: true });
+        }
+    });
+    
+    // Renderizar la tabla con los datos ordenados
+    renderAssignmentsTable();
+}
+
+// Función para actualizar los iconos de ordenamiento
+function updateSortIcons(column, direction) {
+    // Resetear todos los iconos
+    const allIcons = ['sort-icon-rack', 'sort-icon-ubicacion'];
+    allIcons.forEach(iconId => {
+        const icon = document.getElementById(iconId);
+        if (icon) {
+            icon.className = 'fas fa-sort ml-1';
+        }
+    });
+    
+    // Actualizar el icono de la columna activa
+    const activeIcon = document.getElementById(`sort-icon-${column}`);
+    if (activeIcon) {
+        if (direction === 'asc') {
+            activeIcon.className = 'fas fa-sort-up ml-1';
+        } else {
+            activeIcon.className = 'fas fa-sort-down ml-1';
+        }
+    }
+}
+
+// Función para renderizar la tabla de asignaciones
+function renderAssignmentsTable() {
+    const assignmentsTable = document.getElementById('assignments-table');
+    if (!assignmentsTable) return;
+    
+    if (assignmentsData.length === 0) {
+        assignmentsTable.innerHTML = `
+            <tr>
+                <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    assignmentsTable.innerHTML = assignmentsData.map(item => `
+        <tr id="assignment-row-${item.id}">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <input type="number" 
+                       id="quantity-${item.id}" 
+                       min="0" 
+                       step="1" 
+                       placeholder="Cantidad"
+                       class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <select id="real-location-${item.id}" 
+                        class="w-40 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Seleccionar ubicación</option>
+                </select>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <button onclick="registerQuantity(${item.id})" 
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
+                    Registrar
+                </button>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleDateString()}</td>
+        </tr>
+    `).join('');
+    
+    // Cargar las ubicaciones en los selectores después de que el DOM se actualice
+    setTimeout(async () => {
+        await loadRealLocationsForSelects();
+    }, 100);
+}
+
 async function handleLogout() {
     try {
-        console.log('🚪 Cerrando sesión...');
+        console.log('🚺 Cerrando sesión...');
         
         // Cerrar sesión en Supabase
         const { error } = await supabase.auth.signOut();
