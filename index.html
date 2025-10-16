@@ -405,8 +405,12 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
               <label for="inventory-part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input type="text" id="inventory-part-number" name="inventory-part-number" list="part-number-list-inventory-numbers" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese número de parte">
-              <datalist id="part-number-list-inventory-numbers"></datalist>
+              <div class="relative">
+                <input type="text" id="inventory-part-number" name="inventory-part-number" readonly required class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Haz clic para seleccionar número de parte" onclick="openPartNumberModal()">
+                <button type="button" onclick="openPartNumberModal()" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-navy">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
             </div>
              <div>
             <label for="inventory-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
@@ -472,6 +476,58 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal de Selección de Número de Parte -->
+  <div id="part-number-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <!-- Header del Modal -->
+      <div class="flex justify-between items-center p-6 border-b">
+        <h3 class="text-xl font-semibold text-navy">
+          <i class="fas fa-search mr-2"></i>Seleccionar Número de Parte
+        </h3>
+        <button onclick="closePartNumberModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-2xl"></i>
+        </button>
+      </div>
+      
+      <!-- Buscador -->
+      <div class="p-4 border-b">
+        <div class="relative">
+          <input type="text" id="part-number-search" placeholder="Buscar número de parte..." class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="filterPartNumbers()">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+        <p class="text-sm text-gray-500 mt-2">
+          <span id="part-number-count">0</span> números de parte encontrados
+        </p>
+      </div>
+      
+      <!-- Tabla con scroll -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 sticky top-0">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Número de Parte
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acción
+              </th>
+            </tr>
+          </thead>
+          <tbody id="part-number-table-body" class="bg-white divide-y divide-gray-200">
+            <!-- Los datos se cargarán dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Footer -->
+      <div class="p-4 border-t bg-gray-50 flex justify-end">
+        <button onclick="closePartNumberModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-all">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
 
 <script>
 // Configuración de Supabase
@@ -2791,6 +2847,219 @@ async function handleLogout() {
         window.location.href = 'login_completo.html';
     }
 }
+
+// ========================================
+// FUNCIONES DEL MODAL DE NÚMEROS DE PARTE
+// ========================================
+
+// Variable global para almacenar todos los números de parte
+let allPartNumbers = [];
+let filteredPartNumbers = [];
+
+// Función para abrir el modal
+function openPartNumberModal() {
+    console.log('🔍 Abriendo modal de números de parte...');
+    const modal = document.getElementById('part-number-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Cargar los datos si aún no se han cargado
+        if (allPartNumbers.length === 0) {
+            loadAllPartNumbersForModal();
+        } else {
+            renderPartNumberTable(allPartNumbers);
+        }
+        // Focus en el buscador
+        setTimeout(() => {
+            const searchInput = document.getElementById('part-number-search');
+            if (searchInput) searchInput.focus();
+        }, 100);
+    }
+}
+
+// Función para cerrar el modal
+function closePartNumberModal() {
+    const modal = document.getElementById('part-number-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        // Limpiar el buscador
+        const searchInput = document.getElementById('part-number-search');
+        if (searchInput) searchInput.value = '';
+    }
+}
+
+// Función para cargar todos los números de parte para el modal
+async function loadAllPartNumbersForModal() {
+    try {
+        console.log('📊 Cargando números de parte para el modal...');
+        
+        // Mostrar indicador de carga
+        const tableBody = document.getElementById('part-number-table-body');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando números de parte...
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Obtener TODOS los registros sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('inventario_id')
+                .order('inventario_id')
+                .range(from, from + pageSize - 1);
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                console.log(`✅ Cargados ${data.length} registros (total: ${allData.length})`);
+                from += pageSize;
+                
+                if (data.length < pageSize) {
+                    hasMore = false;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        // Eliminar duplicados y ordenar
+        const uniqueIds = Array.from(new Set(allData.map(item => item.inventario_id)));
+        allPartNumbers = uniqueIds.sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+        
+        console.log(`📊 Total de números de parte únicos: ${allPartNumbers.length}`);
+        
+        // Renderizar la tabla
+        renderPartNumberTable(allPartNumbers);
+        
+    } catch (error) {
+        console.error('Error al cargar números de parte:', error);
+        const tableBody = document.getElementById('part-number-table-body');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="2" class="px-6 py-4 text-center text-sm text-red-500">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar los datos
+                    </td>
+                </tr>
+            `;
+        }
+    }
+}
+
+// Función para renderizar la tabla de números de parte
+function renderPartNumberTable(partNumbers) {
+    const tableBody = document.getElementById('part-number-table-body');
+    const countElement = document.getElementById('part-number-count');
+    
+    if (!tableBody) return;
+    
+    // Actualizar contador
+    if (countElement) {
+        countElement.textContent = partNumbers.length;
+    }
+    
+    if (partNumbers.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
+                    <i class="fas fa-search mr-2"></i>No se encontraron números de parte
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Renderizar filas (limitado a 100 por rendimiento, se puede ajustar)
+    const maxRows = 500; // Mostrar hasta 500 resultados
+    const displayPartNumbers = partNumbers.slice(0, maxRows);
+    
+    tableBody.innerHTML = displayPartNumbers.map(partNumber => `
+        <tr class="hover:bg-gray-50 cursor-pointer" onclick="selectPartNumber('${partNumber}')">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${partNumber}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button type="button" onclick="selectPartNumber('${partNumber}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
+                    <i class="fas fa-check mr-1"></i>Seleccionar
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Mostrar mensaje si hay más resultados
+    if (partNumbers.length > maxRows) {
+        tableBody.innerHTML += `
+            <tr>
+                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500 bg-yellow-50">
+                    <i class="fas fa-info-circle mr-2"></i>Mostrando ${maxRows} de ${partNumbers.length} resultados. Usa el buscador para filtrar.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Función para filtrar números de parte
+function filterPartNumbers() {
+    const searchInput = document.getElementById('part-number-search');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    if (searchTerm === '') {
+        // Si no hay término de búsqueda, mostrar todos
+        renderPartNumberTable(allPartNumbers);
+    } else {
+        // Filtrar los números de parte que contengan el término de búsqueda
+        const filtered = allPartNumbers.filter(partNumber => 
+            partNumber.toLowerCase().includes(searchTerm)
+        );
+        renderPartNumberTable(filtered);
+    }
+}
+
+// Función para seleccionar un número de parte
+function selectPartNumber(partNumber) {
+    console.log('✅ Número de parte seleccionado:', partNumber);
+    
+    // Establecer el valor en el input
+    const input = document.getElementById('inventory-part-number');
+    if (input) {
+        input.value = partNumber;
+        
+        // Disparar evento change para que se cargue la descripción
+        const event = new Event('change', { bubbles: true });
+        input.dispatchEvent(event);
+    }
+    
+    // Cerrar el modal
+    closePartNumberModal();
+}
+
+// Cerrar modal al hacer clic fuera de él
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('part-number-modal');
+    if (modal && event.target === modal) {
+        closePartNumberModal();
+    }
+});
+
+// Cerrar modal con tecla ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('part-number-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closePartNumberModal();
+        }
+    }
+});
 
 console.log('Script cargado correctamente');
 </script>
