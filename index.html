@@ -1234,18 +1234,54 @@ async function loadUserData() {
 
 async function loadPartNumbers(datalistId) {
     try {
-        const { data, error } = await supabase
-            .from('numerosinventario')
-            .select('inventario_id')
-            .order('inventario_id');
+        console.log('🔍 Cargando números de parte para:', datalistId);
         
-        if (error) throw error;
+        // Obtener TODOS los registros sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000; // Tamaño de página
+        let hasMore = true;
+        
+        while (hasMore) {
+            const { data, error, count } = await supabase
+                .from('numerosinventario')
+                .select('inventario_id', { count: 'exact' })
+                .order('inventario_id')
+                .range(from, from + pageSize - 1);
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                console.log(`✅ Cargados ${data.length} registros (total acumulado: ${allData.length})`);
+                from += pageSize;
+                
+                // Si obtuvimos menos registros que el tamaño de página, ya no hay más
+                if (data.length < pageSize) {
+                    hasMore = false;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        console.log(`📊 Total de números de parte cargados: ${allData.length}`);
+        
+        // Eliminar duplicados (por si acaso)
+        const uniqueData = Array.from(new Set(allData.map(item => item.inventario_id)))
+            .map(id => ({ inventario_id: id }))
+            .sort((a, b) => a.inventario_id.localeCompare(b.inventario_id, 'es', { numeric: true }));
+        
+        console.log(`📊 Números de parte únicos: ${uniqueData.length}`);
         
         const datalist = document.getElementById(datalistId);
         if (datalist) {
-            datalist.innerHTML = data.map(item => 
+            datalist.innerHTML = uniqueData.map(item => 
                 `<option value="${item.inventario_id}">`
             ).join('');
+            console.log(`✅ Datalist '${datalistId}' actualizado con ${uniqueData.length} opciones`);
+        } else {
+            console.warn(`⚠️ No se encontró el elemento datalist con id: ${datalistId}`);
         }
         
     } catch (error) {
