@@ -478,8 +478,8 @@
   </main>
 
   <!-- Modal de Selección de Número de Parte -->
- <div class="flex-1 overflow-y-auto p-4">
-  <div id="part-number-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+  <div id="part-number-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 my-8 flex flex-col" style="max-height: 90vh;">
       <!-- Header del Modal -->
       <div class="flex justify-between items-center p-6 border-b">
         <h3 class="text-xl font-semibold text-navy">
@@ -501,23 +501,11 @@
         </p>
       </div>
       
-      <!-- Tabla con scroll -->
+      <!-- Grid de números de parte con scroll -->
       <div class="flex-1 overflow-y-auto p-4">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 sticky top-0">
-            <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Número de Parte
-              </th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acción
-              </th>
-            </tr>
-          </thead>
-          <tbody id="part-number-grid" class="bg-white divide-y divide-gray-200">
-            <!-- Los datos se cargarán dinámicamente -->
-          </tbody>
-        </table>
+        <div id="part-number-grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <!-- Los datos se cargarán dinámicamente aquí -->
+        </div>
       </div>
       
       <!-- Footer -->
@@ -525,6 +513,7 @@
         <button onclick="closePartNumberModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-all">
           Cancelar
         </button>
+        
       </div>
     </div>
   </div>
@@ -2892,15 +2881,12 @@ async function loadAllPartNumbersForModal() {
     try {
         console.log('📊 Cargando números de parte para el modal...');
         
-        // Mostrar indicador de carga
-        const tableBody = document.getElementById('part-number-grid');
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando números de parte...
-                    </td>
-                </tr>
+        // Mostrar indicador de carg        const gridContainer = document.getElementById(\'part-number-grid-container\');
+        if (gridContainer) {
+            gridContainer.innerHTML = `
+                <div class="col-span-full px-6 py-4 text-center text-sm text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Cargando números de parte...
+                </div>
             `;
         }
         
@@ -2942,26 +2928,21 @@ async function loadAllPartNumbersForModal() {
         renderPartNumberTable(allPartNumbers);
         
     } catch (error) {
-        console.error('Error al cargar números de parte:', error);
-        const tableBody = document.getElementById('part-number-grid');
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="2" class="px-6 py-4 text-center text-sm text-red-500">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar los datos
-                    </td>
-                </tr>
+        console.error('Error al cargar números de parte:', error)        const gridContainer = document.getElementById(\'part-number-grid-container\');
+        if (gridContainer) {
+            gridContainer.innerHTML = `
+                <div class="col-span-full px-6 py-4 text-center text-sm text-red-500">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar los datos
+                </div>
             `;
         }
     }
 }
 
 // Función para renderizar la tabla de números de parte
-function renderPartNumberTable(partNumbers) {
-    const tableBody = document.getElementById('part-number-grid');
-    const countElement = document.getElementById('part-number-count');
+function renderPartNumberTable(partNumbers) {    const gridContainer = document.getElementById(\'part-number-grid-container\');    const countElement = document.getElementById('part-number-count');
     
-    if (!tableBody) return;
+    if (!gridContainer) return;
     
     // Actualizar contador
     if (countElement) {
@@ -2969,40 +2950,32 @@ function renderPartNumberTable(partNumbers) {
     }
     
     if (partNumbers.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
-                    <i class="fas fa-search mr-2"></i>No se encontraron números de parte
-                </td>
-            </tr>
+        gridContainer.innerHTML = `
+            <div class="col-span-full px-6 py-4 text-center text-sm text-gray-500">
+                <i class="fas fa-search mr-2"></i>No se encontraron números de parte
+            </div>
         `;
         return;
     }
     
-    // Renderizar filas (limitado a 100 por rendimiento, se puede ajustar)
-    const maxRows = 500; // Mostrar hasta 500 resultados
-    const displayPartNumbers = partNumbers.slice(0, maxRows);
+    // Renderizar elementos del grid (limitado a 500 por rendimiento, se puede ajustar)
+    const maxItems = 500; // Mostrar hasta 500 resultados
+    const displayPartNumbers = partNumbers.slice(0, maxItems);
     
-    tableBody.innerHTML = displayPartNumbers.map(partNumber => `
-        <tr class="hover:bg-gray-50 cursor-pointer" onclick="selectPartNumber('${partNumber}')">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${partNumber}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button type="button" onclick="selectPartNumber('${partNumber}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
-                    <i class="fas fa-check mr-1"></i>Seleccionar
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    gridContainer.innerHTML = displayPartNumbers.map(partNumber => `
+        <button onclick="selectPartNumber(\'${partNumber}\')" class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150 ease-in-out">
+            ${partNumber}
+        </button>
+    `).join(\'\');
     
     // Mostrar mensaje si hay más resultados
-    if (partNumbers.length > maxRows) {
-        tableBody.innerHTML += `
-            <tr>
-                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500 bg-yellow-50">
-                    <i class="fas fa-info-circle mr-2"></i>Mostrando ${maxRows} de ${partNumbers.length} resultados. Usa el buscador para filtrar.
-                </td>
-            </tr>
+    if (partNumbers.length > maxItems) {
+        const infoDiv = document.createElement(\'div\');
+        infoDiv.className = \'col-span-full px-6 py-4 text-center text-sm text-gray-500 bg-yellow-50 rounded-md\';
+        infoDiv.innerHTML = `
+            <i class="fas fa-info-circle mr-2"></i>Mostrando ${maxItems} de ${partNumbers.length} resultados. Usa el buscador para filtrar.
         `;
+        gridContainer.appendChild(infoDiv);
     }
 }
 
