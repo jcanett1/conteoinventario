@@ -3078,19 +3078,22 @@ async function handleLogout() {
     closePartNumberModal();
 }
 
-  // Función para manejar el cambio de número de parte en Registro Manual de Inventario
-   async function handlePartNumberChange() {
-    // Solo afecta al input de "Registro Manual de Inventario"
+  async function handlePartNumberChange() {
+    // Solo afectar si estamos en la pestaña de inventario manual (visible)
+    const inventoryContent = document.getElementById('content-inventory');
+    if (!inventoryContent || inventoryContent.classList.contains('hidden')) {
+        return; // No hacer nada si la pestaña no está activa
+    }
+
     const partNumberInput = document.getElementById("inventory-part-number");
     const descriptionInput = document.getElementById("description");
-
+    
     if (!partNumberInput || !descriptionInput) {
-        console.warn("No se encontraron los elementos necesarios");
+        console.warn("Campos de inventario manual no encontrados");
         return;
     }
 
     const partNumber = partNumberInput.value.trim();
-
     if (partNumber === "") {
         descriptionInput.value = "";
         return;
@@ -3102,14 +3105,8 @@ async function handleLogout() {
             .select("descripcion")
             .eq("inventario_id", partNumber)
             .limit(1);
-
         if (error) throw error;
-
-        if (data && data.length > 0) {
-            descriptionInput.value = data[0].descripcion || "";
-        } else {
-            descriptionInput.value = "Descripción no encontrada";
-        }
+        descriptionInput.value = (data && data.length > 0) ? (data[0].descripcion || "") : "Descripción no encontrada";
     } catch (error) {
         console.error("Error al obtener la descripción:", error);
         descriptionInput.value = "Error al cargar descripción";
