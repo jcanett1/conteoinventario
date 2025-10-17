@@ -541,6 +541,7 @@
             <tbody id="assignments-table" class="bg-white divide-y divide-gray-200"></tbody>
           </table>
         </div>
+        <div id="assignments-pagination-controls" class="mt-4 flex justify-center space-x-2"></div>
       </div>
     </div>
 
@@ -629,6 +630,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 // Variables globales
 let currentUser = null;
 let isAdmin = false;
+let currentAssignmentsPage = 1;
+const assignmentsPageSize = 100;
+let totalAssignmentsRecords = 0;
 
 // Inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', async function() {
@@ -809,7 +813,9 @@ async function loadInitialData() {
     
     console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
     console.log('🔄 [DEBUG] Antes de loadAssignments - isAdmin:', isAdmin);
-    await loadAssignments();
+    currentAssignmentsPage = 1;
+    totalAssignmentsRecords = 0;
+    await loadAssignments(1);
     
     await loadInventoryData();
     await loadInventoryNumbers();
@@ -1513,44 +1519,50 @@ function setCurrentUserInInventoryForm() {
     }
 }
 
-async function loadAssignments() {
+async function loadAssignments(page = 1) {
     try {
-        console.log('🔍 [DEBUG] Iniciando loadAssignments...');
+        console.log('🔍 [DEBUG] Iniciando loadAssignments con paginación...');
         console.log('🔍 [DEBUG] isAdmin:', isAdmin);
         console.log('🔍 [DEBUG] currentUser:', currentUser);
-        
+
+        // Obtener el total de asignaciones (solo si es la primera carga)
+        if (totalAssignmentsRecords === 0) {
+            let countQuery = supabase
+                .from('conteoinventario')
+                .select('*', { count: 'exact', head: true })
+                .eq('cantidad_contada', false);
+
+            if (!isAdmin && currentUser) {
+                const usuarioParaFiltrar = currentUser.usuarioConteoVinculado;
+                countQuery = countQuery.eq('usuario_asignado', usuarioParaFiltrar);
+            }
+
+            const { count, error: countError } = await countQuery;
+            if (countError) throw countError;
+            totalAssignmentsRecords = count || 0;
+        }
+
+        const from = (page - 1) * assignmentsPageSize;
+        const to = from + assignmentsPageSize - 1;
+
         let query = supabase
             .from('conteoinventario')
             .select('*')
-            .eq('cantidad_contada', false); // Solo mostrar pendientes
-        
-        // Si no es admin, filtrar solo las asignaciones del usuario actual
+            .eq('cantidad_contada', false)
+            .range(from, to);
+
         if (!isAdmin && currentUser) {
             const usuarioParaFiltrar = currentUser.usuarioConteoVinculado;
-            console.log('👁️ [DEBUG] Filtrando asignaciones para usuario de conteo:', usuarioParaFiltrar);
-            console.log('👁️ [DEBUG] Usuario de login:', currentUser.full_name);
             query = query.eq('usuario_asignado', usuarioParaFiltrar);
-        } else if (isAdmin) {
-            console.log('🔧 [DEBUG] Usuario admin - mostrando todas las asignaciones');
-        } else {
-            console.log('⚠️ [DEBUG] No hay currentUser definido');
         }
-        
+
         const { data, error } = await query.order('fecha_actualizacion', { ascending: false });
-        
-        console.log('📊 [DEBUG] Resultado de la consulta:');
-        console.log('📊 [DEBUG] Error:', error);
-        console.log('📊 [DEBUG] Data length:', data ? data.length : 'null');
-        console.log('📊 [DEBUG] Data:', data);
-        
         if (error) throw error;
-        
-        // Guardar los datos en la variable global
+
+        currentAssignmentsPage = page;
         assignmentsData = data || [];
-        
-        // Renderizar la tabla usando la función de renderizado
         renderAssignmentsTable();
-        
+        renderAssignmentsPagination();
     } catch (error) {
         console.error('Error al cargar asignaciones:', error);
         const assignmentsTable = document.getElementById('assignments-table');
@@ -1561,6 +1573,7 @@ async function loadAssignments() {
                 </tr>
             `;
         }
+        document.getElementById('assignments-pagination-controls').innerHTML = '';
     }
 }
 
@@ -1787,6 +1800,48 @@ function getStatusBadge(item) {
                 </span>`;
     }
 }
+
+
+function renderAssignmentsPagination() {
+    const totalPages = Math.ceil(totalAssignmentsRecords / assignmentsPageSize);
+    const container = document.getElementById('assignments-pagination-controls');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botón anterior
+    if (currentAssignmentsPage > 1) {
+        html += `<button onclick="loadAssignments(${currentAssignmentsPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5)
+    let startPage = Math.max(1, currentAssignmentsPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentAssignmentsPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadAssignments(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentAssignmentsPage < totalPages) {
+        html += `<button onclick="loadAssignments(${currentAssignmentsPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+
+  
 
 function renderInventoryTable(data) {
     const inventoryTableBody = document.getElementById('inventory-table-body');
