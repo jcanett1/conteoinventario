@@ -3043,87 +3043,78 @@ async function handleLogout() {
     }
 
     // Función para seleccionar un número de parte
-    async function selectPartNumber(partNumber) {
-        console.log("✅ Número de parte seleccionado:", partNumber);
-        
-        // Establecer el valor en el input del número de parte
-        const partNumberInput = document.getElementById("inventory-numbers-part-number");
-        if (partNumberInput) {
-            partNumberInput.value = partNumber;
-        }
+   async function selectPartNumber(partNumber) {
+    console.log("Número de parte seleccionado:", partNumber);
 
-        // Buscar la descripción del número de parte
-        try {
-            const { data, error } = await supabase
-                .from("numerosinventario")
-                .select("descripcion")
-                .eq("inventario_id", partNumber)
-                .limit(1);
-
-            if (error) throw error;
-
-            const descriptionInput = document.getElementById("inventory-description");
-            if (descriptionInput && data && data.length > 0) {
-                descriptionInput.value = data[0].descripcion || "";
-            }
-        } catch (error) {
-            console.error("Error al obtener la descripción del número de parte:", error);
-            const descriptionInput = document.getElementById("inventory-description");
-            if (descriptionInput) {
-                descriptionInput.value = "Descripción no encontrada";
-            }
-        }
-        
-        // Cerrar el modal
-        closePartNumberModal();
+    // Solo afecta al input de "Registro de Números de Inventario"
+    const partNumberInput = document.getElementById("inventory-numbers-part-number");
+    if (partNumberInput) {
+        partNumberInput.value = partNumber;
     }
 
+    // Buscar la descripción del número de parte
+    try {
+        const { data, error } = await supabase
+            .from("numerosinventario")
+            .select("descripcion")
+            .eq("inventario_id", partNumber)
+            .limit(1);
+
+        if (error) throw error;
+
+        const descriptionInput = document.getElementById("inventory-description");
+        if (descriptionInput && data && data.length > 0) {
+            descriptionInput.value = data[0].descripcion || "";
+        }
+    } catch (error) {
+        console.error("Error al obtener la descripción del número de parte:", error);
+        const descriptionInput = document.getElementById("inventory-description");
+        if (descriptionInput) {
+            descriptionInput.value = "Descripción no encontrada";
+        }
+    }
+
+    // Cerrar el modal
+    closePartNumberModal();
+}
+
   // Función para manejar el cambio de número de parte en Registro Manual de Inventario
-    async function handlePartNumberChange() {
-        // IMPORTANTE: Esta función es para la pestaña "Conteo de Inventario"
-        // El input correcto es "inventory-part-number" pero la descripción es "description"
-        const partNumberInput = document.getElementById("inventory-part-number");
-        const descriptionInput = document.getElementById("description");
-        
-        console.log("🔍 [Conteo Manual] handlePartNumberChange ejecutado");
-        console.log("🔍 [Conteo Manual] partNumberInput:", partNumberInput);
-        console.log("🔍 [Conteo Manual] descriptionInput:", descriptionInput);
-        
-        if (!partNumberInput || !descriptionInput) {
-            console.warn("⚠️ [Conteo Manual] No se encontraron los elementos necesarios");
-            return;
-        }
-        
-        const partNumber = partNumberInput.value.trim();
-        
-        if (partNumber === "") {
-            descriptionInput.value = "";
-            return;
-        }
-        
-        console.log("🔍 [Conteo Manual] Buscando descripción para:", partNumber);
-        
-        // Buscar la descripción del número de parte
-        try {
-            const { data, error } = await supabase
-                .from("numerosinventario")
-                .select("descripcion")
-                .eq("inventario_id", partNumber)
-                .limit(1);
+   async function handlePartNumberChange() {
+    // Solo afecta al input de "Registro Manual de Inventario"
+    const partNumberInput = document.getElementById("inventory-part-number");
+    const descriptionInput = document.getElementById("description");
 
-            if (error) throw error;
+    if (!partNumberInput || !descriptionInput) {
+        console.warn("No se encontraron los elementos necesarios");
+        return;
+    }
 
-            if (data && data.length > 0) {
-                descriptionInput.value = data[0].descripcion || "";
-                console.log("✅ [Conteo Manual] Descripción cargada:", data[0].descripcion);
-            } else {
-                descriptionInput.value = "Descripción no encontrada";
-                console.warn("⚠️ [Conteo Manual] No se encontró descripción");
-            }
-        } catch (error) {
-            console.error("❌ [Conteo Manual] Error al obtener la descripción:", error);
-            descriptionInput.value = "Error al cargar descripción";
+    const partNumber = partNumberInput.value.trim();
+
+    if (partNumber === "") {
+        descriptionInput.value = "";
+        return;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from("numerosinventario")
+            .select("descripcion")
+            .eq("inventario_id", partNumber)
+            .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            descriptionInput.value = data[0].descripcion || "";
+        } else {
+            descriptionInput.value = "Descripción no encontrada";
         }
+    } catch (error) {
+        console.error("Error al obtener la descripción:", error);
+        descriptionInput.value = "Error al cargar descripción";
+    }
+}
 
     // Cerrar modal al hacer clic fuera de él
     document.addEventListener("click", function(event) {
