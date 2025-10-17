@@ -368,12 +368,12 @@
             </div>
             <div>
               <label for="part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
-              <input type="text" id="inventory-part-number" name="numero_parte" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" placeholder="Seleccione número de parte" readonly onclick="openPartNumberModal()">
+              <input type="text" id="inventory-part-number" name="numero_parte" list="part-number-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o escriba número de parte" oninput="handlePartNumberChange()">
               <datalist id="part-number-list"></datalist>
             </div>
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <input type="text" id="description" name="description" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese descripción del producto">
+              <input type="text" id="description" name="description" required readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
             </div>
             <div>
               <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
@@ -3076,6 +3076,41 @@ async function handleLogout() {
         
         // Cerrar el modal
         closePartNumberModal();
+    }
+
+    // Función para manejar el cambio de número de parte en Registro Manual de Inventario
+    async function handlePartNumberChange() {
+        const partNumberInput = document.getElementById("inventory-part-number");
+        const descriptionInput = document.getElementById("description");
+        
+        if (!partNumberInput || !descriptionInput) return;
+        
+        const partNumber = partNumberInput.value.trim();
+        
+        if (partNumber === "") {
+            descriptionInput.value = "";
+            return;
+        }
+        
+        // Buscar la descripción del número de parte
+        try {
+            const { data, error } = await supabase
+                .from("numerosinventario")
+                .select("descripcion")
+                .eq("inventario_id", partNumber)
+                .limit(1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                descriptionInput.value = data[0].descripcion || "";
+            } else {
+                descriptionInput.value = "Descripción no encontrada";
+            }
+        } catch (error) {
+            console.error("Error al obtener la descripción del número de parte:", error);
+            descriptionInput.value = "Error al cargar descripción";
+        }
     }
 
     // Cerrar modal al hacer clic fuera de él
