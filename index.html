@@ -497,6 +497,7 @@
               </tr>
             </tbody>
           </table>
+          <div id="pagination-controls" class="mt-4 flex justify-center space-x-2"></div>
         </div>
       </div>
     </div>
@@ -1787,69 +1788,129 @@ function getStatusBadge(item) {
     }
 }
 
+function renderInventoryTable(data) {
+    const inventoryTableBody = document.getElementById('inventory-table-body');
+    if (!inventoryTableBody) return;
+
+    if (data.length === 0) {
+        inventoryTableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td>
+            </tr>
+        `;
+        return;
+    }
+
+    inventoryTableBody.innerHTML = data.map(item => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion_real || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${getStatusBadge(item)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <button onclick="recountInventoryItem(${item.id})" class="text-orange-600 hover:text-orange-900 mr-2" title="Reconteo">
+                    <i class="fas fa-book"></i>
+                </button>
+                <button onclick="editInventoryItem(${item.id})" class="text-blue-600 hover:text-blue-900 mr-2" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteInventoryItem(${item.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+function renderPaginationControls() {
+    const totalPages = Math.ceil(totalInventoryRecords / pageSize);
+    const container = document.getElementById('pagination-controls');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botón anterior
+    if (currentPage > 1) {
+        html += `<button onclick="loadInventoryData(${currentPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5 a la vez)
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadInventoryData(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentPage < totalPages) {
+        html += `<button onclick="loadInventoryData(${currentPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+
+
+
+  
+
 // Función para cargar registros detallados de inventario
-async function loadInventoryData() {
+let currentPage = 1;
+const pageSize = 50;
+let totalInventoryRecords = 0;
+
+async function loadInventoryData(page = 1) {
     try {
+        // Obtener el total de registros (solo una vez al inicio o cuando cambie el filtro)
+        if (totalInventoryRecords === 0) {
+            const { count, error: countError } = await supabase
+                .from('conteoinventario')
+                .select('*', { count: 'exact', head: true })
+                .eq('cantidad_contada', true);
+            if (countError) throw countError;
+            totalInventoryRecords = count || 0;
+        }
+
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
         const { data, error } = await supabase
             .from('conteoinventario')
             .select('*')
             .eq('cantidad_contada', true)
-            .order('fecha_actualizacion', { ascending: false });
-        
+            .order('fecha_actualizacion', { ascending: false })
+            .range(from, to);
+
         if (error) throw error;
-        
-        const inventoryTableBody = document.getElementById('inventory-table-body');
-        if (inventoryTableBody) {
-            if (data.length === 0) {
-                inventoryTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td>
-                    </tr>
-                `;
-            } else {
-                inventoryTableBody.innerHTML = data.map(item => `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleString()}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion_real || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            ${getStatusBadge(item)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <button onclick="recountInventoryItem(${item.id})" class="text-orange-600 hover:text-orange-900 mr-2" title="Reconteo">
-                                <i class="fas fa-book"></i>
-                            </button>
-                            <button onclick="editInventoryItem(${item.id})" class="text-blue-600 hover:text-blue-900 mr-2" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteInventoryItem(${item.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        }
-        
-        // Cargar también los resúmenes
+
+        currentPage = page;
+        renderInventoryTable(data);
+        renderPaginationControls();
         await loadRackSummary();
         await loadUserSummary();
-        
     } catch (error) {
         console.error('Error al cargar datos de inventario:', error);
-        const inventoryTableBody = document.getElementById('inventory-table-body');
-        if (inventoryTableBody) {
-            inventoryTableBody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td>
-                </tr>
-            `;
-        }
+        document.getElementById('inventory-table-body').innerHTML = `
+            <tr><td colspan="10" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td></tr>
+        `;
+        document.getElementById('pagination-controls').innerHTML = '';
     }
 }
 
