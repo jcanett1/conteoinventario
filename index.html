@@ -3078,16 +3078,16 @@ async function handleLogout() {
         closePartNumberModal();
     }
 
-   // Función para manejar el cambio de número de parte en Registro Manual de Inventario
+  // Función para manejar el cambio de número de parte en Registro Manual de Inventario
     async function handlePartNumberChange() {
         // IMPORTANTE: Esta función es para la pestaña "Conteo de Inventario"
-        // El input correcto es "inventory-part-number" y la descripción es "description-manual"
+        // El input correcto es "inventory-part-number" pero la descripción es "description"
         const partNumberInput = document.getElementById("inventory-part-number");
-        const descriptionInput = document.getElementById("description-manual");
+        const descriptionInput = document.getElementById("description");
         
         console.log("🔍 [Conteo Manual] handlePartNumberChange ejecutado");
         console.log("🔍 [Conteo Manual] partNumberInput:", partNumberInput);
-        console.log("🔍 [Conteo Manual] descriptionInput (description-manual):", descriptionInput);
+        console.log("🔍 [Conteo Manual] descriptionInput:", descriptionInput);
         
         if (!partNumberInput || !descriptionInput) {
             console.warn("⚠️ [Conteo Manual] No se encontraron los elementos necesarios");
@@ -3098,7 +3098,6 @@ async function handleLogout() {
         
         if (partNumber === "") {
             descriptionInput.value = "";
-            console.log("🔍 [Conteo Manual] Campo vacío, limpiando descripción");
             return;
         }
         
@@ -3116,7 +3115,7 @@ async function handleLogout() {
 
             if (data && data.length > 0) {
                 descriptionInput.value = data[0].descripcion || "";
-                console.log("✅ [Conteo Manual] Descripción cargada en description-manual:", data[0].descripcion);
+                console.log("✅ [Conteo Manual] Descripción cargada:", data[0].descripcion);
             } else {
                 descriptionInput.value = "Descripción no encontrada";
                 console.warn("⚠️ [Conteo Manual] No se encontró descripción");
@@ -3125,7 +3124,6 @@ async function handleLogout() {
             console.error("❌ [Conteo Manual] Error al obtener la descripción:", error);
             descriptionInput.value = "Error al cargar descripción";
         }
-    }
 
     // Cerrar modal al hacer clic fuera de él
     document.addEventListener("click", function(event) {
