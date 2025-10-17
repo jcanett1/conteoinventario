@@ -1091,33 +1091,42 @@ async function handleInventorySubmit(e) {
 async function handleInventoryNumbersSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    
+
+    // ✅ Validación: número de parte es obligatorio
+    const numeroParte = formData.get('numero_parte')?.trim();
+    if (!numeroParte) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Número de parte requerido',
+            text: 'Debe seleccionar un número de parte antes de registrar.'
+        });
+        return;
+    }
+
     try {
         const rack = formData.get('inventory-rack');
         const ubicacion = formData.get('inventory-location');
-        
-        // Determinar si es una variación
         const esVariacion = (rack === 'VARIACIONES' && ubicacion === 'VARIACIONES');
-        
+
         const { error } = await supabase
             .from('conteoinventario')
             .insert([{
                 rack: rack,
                 ubicacion: ubicacion,
                 ubicacion_real: ubicacion,
-                numero_parte: formData.get('inventory-part-number'),
+                numero_parte: numeroParte, // ✅ Ahora garantizamos que no sea null
                 descripcion: formData.get('inventory-description') || '',
                 usuario_asignado: formData.get('inventory-user'),
-                cantidad: parseInt(formData.get('inventory-quantity')),
+                cantidad: parseInt(formData.get('inventory-quantity')) || 0,
                 cantidad_contada: true,
                 es_asignacion: false,
                 es_reconteo: false,
                 variaciones: esVariacion,
                 fecha_actualizacion: new Date().toISOString()
             }]);
-        
+
         if (error) throw error;
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Número de inventario registrado',
@@ -1125,16 +1134,15 @@ async function handleInventoryNumbersSubmit(e) {
             timer: 2000,
             showConfirmButton: false
         });
-        
+
         e.target.reset();
         await loadInventoryData();
-        
     } catch (error) {
         console.error('Error al registrar número de inventario:', error);
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Error al registrar número de inventario: ' + error.message
+            text: 'Error al registrar número de inventario: ' + (error.message || 'Desconocido')
         });
     }
 }
