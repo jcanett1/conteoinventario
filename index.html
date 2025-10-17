@@ -3080,10 +3080,19 @@ async function handleLogout() {
 
     // Función para manejar el cambio de número de parte en Registro Manual de Inventario
     async function handlePartNumberChange() {
+        // IMPORTANTE: Esta función es para la pestaña "Conteo de Inventario"
+        // El input correcto es "inventory-part-number" pero la descripción es "description"
         const partNumberInput = document.getElementById("inventory-part-number");
         const descriptionInput = document.getElementById("description");
         
-        if (!partNumberInput || !descriptionInput) return;
+        console.log("🔍 [Conteo Manual] handlePartNumberChange ejecutado");
+        console.log("🔍 [Conteo Manual] partNumberInput:", partNumberInput);
+        console.log("🔍 [Conteo Manual] descriptionInput:", descriptionInput);
+        
+        if (!partNumberInput || !descriptionInput) {
+            console.warn("⚠️ [Conteo Manual] No se encontraron los elementos necesarios");
+            return;
+        }
         
         const partNumber = partNumberInput.value.trim();
         
@@ -3091,6 +3100,8 @@ async function handleLogout() {
             descriptionInput.value = "";
             return;
         }
+        
+        console.log("🔍 [Conteo Manual] Buscando descripción para:", partNumber);
         
         // Buscar la descripción del número de parte
         try {
@@ -3104,11 +3115,13 @@ async function handleLogout() {
 
             if (data && data.length > 0) {
                 descriptionInput.value = data[0].descripcion || "";
+                console.log("✅ [Conteo Manual] Descripción cargada:", data[0].descripcion);
             } else {
                 descriptionInput.value = "Descripción no encontrada";
+                console.warn("⚠️ [Conteo Manual] No se encontró descripción");
             }
         } catch (error) {
-            console.error("Error al obtener la descripción del número de parte:", error);
+            console.error("❌ [Conteo Manual] Error al obtener la descripción:", error);
             descriptionInput.value = "Error al cargar descripción";
         }
     }
