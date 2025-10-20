@@ -2816,10 +2816,23 @@ async function recountInventoryItem(id) {
         return;
     }
 
+   // Validar que la ubicación real no esté vacía
+if (!realLocation) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Ubicación real requerida',
+        text: 'Por favor ingresa la ubicación real antes de registrar.',
+        timer: 3000,
+        showConfirmButton: false
+    });
+    realLocationInput.focus();
+    return;
+}
+
     // Mostrar alerta de confirmación antes de registrar
     const result = await Swal.fire({
         title: '¿Confirmar registro?',
-        html: `¿Estás seguro que deseas registrar la cantidad ${quantity}?${realLocation ? '<br><strong>Ubicación Real:</strong> ' + realLocation : ''}`,
+        html: `¿Estás seguro que deseas registrar la cantidad <strong>${quantity}</strong>?<br><strong>Ubicación Real:</strong> ${realLocation || 'No especificada'}`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#0a192f',
@@ -2980,11 +2993,11 @@ function renderAssignmentsTable() {
                        class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <select id="real-location-${item.id}" 
-                        class="w-40 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Seleccionar ubicación</option>
-                </select>
-            </td>
+    <input type="text"
+           id="real-location-${item.id}"
+           placeholder="Ubicación real"
+           class="w-40 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+</td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <button onclick="registerQuantity(${item.id})" 
                         class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
