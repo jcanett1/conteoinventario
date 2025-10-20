@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -596,6 +597,35 @@
           </div>
         </form>
       </div>
+      
+      <!-- Tabla de registros -->
+      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
+        <div class="mb-4">
+          <input type="text" id="search-filter-inventory-numbers" placeholder="Buscar por rack, ubicación, número de parte o usuario..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 table-hover">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación Real</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-numbers-table-body" class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Cargando registros...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="pagination-controls-inventory-numbers" class="mt-4 flex justify-center space-x-2"></div>
+      </div>
     </div>
 
     <!-- Tab 5: Carga Masiva -->
@@ -786,6 +816,11 @@ function setupTabs() {
                 
                 // Activar pestaña seleccionada
                 tabButton.classList.add('text-navy', 'border-b-2', 'border-navy');
+                
+                // Cargar datos específicos de la pestaña
+                if (tabId === 'tab-inventory-numbers') {
+                    loadInventoryNumbersData();
+                }
             });
         }
     });
@@ -820,6 +855,7 @@ async function loadInitialData() {
     
     await loadInventoryData();
     await loadInventoryNumbers();
+    await loadInventoryNumbersData(); // Cargar tabla de Registro
     await loadRacksFromDatabase(); // Cargar racks para inventory-rack
     setCurrentUserInInventoryForm(); // Autoseleccionar usuario en formulario de números de inventario
     
@@ -1084,6 +1120,7 @@ async function handleInventorySubmit(e) {
         });
         
         e.target.reset();
+        totalInventoryRecords = 0; // Forzar recálculo del total
         await loadInventoryData();
         
     } catch (error) {
@@ -1144,7 +1181,9 @@ async function handleInventoryNumbersSubmit(e) {
         });
 
         e.target.reset();
+        totalInventoryRecords = 0; // Forzar recálculo del total
         await loadInventoryData();
+        await loadInventoryNumbersData(); // Recargar tabla de Registro
     } catch (error) {
         console.error('Error al registrar número de inventario:', error);
         Swal.fire({
@@ -1335,6 +1374,7 @@ async function handleBulkUpload(file) {
 
             // Recargar datos
             await loadAssignments();
+            totalInventoryRecords = 0; // Forzar recálculo del total
             await loadInventoryData();
         }
 
@@ -2635,6 +2675,7 @@ async function editInventoryItem(id) {
                 showConfirmButton: false
             });
             
+            totalInventoryRecords = 0; // Forzar recálculo del total
             await loadInventoryData();
         }
         
@@ -2677,6 +2718,7 @@ async function deleteInventoryItem(id) {
                 showConfirmButton: false
             });
             
+            totalInventoryRecords = 0; // Forzar recálculo del total
             await loadInventoryData();
             
         } catch (error) {
@@ -2785,6 +2827,7 @@ async function recountInventoryItem(id) {
             });
             
             // Recargar ambas tablas
+            totalInventoryRecords = 0; // Forzar recálculo del total
             await loadInventoryData(); // Recargar registros de inventario
             await loadAssignments(); // Recargar asignaciones pendientes
         }
@@ -2870,6 +2913,7 @@ async function registerQuantity(assignmentId) {
         renderAssignmentsPagination();
 
         // Recargar datos de inventario
+        totalInventoryRecords = 0; // Forzar recálculo del total
         await loadInventoryData();
 
     } catch (error) {
@@ -3226,6 +3270,146 @@ async function handleLogout() {
         descriptionInput.value = "Error al cargar descripción";
     }
 }
+
+// ============================================
+// FUNCIONES PARA LA PESTAÑA DE REGISTRO
+// ============================================
+
+let currentInventoryNumbersPage = 1;
+const inventoryNumbersPageSize = 50;
+let totalInventoryNumbersRecords = 0;
+let allInventoryNumbersData = []; // Para filtrado local
+
+async function loadInventoryNumbersData(page = 1) {
+    try {
+        // Obtener el total de registros
+        const { count, error: countError } = await supabase
+            .from('conteoinventario')
+            .select('*', { count: 'exact', head: true })
+            .eq('es_asignacion', false);
+        
+        if (countError) throw countError;
+        totalInventoryNumbersRecords = count || 0;
+
+        const from = (page - 1) * inventoryNumbersPageSize;
+        const to = from + inventoryNumbersPageSize - 1;
+
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('es_asignacion', false)
+            .order('fecha_actualizacion', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        currentInventoryNumbersPage = page;
+        allInventoryNumbersData = data || [];
+        renderInventoryNumbersTable(data);
+        renderInventoryNumbersPagination();
+    } catch (error) {
+        console.error('Error al cargar datos de registro:', error);
+        document.getElementById('inventory-numbers-table-body').innerHTML = `
+            <tr><td colspan="7" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td></tr>
+        `;
+        document.getElementById('pagination-controls-inventory-numbers').innerHTML = '';
+    }
+}
+
+function renderInventoryNumbersTable(data) {
+    const tbody = document.getElementById('inventory-numbers-table-body');
+    if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = data.map(item => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion_real || item.ubicacion || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte || '-'}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${item.descripcion || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.fecha_actualizacion ? new Date(item.fecha_actualizacion).toLocaleString('es-MX') : '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderInventoryNumbersPagination() {
+    const totalPages = Math.ceil(totalInventoryNumbersRecords / inventoryNumbersPageSize);
+    const container = document.getElementById('pagination-controls-inventory-numbers');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botón anterior
+    if (currentInventoryNumbersPage > 1) {
+        html += `<button onclick="loadInventoryNumbersData(${currentInventoryNumbersPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5)
+    let startPage = Math.max(1, currentInventoryNumbersPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentInventoryNumbersPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadInventoryNumbersData(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentInventoryNumbersPage < totalPages) {
+        html += `<button onclick="loadInventoryNumbersData(${currentInventoryNumbersPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// Filtro de búsqueda para la tabla de Registro
+function filterInventoryNumbersTable() {
+    const searchInput = document.getElementById('search-filter-inventory-numbers');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderInventoryNumbersTable(allInventoryNumbersData);
+        return;
+    }
+    
+    const filteredData = allInventoryNumbersData.filter(item => {
+        return (
+            (item.rack && item.rack.toLowerCase().includes(searchTerm)) ||
+            (item.ubicacion_real && item.ubicacion_real.toLowerCase().includes(searchTerm)) ||
+            (item.ubicacion && item.ubicacion.toLowerCase().includes(searchTerm)) ||
+            (item.numero_parte && item.numero_parte.toLowerCase().includes(searchTerm)) ||
+            (item.usuario_asignado && item.usuario_asignado.toLowerCase().includes(searchTerm))
+        );
+    });
+    
+    renderInventoryNumbersTable(filteredData);
+}
+
+// Event listener para el filtro de búsqueda
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-filter-inventory-numbers');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterInventoryNumbersTable);
+    }
+});
 
     // Cerrar modal al hacer clic fuera de él
     document.addEventListener("click", function(event) {
