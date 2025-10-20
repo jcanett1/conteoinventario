@@ -2948,9 +2948,9 @@ function renderAssignmentsTable() {
     if (!assignmentsTable) return;
     
     if (assignmentsData.length === 0) {
-        assignmentsTable.innerHTML = `
-            <tr>
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes</td>
+    assignmentsTable.innerHTML = `
+        <tr>
+            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes</td>
             </tr>
         `;
         return;
