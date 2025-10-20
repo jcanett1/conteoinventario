@@ -2797,12 +2797,11 @@ async function recountInventoryItem(id) {
     }
 }
 
- async function registerQuantity(assignmentId) {
+async function registerQuantity(assignmentId) {
     const quantityInput = document.getElementById(`quantity-${assignmentId}`);
-
     const quantity = parseInt(quantityInput.value);
-   
-    // Validar que se haya ingresado una cantidad válida (permitir 0)
+
+    // Validar cantidad
     if (quantityInput.value === '' || quantity < 0) {
         Swal.fire({
             icon: 'warning',
@@ -2815,20 +2814,7 @@ async function recountInventoryItem(id) {
         return;
     }
 
-   // Validar que la ubicación real no esté vacía
-if (!realLocation) {
-    Swal.fire({
-        icon: 'warning',
-        title: 'Ubicación real requerida',
-        text: 'Por favor ingresa la ubicación real antes de registrar.',
-        timer: 3000,
-        showConfirmButton: false
-    });
-    realLocationInput.focus();
-    return;
-}
-
-    // Mostrar alerta de confirmación antes de registrar
+    // Mostrar alerta de confirmación (sin ubicación real)
     const result = await Swal.fire({
         title: '¿Confirmar registro?',
         html: `¿Estás seguro que deseas registrar la cantidad <strong>${quantity}</strong>?`,
@@ -2841,25 +2827,20 @@ if (!realLocation) {
         reverseButtons: true
     });
 
-    // Si el usuario cancela, no continuar con el registro
+    // Si el usuario cancela, no continuar
     if (!result.isConfirmed) {
         return;
     }
 
     try {
-        // Preparar datos para actualizar
+        // Preparar datos para actualizar (sin ubicación real)
         const updateData = {
             cantidad: quantity,
             cantidad_contada: true,
             fecha_actualizacion: new Date().toISOString()
         };
 
-        // Agregar ubicación real si se proporcionó
-        if (realLocation) {
-            updateData.ubicacion_real = realLocation;
-        }
-
-        // Actualizar el registro para marcarlo como contado
+        // Actualizar el registro
         const { error } = await supabase
             .from('conteoinventario')
             .update(updateData)
@@ -2876,17 +2857,17 @@ if (!realLocation) {
             showConfirmButton: false
         });
 
-        // Remover la fila de la tabla de asignaciones
+        // Remover la fila de la tabla
         const row = document.getElementById(`assignment-row-${assignmentId}`);
         if (row) {
             row.remove();
         }
 
-        // **No recargar todas las asignaciones, solo actualizar el contador si es necesario**
-        totalAssignmentsRecords--; // Reducir el contador global de registros
-        renderAssignmentsPagination(); // Solo actualizar la paginación
+        // Actualizar paginación
+        totalAssignmentsRecords--;
+        renderAssignmentsPagination();
 
-        // Recargar solo los datos de inventario (opcional, si es necesario)
+        // Recargar datos de inventario
         await loadInventoryData();
 
     } catch (error) {
