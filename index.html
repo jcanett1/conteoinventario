@@ -3184,12 +3184,11 @@ async function handleLogout() {
         }
     }
 
-    // Función para seleccionar un número de parte
    async function selectPartNumber(partNumber) {
     console.log("Número de parte seleccionado:", partNumber);
 
-    // Solo afecta al input de "Registro de Números de Inventario"
-    const partNumberInput = document.getElementById("inventory-numbers-part-number");
+    // Actualiza el ID del campo de número de parte
+    const partNumberInput = document.getElementById("inventory-part-number");
     if (partNumberInput) {
         partNumberInput.value = partNumber;
     }
