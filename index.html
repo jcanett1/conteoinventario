@@ -523,20 +523,18 @@
           <div id="assignments-pagination-controls" class="mt-4 flex justify-center space-x-2"></div>
           <table class="min-w-full divide-y divide-gray-200 table-hover">
             <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('rack')">
-                  Rack <i id="sort-icon-rack" class="fas fa-sort ml-1"></i>
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('ubicacion')">
-                  Ubicación Teórica <i id="sort-icon-ubicacion" class="fas fa-sort ml-1"></i>
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-              </tr>
+             <tr>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('rack')">
+        Rack <i id="sort-icon-rack" class="fas fa-sort ml-1"></i>
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('ubicacion')">
+        Ubicación Teórica <i id="sort-icon-ubicacion" class="fas fa-sort ml-1"></i>
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+</tr>
             </thead>
             <tbody id="assignments-table" class="bg-white divide-y divide-gray-200"></tbody>
           </table>
@@ -2957,29 +2955,28 @@ function renderAssignmentsTable() {
         return;
     }
     
-    assignmentsTable.innerHTML = assignmentsData.map(item => `
-        <tr id="assignment-row-${item.id}">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <input type="number" 
-                       id="quantity-${item.id}" 
-                       min="0" 
-                       step="1" 
-                       placeholder="Cantidad"
-                       class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <button onclick="registerQuantity(${item.id})" 
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
-                    Registrar
-                </button>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleDateString()}</td>
-        </tr>
-    `).join('');
+   assignmentsTable.innerHTML = assignmentsData.map(item => `
+    <tr id="assignment-row-${item.id}">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 w-1/6">${item.rack}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 w-1/6">${item.ubicacion}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 w-1/6">${item.numero_parte}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 w-1/6">${item.descripcion || 'N/A'}</td>
+        <td class="px-6 py-4 whitespace-nowrap w-1/6">
+            <input type="number"
+                   id="quantity-${item.id}"
+                   min="0"
+                   step="1"
+                   placeholder="Cantidad"
+                   class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap w-1/6">
+            <button onclick="registerQuantity(${item.id})"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all">
+                Registrar
+            </button>
+        </td>
+    </tr>
+`).join('');
     
     // Cargar las ubicaciones en los selectores después de que el DOM se actualice
     setTimeout(async () => {
