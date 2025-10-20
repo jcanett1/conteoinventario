@@ -837,26 +837,31 @@ function setupTabs() {
 
 // Cargar datos iniciales
 async function loadInitialData() {
-    console.log('🔄 [DEBUG] Iniciando carga de datos iniciales...');
-    console.log('🔄 [DEBUG] currentUser al inicio:', currentUser);
-    console.log('🔄 [DEBUG] isAdmin al inicio:', isAdmin);
+console.log('🔄 [DEBUG] Iniciando carga de datos iniciales...');
+console.log('🔄 [DEBUG] currentUser al inicio:', currentUser);
+console.log('🔄 [DEBUG] isAdmin al inicio:', isAdmin);
 
-    await loadUserData();
-    await loadPartNumbers('part-number-list-assignment');
-    await loadPartNumbers('part-number-list');
-    await loadPartNumbers('part-number-list-inventory-numbers');
-    await loadAllRacks();
-    await loadRacksFromDatabase();
+await loadUserData();
+await loadPartNumbers('part-number-list-assignment');
+await loadPartNumbers('part-number-list');
+await loadPartNumbers('part-number-list-inventory-numbers');
+await loadAllRacks();
 
-    console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
-    console.log('🔄 [DEBUG] Antes de loadAssignments - isAdmin:', isAdmin);
-    currentAssignmentsPage = 1;
-    totalAssignmentsRecords = 0;
-    await loadAssignments(1);
+console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
+console.log('🔄 [DEBUG] Antes de loadAssignments - isAdmin:', isAdmin);
+currentAssignmentsPage = 1;
+totalAssignmentsRecords = 0;
+await loadAssignments(1);
 
-    setCurrentUserInInventoryForm();
-    console.log('✅ [DEBUG] Carga de datos iniciales completada');
+await loadInventoryData();
+await loadInventoryNumbers();
+await loadInventoryNumbersData(); // Cargar tabla de Registro
+await loadRacksFromDatabase(); // Cargar racks para inventory-rack
+setCurrentUserInInventoryForm(); // Autoseleccionar usuario en formulario de números de inventario
+
+console.log('✅ [DEBUG] Carga de datos iniciales completada');
 }
+
 
 // Configurar event listeners
 function setupEventListeners() {
