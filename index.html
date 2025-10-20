@@ -1578,7 +1578,47 @@ async function loadAssignments(page = 1) {
     }
 }
 
+// Función para cargar ubicaciones reales en los selectores
+async function loadRealLocationsForSelects() {
+    try {
+        console.log('📍 [DEBUG] Cargando ubicaciones reales...');
+        
+        // Obtener TODAS las ubicaciones sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('location')
+                .range(from, from + pageSize - 1)
+                .order('location');
+            
+            if (error) {
+                console.error('❌ Error al consultar numerosinventario:', error);
+                throw error;
+            }
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                console.log(`📄 [DEBUG] Página cargada: ${data.length} registros (total acumulado: ${allData.length})`);
+                
+                // Si obtuvimos menos registros que el tamaño de página, ya no hay más
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    from += pageSize;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
 
+
+
+  
         console.log('📊 [DEBUG] Total de registros obtenidos de numerosinventario:', allData.length);
         const data = allData;
         
