@@ -2797,93 +2797,96 @@ async function recountInventoryItem(id) {
     }
 }
 
- // Función para registrar cantidad desde Vista de Asignaciones - MODIFICADA CON ALERTA DE CONFIRMACIÓN
-    async function registerQuantity(assignmentId) {
-        const quantityInput = document.getElementById(`quantity-${assignmentId}`);
-        const realLocationInput = document.getElementById(`real-location-${assignmentId}`);
-        const quantity = parseInt(quantityInput.value);
-        const realLocation = realLocationInput.value.trim();
-        
-        // Validar que se haya ingresado una cantidad válida (permitir 0)
-        if (quantityInput.value === '' || quantity < 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Cantidad requerida',
-                text: 'Por favor ingresa una cantidad válida (0 o mayor)',
-                timer: 3000,
-                showConfirmButton: false
-            });
-            quantityInput.focus();
-            return;
-        }
-        
-        // NUEVA FUNCIONALIDAD: Mostrar alerta de confirmación antes de registrar
-        const result = await Swal.fire({
-            title: '¿Confirmar registro?',
-            html: `¿Estás seguro que deseas registrar la cantidad ${quantity}?${realLocation ? '<br><strong>Ubicación Real:</strong> ' + realLocation : ''}`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#0a192f',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sí, registrar',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true
+ async function registerQuantity(assignmentId) {
+    const quantityInput = document.getElementById(`quantity-${assignmentId}`);
+    const realLocationInput = document.getElementById(`real-location-${assignmentId}`);
+    const quantity = parseInt(quantityInput.value);
+    const realLocation = realLocationInput.value.trim();
+
+    // Validar que se haya ingresado una cantidad válida (permitir 0)
+    if (quantityInput.value === '' || quantity < 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cantidad requerida',
+            text: 'Por favor ingresa una cantidad válida (0 o mayor)',
+            timer: 3000,
+            showConfirmButton: false
         });
-        
-        // Si el usuario cancela, no continuar con el registro
-        if (!result.isConfirmed) {
-            return;
-        }
-        
-        try {
-            // Preparar datos para actualizar
-            const updateData = {
-                cantidad: quantity,
-                cantidad_contada: true,
-                fecha_actualizacion: new Date().toISOString()
-            };
-            
-            // Agregar ubicación real si se proporcionó
-            if (realLocation) {
-                updateData.ubicacion_real = realLocation;
-            }
-            
-            // Actualizar el registro para marcarlo como contado
-            const { error } = await supabase
-                .from('conteoinventario')
-                .update(updateData)
-                .eq('id', assignmentId);
-            
-            if (error) throw error;
-            
-            // Mostrar mensaje de éxito
-            Swal.fire({
-                icon: 'success',
-                title: 'Cantidad registrada',
-                text: `Se registró la cantidad ${quantity} correctamente`,
-                timer: 2000,
-                showConfirmButton: false
-            });
-            
-            // Remover la fila de la tabla de asignaciones
-            const row = document.getElementById(`assignment-row-${assignmentId}`);
-            if (row) {
-                row.remove();
-            }
-            
-            // Recargar las tablas para reflejar los cambios
-            await loadAssignments(); // Recargar asignaciones pendientes
-            await loadInventoryData(); // Recargar registros de inventario
-            
-        } catch (error) {
-            console.error('Error al registrar cantidad:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo registrar la cantidad: ' + error.message
-            });
-        }
+        quantityInput.focus();
+        return;
     }
+
+    // Mostrar alerta de confirmación antes de registrar
+    const result = await Swal.fire({
+        title: '¿Confirmar registro?',
+        html: `¿Estás seguro que deseas registrar la cantidad ${quantity}?${realLocation ? '<br><strong>Ubicación Real:</strong> ' + realLocation : ''}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0a192f',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    });
+
+    // Si el usuario cancela, no continuar con el registro
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        // Preparar datos para actualizar
+        const updateData = {
+            cantidad: quantity,
+            cantidad_contada: true,
+            fecha_actualizacion: new Date().toISOString()
+        };
+
+        // Agregar ubicación real si se proporcionó
+        if (realLocation) {
+            updateData.ubicacion_real = realLocation;
+        }
+
+        // Actualizar el registro para marcarlo como contado
+        const { error } = await supabase
+            .from('conteoinventario')
+            .update(updateData)
+            .eq('id', assignmentId);
+
+        if (error) throw error;
+
+        // Mostrar mensaje de éxito
+        Swal.fire({
+            icon: 'success',
+            title: 'Cantidad registrada',
+            text: `Se registró la cantidad ${quantity} correctamente`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        // Remover la fila de la tabla de asignaciones
+        const row = document.getElementById(`assignment-row-${assignmentId}`);
+        if (row) {
+            row.remove();
+        }
+
+        // **No recargar todas las asignaciones, solo actualizar el contador si es necesario**
+        totalAssignmentsRecords--; // Reducir el contador global de registros
+        renderAssignmentsPagination(); // Solo actualizar la paginación
+
+        // Recargar solo los datos de inventario (opcional, si es necesario)
+        await loadInventoryData();
+
+    } catch (error) {
+        console.error('Error al registrar cantidad:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo registrar la cantidad: ' + error.message
+        });
+    }
+}
+
 // Variables para controlar el ordenamiento
 let currentSortColumn = null;
 let currentSortDirection = 'asc'; // 'asc' o 'desc'
