@@ -227,7 +227,7 @@
       <i class="fas fa-tasks"></i> Vista de Asignaciones
     </button>
     <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
-      <i class="fas fa-list"></i> Registro
+      <i class="fas fa-list"></i> Añadir
     </button>
     <button id="tab-bulk-upload" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
       <i class="fas fa-file-upload"></i> Carga Masiva
@@ -599,35 +599,6 @@
         </form>
       </div>
       
-      <!-- Tabla de registros -->
-      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
-        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
-        <div class="mb-4">
-          <input type="text" id="search-filter-inventory-numbers" placeholder="Buscar por rack, ubicación, número de parte o usuario..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 table-hover">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación Real</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="inventory-numbers-table-body" class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Cargando registros...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div id="pagination-controls-inventory-numbers" class="mt-4 flex justify-center space-x-2"></div>
-      </div>
-    </div>
 
     <!-- Tab 5: Carga Masiva -->
     <div id="content-bulk-upload" class="hidden">
