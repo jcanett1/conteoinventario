@@ -568,11 +568,15 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="inventory-location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación Real</label>
-              <select id="inventory-location" name="inventory-location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Seleccione ubicación</option>
-              </select>
-            </div>
+    <label for="inventory-location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación Real</label>
+    <input type="text"
+           id="inventory-location"
+           name="inventory-location"
+           required
+           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+           placeholder="Ingresa la ubicación real">
+    <p class="text-xs text-gray-500 mt-1">(Si la ubicación no existe en el rack seleccionado, agrégala manualmente)</p>
+</div>
       
           </div>
          
@@ -2020,18 +2024,13 @@ async function handleRackChange() {
 
 async function handleInventoryRackChange() {
     const rackSelect = document.getElementById('inventory-rack');
-    const locationSelect = document.getElementById('inventory-location');
-    
-    if (!rackSelect || !locationSelect) return;
-    
+    const locationInput = document.getElementById('inventory-location');
+
+    if (!rackSelect || !locationInput) return;
+
     const selectedRack = rackSelect.value;
-    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
-    
     if (selectedRack === 'VARIACIONES') {
-        // Si el rack es VARIACIONES, agregar solo la opción VARIACIONES en ubicación
-        locationSelect.innerHTML += '<option value="VARIACIONES">VARIACIONES</option>';
-    } else if (selectedRack) {
-        await loadLocationsForRack(selectedRack, 'inventory-location');
+        locationInput.value = 'VARIACIONES';
     }
 }
 
