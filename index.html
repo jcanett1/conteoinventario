@@ -645,36 +645,12 @@ const supabaseUrl = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
 
 // Variable global para Supabase - será inicializada después
-let supabaseClient = null;
+//let supabaseClient = null;
 
-// Función para inicializar Supabase de forma segura
-async function initSupabaseClient() {
-    return new Promise((resolve) => {
-        const maxRetries = 50;
-        let retries = 0;
- 
-        const tryInit = () => {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                try {
-                    supabaseClient = window.supabase.createClient(
-                        supabaseUrl,
-                        supabaseKey
-                    );
-                    resolve(true);
-                } catch (error) {
-                    resolve(false);
-                }
-            } else if (retries < maxRetries) {
-                retries++;
-                setTimeout(tryInit, 100);
-            } else {
-                resolve(false);
-            }
-        };
- 
-        tryInit();
-    });
-}
+const supabaseClient = window.supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+);
 
 // Variables globales
 let currentUser = null;
