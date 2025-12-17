@@ -683,18 +683,34 @@
         const supabaseUrl = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
 
-      // ✅ Inicializar cliente de Supabase de forma segura
-if (typeof supabase === 'undefined') {
-    if (!window.supabaseClient) {
-        window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true
-            }
-        });
+       // ✅ Esperar a que Supabase esté disponible antes de usarlo
+    let supabase;
+    
+    function initSupabase() {
+        if (!window.supabase) {
+            console.error('❌ Supabase no está disponible');
+            setTimeout(initSupabase, 100); // Reintentar en 100ms
+            return;
+        }
+        
+        if (!window.supabaseClient) {
+            window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true
+                }
+            });
+        }
+        supabase = window.supabaseClient;
+        console.log('✅ Supabase inicializado correctamente');
     }
-    var supabase = window.supabaseClient;
-}
+    
+    // Inicializar Supabase cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSupabase);
+    } else {
+        initSupabase();
+    }
 
        // Verificar si ya hay una sesión activa al cargar la página
     document.addEventListener('DOMContentLoaded', async function() {
