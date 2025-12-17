@@ -1,1189 +1,3452 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Conteo de Inventario</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 100%;
-            max-width: 900px;
-            min-height: 600px;
-            display: flex;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .login-left {
-            flex: 1;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-left::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            animation: float 20s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(30px, -30px) rotate(120deg); }
-            66% { transform: translate(-20px, 20px) rotate(240deg); }
-        }
-
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .welcome-text {
-            position: relative;
-            z-index: 1;
-        }
-
-        .welcome-text h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            font-weight: 700;
-        }
-
-        .welcome-text p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-
-        .login-right {
-            flex: 1;
-            padding: 60px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .form-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .form-header h2 {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .form-header p {
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .form-tabs {
-            display: flex;
-            margin-bottom: 30px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 5px;
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            background: transparent;
-            color: #666;
-            font-size: 1rem;
-            font-weight: 500;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tab-button.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-container {
-            position: relative;
-        }
-
-        .form-panel {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .form-panel.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group.has-icon {
-            position: relative;
-        }
-
-        .form-group.has-icon i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .form-group.has-icon i:hover {
-            color: #667eea;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .loading {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .loading.show {
-            display: flex;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-            display: none;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .forgot-password {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .forgot-password a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-password a:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-        .role-info {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            color: #1565c0;
-        }
-
-        .role-info i {
-            margin-right: 8px;
-        }
-
-        .test-data {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .test-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .btn-test {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-test:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .login-container {
-                flex-direction: column;
-                max-width: 400px;
-                min-height: auto;
-            }
-
-            .login-left {
-                padding: 40px 30px;
-                min-height: 200px;
-            }
-
-            .welcome-text h1 {
-                font-size: 2rem;
-            }
-
-            .logo {
-                font-size: 2rem;
-            }
-
-            .login-right {
-                padding: 40px 30px;
-            }
-
-            .form-header h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        .password-strength {
-            margin-top: 5px;
-            font-size: 0.8rem;
-        }
-
-        .strength-bar {
-            height: 4px;
-            background: #e1e5e9;
-            border-radius: 2px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .strength-fill {
-            height: 100%;
-            transition: all 0.3s ease;
-            border-radius: 2px;
-        }
-
-        .strength-weak { background: #dc3545; width: 25%; }
-        .strength-fair { background: #ffc107; width: 50%; }
-        .strength-good { background: #28a745; width: 75%; }
-        .strength-strong { background: #007bff; width: 100%; }
-
-        .forgot-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .forgot-modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            animation: modalSlideIn 0.3s ease-out;
-            position: relative;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #999;
-        }
-
-          /* Ocultar elementos exclusivos del administrador por defecto */
-        .admin-only {
-            display: none !important; /* !important para sobrescribir otros estilos */
-        }
-
-        /* Mostrar elementos exclusivos del administrador cuando el usuario es admin */
-        .is-admin .admin-only {
-            display: block !important; /* Mostrar como bloque por defecto */
-        }
-         .is-admin .admin-only.form-panel {
-            display: none !important; /* Mantener oculto inicialmente si es un panel */
-        }
-         .is-admin .admin-only.form-panel.active {
-            display: block !important; /* Mostrar solo si está activo */
-        }
-        .is-admin .admin-only.tab-button {
-             display: flex !important; /* Mantener el display flex para los tabs */
-        }
-        .is-admin .form-header p { /* Actualizar el texto del encabezado si es admin */
-             color: #28a745; /* Verde para indicar acceso ampliado */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Conteo de Inventario PXG</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style id="app-style">
+    /* ============================================ */
+    /* ESTILOS MEJORADOS PARA GRID DE NÚMEROS DE PARTE */
+    /* ============================================ */
+    
+    /* Estilos para cada item del grid */
+    .part-number-grid-item {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1.5px solid #e5e7eb;
+      background: white;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      min-height: 42px;
+    }
+    
+    .part-number-grid-item:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: #667eea;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.4);
+      z-index: 10;
+    }
+    
+    .part-number-grid-item:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 5px 15px -3px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Efecto de brillo al pasar el mouse */
+    .part-number-grid-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+    
+    .part-number-grid-item:hover::before {
+      left: 100%;
+    }
+    
+    /* Grid responsive con múltiples columnas */
+    .part-number-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    
+    /* Pantallas pequeñas (sm: 640px+) - 3 columnas */
+    @media (min-width: 640px) {
+      .part-number-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    
+    /* Tablets (md: 768px+) - 4 columnas */
+    @media (min-width: 768px) {
+      .part-number-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+    
+    /* Laptops (lg: 1024px+) - 6 columnas */
+    @media (min-width: 1024px) {
+      .part-number-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+    }
+    
+    /* Pantallas grandes (xl: 1280px+) - 8 columnas */
+    @media (min-width: 1280px) {
+      .part-number-grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+      }
+    }
+    
+    /* Pantallas extra grandes (2xl: 1536px+) - 10 columnas */
+    @media (min-width: 1536px) {
+      .part-number-grid {
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+      }
+    }
+    
+    /* Scroll suave */
+    .smooth-scroll {
+      scroll-behavior: smooth;
+    }
+    
+    /* Barra de scroll personalizada */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      border: 2px solid #f1f5f9;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #5568d3 0%, #653a8b 100%);
+    }
+    
+    /* Animación de carga */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .part-number-grid-item {
+      animation: fadeIn 0.3s ease-out;
+    }
+/* Ocultar elementos exclusivos del administrador por defecto */
+.admin-only {
+    display: none !important;
+}
+
+/* Mostrar elementos exclusivos del administrador si el usuario es admin */
+.is-admin .admin-only {
+    display: block !important;
+}
+    
+    .bg-navy {
+      background-color: #0a192f;
+    }
+    .text-navy {
+      color: #0a192f;
+    }
+    .border-navy {
+      border-color: #0a192f;
+    }
+    .hover-bg-navy:hover {
+      background-color: #0a192f;
+      color: white;
+    }
+    .transition-all {
+      transition: all 0.3s ease;
+    }
+    .custom-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .table-hover tr:hover {
+      background-color: #f9fafb;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .loader {
+      border-top-color: #0a192f;
+      animation: spinner 1.5s linear infinite;
+    }
+    @keyframes spinner {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    .cursor-pointer {
+      cursor: pointer;
+    }
+    th.cursor-pointer:hover {
+      background-color: #e5e7eb !important;
+    }
+  </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-left">
-            <div class="logo">
-                <i class="fas fa-boxes"></i>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-navy shadow-md">
+    <div class="container mx-auto px-4 py-5">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-warehouse text-white text-3xl mr-3"></i>
+          <h1 class="text-2xl font-bold text-white">Sistema de Conteo de Inventario PXG</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div id="user-info" class="text-white text-sm">
+            <span id="user-name" class="font-medium"></span>
+            <span id="user-role" class="text-gray-300 ml-2"></span>
+          </div>
+          <button id="logout-btn" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded-md text-sm transition-all">
+            <i class="fas fa-sign-out-alt mr-1"></i>Cerrar Sesión
+          </button>
+         
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab navigation -->
+  <div class="flex border-b border-gray-200">
+    <button id="tab-admin" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+      <i class="fas fa-cog"></i> Administración
+    </button>
+    <button id="tab-inventory" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+      <i class="fas fa-boxes"></i> Conteo de Inventario
+    </button>
+    <button id="tab-view" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
+      <i class="fas fa-tasks"></i> Vista de Asignaciones
+    </button>
+    <button id="tab-inventory-numbers" class="px-4 py-2 text-gray-500 font-medium hover:text-navy">
+      <i class="fas fa-list"></i> Añadir
+    </button>
+    <button id="tab-bulk-upload" class="px-4 py-2 text-gray-500 font-medium hover:text-navy admin-only">
+      <i class="fas fa-file-upload"></i> Carga Masiva
+    </button>
+  </div>
+
+  <!-- Modal de Selección de Números de Parte -->
+    <div id="part-number-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Seleccionar Número de Parte</h3>
+                <button onclick="closePartNumberModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
-            <div class="welcome-text">
-                <h1>Bienvenido</h1>
-                <p>Sistema de Captura de Inventario. Accede a tu cuenta para ingresar los datos de inventario del almacen y generar reportes.</p>
+            <div class="mt-4">
+                <input type="text" id="part-number-search" onkeyup="filterPartNumbers()" placeholder="Buscar número de parte..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                <p class="text-sm text-gray-600 mb-3"><span id="part-number-count">0</span> números de parte encontrados</p>
+                <div id="part-number-grid-container" class="grid part-number-grid gap-3 max-h-96 overflow-y-auto custom-scrollbar p-2 border border-gray-200 rounded-md">
+                    <!-- Los números de parte se cargarán aquí -->
+                </div>
+            </div>
+            <div class="mt-5 text-right">
+                <button onclick="closePartNumberModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
             </div>
         </div>
-
-        <div class="login-right">
-            <div class="form-header">
-                <h2>Acceso al Sistema</h2>
-                <p>Inicia sesión o crea una nueva cuenta</p>
+    </div>
+    <!-- Main Content -->
+  <main class="container mx-auto px-4 py-6">
+    <!-- Tab 1: Administración -->
+    <div id="content-admin" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Left Column - User Assignment Form -->
+        <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Asignación de Usuario para Conteo</h2>
+          <form id="assignment-form" class="space-y-4">
+            <div>
+              <label for="user-assignment" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+              <input type="text" id="user-assignment" name="user-assignment" list="user-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese usuario">
+               <datalist id="user-list"> </datalist>
             </div>
-
-            <div class="form-tabs">
-                <button class="tab-button active" onclick="switchTab('login')">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                </button>
-                <!-- Panel de Registro - Solo visible para Admin -->
-<button class="tab-button admin-only" id="register-tab-button" onclick="switchTab('register')">
-    <i class="fas fa-user-plus"></i> Registrarse
-</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="rack-assignment" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+                <select id="rack-assignment" name="rack-assignment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccione un Rack</option>
+                </select>
+              </div>
+              <div>
+                <label for="location-assignment" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                <select id="location-assignment" name="location-assignment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccione ubicación</option>
+                </select>
+              </div>
             </div>
+            <div>
+              <label for="part-number-assignment" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+              <input type="text" id="part-number-assignment" name="part-number-assignment" list="part-number-list-assignment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese número de parte">
+              <datalist id="part-number-list-assignment"></datalist>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">¿Es una asignación pendiente?</label>
+              <div class="flex items-center space-x-4">
+                <label class="flex items-center">
+                  <input type="radio" name="es_asignacion" value="true" checked class="mr-2">
+                  Sí
+                </label>
+                <label class="flex items-center">
+                  <input type="radio" name="es_asignacion" value="false" class="mr-2">
+                  No
+                </label>
+              </div>
+            </div>
+            <div class="pt-2">
+              <button type="submit" id="assignment-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+                Asignar Usuario
+              </button>
+            </div>
+          </form>
+        </div>
 
-            <div id="alert-container"></div>
+        <!-- Right Column - User Registration -->
+        <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro de Usuarios para Conteo</h2>
+          <form id="user-register-form" class="mb-6 flex items-end space-x-2">
+            <div class="flex-1">
+              <label for="new-user-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+              <input type="text" id="new-user-name" name="new-user-name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nombre del usuario">
+            </div>
+            <div class="flex-1">
+              <label for="new-user-email" class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
+              <input type="email" id="new-user-email" name="new-user-email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="correo@empresa.com">
+            </div>
+            <button type="submit" class="bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+              Registrar Usuario
+            </button>
+          </form>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-hover">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                </tr>
+              </thead>
+              <tbody id="user-registry" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <div class="form-container">
-                <!-- Panel de Login -->
-                <div id="login-panel" class="form-panel active">
-                   
+   <!-- Tab 2: Conteo de Inventario -->
+    <div id="content-inventory" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Formulario de Registro Manual -->
+        <div class="md:col-span-6 bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro Manual de Inventario</h2>
+          <form id="inventory-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="rack" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+                <select id="rack" name="rack" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccione un Rack</option>
+                </select>
+              </div>
+              <div>
+                <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                <select id="location" name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccione ubicación</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label for="user" class="block text-sm font-medium text-gray-700 mb-1">Usuario Asignado</label>
+              <input type="text" id="user" name="user" list="user-list-inventory" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o ingrese usuario">
+              <datalist id="user-list-inventory"></datalist>
+            </div>
+            <div>
+              <label for="part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+              <input type="text" id="inventory-part-number" name="numero_parte" list="part-number-list" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Seleccione o escriba número de parte" oninput="handlePartNumberChange()">
+              <datalist id="part-number-list"></datalist>
+            </div>
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <input type="text" id="description" name="description" required readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
+            </div>
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+              <input type="number" id="quantity" name="quantity" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad contada">
+            </div>
+            <div class="pt-2">
+              <button type="submit" id="inventory-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+                Registrar Inventario
+              </button>
+            </div>
+          </form>
+        </div>
 
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label for="login-email">
-                                <i class="fas fa-envelope"></i> Email
-                            </label>
-                            <input type="email" id="login-email" name="email" required 
-                                   placeholder="tu@email.com">
-                        </div>
-
-                        <div class="form-group has-icon">
-                            <label for="login-password">
-                                <i class="fas fa-lock"></i> Contraseña
-                            </label>
-                            <input type="password" id="login-password" name="password" required 
-                                   placeholder="Tu contraseña">
-                            <i class="fas fa-eye" onclick="togglePassword('login-password', this)"></i>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="login-btn">
-                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                        </button>
-
-                        <div class="loading" id="login-loading">
-                            <div class="spinner"></div>
-                            <span>Iniciando sesión...</span>
-                        </div>
-                    </form>
-
-                    <div class="forgot-password">
-                        <a href="#" onclick="showForgotPassword()">
-                            <i class="fas fa-question-circle"></i> ¿Olvidaste tu contraseña?
-                        </a>
-                    </div>
-                </div>
-
-   <!-- Leyenda de contacto agregada aquí -->
-                    <div class="contact-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>En caso de necesitar asistencia técnica, ponte en contacto con el administrador del sistema IT: Julio</strong>
-                    </div>
         
-
-
-
-
-                
-                <!-- Panel de Registro - Solo visible para Admin -->
-<div id="register-panel" class="form-panel admin-only">
-                    <div class="role-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Roles disponibles:</strong><br>
-                        • <strong>Administrador:</strong> Acceso completo al sistema<br>
-                        • <strong>Visualizador:</strong> Solo lectura de datos
-                    </div>
-
-                    <form id="register-form">
-                        <div class="form-group">
-                            <label for="register-name">
-                                <i class="fas fa-user"></i> Nombre Completo
-                            </label>
-                            <input type="text" id="register-name" name="full_name" required 
-                                   placeholder="Tu nombre completo">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="register-email">
-                                <i class="fas fa-envelope"></i> Email
-                            </label>
-                            <input type="email" id="register-email" name="email" required 
-                                   placeholder="tu@email.com">
-                        </div>
-
-                        <div class="form-group has-icon">
-                            <label for="register-password">
-                                <i class="fas fa-lock"></i> Contraseña
-                            </label>
-                            <input type="password" id="register-password" name="password" required 
-                                   placeholder="Mínimo 6 caracteres" 
-                                   oninput="checkPasswordStrength(this.value)">
-                            <i class="fas fa-eye" onclick="togglePassword('register-password', this)"></i>
-                        </div>
-
-                        <div class="password-strength" id="password-strength" style="display: none;">
-                            <div class="strength-bar">
-                                <div class="strength-fill" id="strength-fill"></div>
-                            </div>
-                            <span id="strength-text">Ingresa una contraseña</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="register-role">
-                                <i class="fas fa-user-tag"></i> Rol
-                            </label>
-                            <select id="register-role" name="role" required>
-                                <option value="">Selecciona un rol</option>
-                                <option value="admin">Administrador</option>
-                                <option value="viewer">Visualizador</option>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="register-btn">
-                            <i class="fas fa-user-plus"></i> Crear Cuenta
-                        </button>
-
-                        <div class="loading" id="register-loading">
-                            <div class="spinner"></div>
-                            <span>Creando cuenta...</span>
-                        </div>
-                    </form>
-
-<!-- Leyenda de contacto también en panel de registro -->
-                    <div class="contact-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>En caso de necesitar asistencia técnica, ponte en contacto con el administrador del sistema IT: Julio</strong>
-                    </div>
-    
-                </div>
+        <!-- Resumen por Rack -->
+        <div class="md:col-span-6">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Resumen por Rack</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 table-hover">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ítems</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Total</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Actualización</th>
+                  </tr>
+                </thead>
+                <tbody id="rack-summary-body" class="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Conteo por Usuario -->
+      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Conteo por Usuario</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 table-hover">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ítems Contados</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Total</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Conteo</th>
+              </tr>
+            </thead>
+            <tbody id="user-summary" class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Cargando datos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Botones de Exportación y Filtros -->
+      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div class="flex flex-col space-y-4">
+          <!-- Botones de Exportación -->
+          <div class="flex space-x-2">
+            <button id="export-inventory-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-all">
+              <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
+            </button>
+            <button id="export-inventory-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all">
+              <i class="fas fa-file-pdf mr-2"></i>Exportar a PDF
+            </button>
+          </div>
+
+          <!-- Filtros -->
+          <div class="flex flex-col md:flex-row md:items-center md:space-x-4">
+            <!-- Filtro por Usuario -->
+            <div class="flex-1 mb-2 md:mb-0">
+              <label for="filter-user" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Usuario</label>
+              <input type="text" id="filter-user" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: Alan Ramos">
+            </div>
+
+            <!-- Filtro por Número de Parte -->
+            <div class="flex-1 mb-2 md:mb-0">
+              <label for="filter-part" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Número de Parte</label>
+              <input type="text" id="filter-part" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: ABC123">
+            </div>
+
+            <!-- Botón para limpiar filtros -->
+            <div class="flex items-end mb-2 md:mb-0">
+              <button id="clear-filters-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-all h-10">
+                <i class="fas fa-times mr-2"></i>Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registros de Inventario -->
+      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registros de Inventario</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 table-hover">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rack</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación Teórica</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+               
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">Cargando registros...</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="pagination-controls" class="mt-4 flex justify-center space-x-2"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- Modal de Recuperación de Contraseña -->
-    <div id="forgot-modal" class="forgot-modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeForgotModal()">&times;</button>
-            <h3>Recuperar Contraseña</h3>
-            <p>Ingresa tu email para recibir instrucciones de recuperación</p>
-            <form id="forgot-form">
-                <div class="form-group">
-                    <input type="email" id="forgot-email" placeholder="tu@email.com" required>
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> Enviar
-                </button>
-            </form>
-        </div>
+ <!-- Tab 3: Vista de Asignaciones -->
+<div id="content-view" class="hidden">
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold text-navy border-b pb-2">Vista de Asignaciones</h2>
+      <div class="flex space-x-2">
+        <button id="export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-all">
+          <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+        </button>
+        <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all">
+          <i class="fas fa-file-pdf mr-2"></i>Exportar PDF
+        </button>
+      </div>
     </div>
 
-    <script>
-        // Configuración de Supabase
-        const supabaseUrl = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+    <!-- ✅ Paginación MOVIDA aquí (arriba, antes del filtro) -->
+    <div id="assignments-pagination-controls" class="mb-4 flex justify-center space-x-2"></div>
 
-       // ✅ Esperar a que Supabase esté disponible antes de usarlo
-    // NO declarar supabase aquí para evitar redeclaración
+    <!-- Filtro de búsqueda -->
+    <div class="mb-4">
+      <input type="text" id="search-filter" placeholder="Buscar por usuario, rack, ubicación o número de parte..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 table-hover text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('rack')">
+              Rack <i id="sort-icon-rack" class="fas fa-sort ml-1"></i>
+            </th>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAssignmentsTable('ubicacion')">
+              Ubicación Teórica <i id="sort-icon-ubicacion" class="fas fa-sort ml-1"></i>
+            </th>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Parte</th>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+          </tr>
+        </thead>
+        <tbody id="assignments-table" class="bg-white divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Tab 4: Números de Inventario -->
+    <div id="content-inventory-numbers" class="hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Registro de Números de Inventario</h2>
+        <form id="inventory-numbers-form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+              <label for="inventory-part-number" class="block text-sm font-medium text-gray-700 mb-1">Número de Parte</label>
+              <input type="text" id="inventory-numbers-part-number" name="numero_parte" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" placeholder="Seleccione número de parte" readonly onclick="openPartNumberModal()">
+              <datalist id="part-number-list-inventory-numbers"></datalist>
+            </div>
+             <div>
+            <label for="inventory-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <input type="text" id="inventory-description" name="inventory-description" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none" placeholder="La descripción aparecerá automáticamente">
+          </div>
+            <div>
+              <label for="inventory-rack" class="block text-sm font-medium text-gray-700 mb-1">Rack</label>
+              <select id="inventory-rack" name="inventory-rack" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccione un Rack</option>
+              </select>
+            </div>
+          </div>
+         <div>
+    <label for="inventory-location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación Real</label>
+    <input type="text"
+           id="inventory-location"
+           name="inventory-location"
+           required
+           list="inventory-location-list"
+           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+           placeholder="Ingresa la ubicación real">
+    <datalist id="inventory-location-list"></datalist>
+    <p class="text-xs text-gray-500 mt-1">(Si la ubicación no existe en el rack seleccionado, agrégala manualmente)</p>
+</div>
+         
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+<label for="inventory-user" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+<input 
+  type="text" 
+  id="inventory-user" 
+  name="inventory-user" 
+  readonly 
+  required 
+  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  placeholder="Cargando usuario..."
+>
+            
+            </div>
+            <div>
+              <label for="inventory-quantity" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+              <input type="number" id="inventory-quantity" name="inventory-quantity" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ingrese cantidad">
+            </div>
+          </div>
+          <div class="pt-2">
+            <button type="submit" id="inventory-numbers-submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+              Registrar Número de Inventario
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+      
+
+    <!-- Tab 5: Carga Masiva -->
+    <div id="content-bulk-upload" class="hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4 text-navy border-b pb-2">Carga Masiva de Asignaciones</h2>
+        <form id="bulk-upload-form" class="space-y-4">
+          <div>
+            <label for="excel-file" class="block text-sm font-medium text-gray-700 mb-1">Archivo Excel</label>
+            <input type="file" id="excel-file" name="excel-file" accept=".xlsx,.xls" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-sm text-gray-500 mt-1">Seleccione un archivo Excel (.xlsx o .xls) con las columnas: Rack, Ubicación, Número de Parte, Descripción, Usuario Asignado</p>
+          </div>
+          <div class="pt-2">
+            <button type="submit" id="upload-submit-btn" class="w-full bg-navy text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition-all">
+              Cargar Archivo
+            </button>
+          </div>
+        </form>
+        <div id="upload-result" class="mt-6 hidden">
+          <h3 class="text-lg font-semibold mb-2">Resultados de la Carga</h3>
+          <div id="upload-messages" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+// Configuración de Supabase
+const supabaseUrl = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Variables globales
+let currentUser = null;
+let isAdmin = false;
+let currentAssignmentsPage = 1;
+const assignmentsPageSize = 50;
+let totalAssignmentsRecords = 0;
+
+// Inicialización cuando el DOM está listo
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('DOM cargado, iniciando aplicación...');
     
-    function initSupabase() {
-        if (!window.supabase) {
-            console.error('❌ Supabase no está disponible');
-            setTimeout(initSupabase, 100); // Reintentar en 100ms
+    // Verificar autenticación
+    await checkAuthentication();
+    
+    // Configurar pestañas
+    setupTabs();
+    
+    // Cargar datos iniciales
+    await loadInitialData();
+    
+    // Configurar event listeners
+    setupEventListeners();
+    
+    console.log('Aplicación inicializada correctamente');
+});
+
+// Función para verificar autenticación
+async function checkAuthentication() {
+    try {
+        console.log('🔍 Verificando autenticación...');
+        
+        // Obtener sesión actual
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+            console.error('Error obteniendo sesión:', error);
+            redirectToLogin();
             return;
         }
         
-        if (!window.supabaseClient) {
-            window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true
+        if (!session) {
+            console.log('❌ No hay sesión activa, redirigiendo al login');
+            redirectToLogin();
+            return;
+        }
+        
+        console.log('✅ Sesión activa encontrada para:', session.user.email);
+        
+        // Obtener datos del usuario desde la tabla users
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+        
+        if (userError || !userData) {
+            console.error('Error obteniendo datos del usuario:', userError);
+            redirectToLogin();
+            return;
+        }
+        
+        // Configurar usuario actual
+        currentUser = userData;
+        isAdmin = userData.role === 'admin';
+        
+        // Configurar usuario de conteo vinculado
+        currentUser.usuarioConteoVinculado = userData.usuario_conteo_vinculado || userData.full_name;
+        
+        console.log('👤 Usuario autenticado:', userData.full_name, '- Rol:', userData.role);
+        console.log('🔗 Usuario de conteo vinculado:', currentUser.usuarioConteoVinculado);
+        
+        // Actualizar UI según el rol
+        updateUIForUser();
+        
+        // Configurar listener para cambios de autenticación
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                redirectToLogin();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error en verificación de autenticación:', error);
+        redirectToLogin();
+    }
+}
+
+// Función para actualizar UI según el usuario
+function updateUIForUser() {
+    // Mostrar información del usuario en el header
+    const userNameElement = document.getElementById('user-name');
+    const userRoleElement = document.getElementById('user-role');
+    
+    if (userNameElement) {
+        userNameElement.textContent = currentUser.full_name;
+    }
+    
+    if (userRoleElement) {
+        const roleText = isAdmin ? '(Administrador)' : '(Usuario)';
+        userRoleElement.textContent = roleText;
+    }
+    
+    // Mostrar/ocultar elementos según el rol
+    if (isAdmin) {
+        document.body.classList.add('is-admin');
+        console.log('🔧 Mostrando elementos de administrador');
+    } else {
+        document.body.classList.remove('is-admin');
+        console.log('👁️ Ocultando elementos de administrador');
+        
+        // Para usuarios no admin, mostrar solo Vista de Asignaciones
+        setTimeout(() => {
+            const viewTab = document.getElementById('tab-view');
+            if (viewTab) {
+                viewTab.click();
+            }
+        }, 100);
+    }
+}
+
+// Función para redirigir al login
+function redirectToLogin() {
+    console.log('🔄 Redirigiendo al login...');
+    window.location.href = 'login_completo.html';
+}
+
+// Configuración de pestañas
+function setupTabs() {
+    const tabs = {
+        'tab-admin': 'content-admin',
+        'tab-inventory': 'content-inventory',
+        'tab-view': 'content-view',
+        'tab-inventory-numbers': 'content-inventory-numbers',
+        'tab-bulk-upload': 'content-bulk-upload'
+    };
+
+    Object.keys(tabs).forEach(tabId => {
+        const tabButton = document.getElementById(tabId);
+        if (tabButton) {
+            tabButton.addEventListener('click', () => {
+                // Ocultar todos los contenidos
+                Object.values(tabs).forEach(contentId => {
+                    const content = document.getElementById(contentId);
+                    if (content) content.classList.add('hidden');
+                });
+                
+                // Remover clase activa de todas las pestañas
+                Object.keys(tabs).forEach(id => {
+                    const tab = document.getElementById(id);
+                    if (tab) tab.classList.remove('text-navy', 'border-b-2', 'border-navy');
+                });
+                
+                // Mostrar contenido seleccionado
+                const targetContent = document.getElementById(tabs[tabId]);
+                if (targetContent) targetContent.classList.remove('hidden');
+                
+                // Activar pestaña seleccionada
+                tabButton.classList.add('text-navy', 'border-b-2', 'border-navy');
+                
+                // Cargar datos específicos de la pestaña
+                if (tabId === 'tab-inventory-numbers') {
+                    loadInventoryNumbersData();
                 }
             });
         }
-        // Asignar a variable global para acceso desde cualquier lugar
-        window.supabase = window.supabaseClient;
-        console.log('✅ Supabase inicializado correctamente');
+    });
+    
+    // Activar primera pestaña por defecto según el rol
+    if (isAdmin) {
+        const firstTab = document.getElementById('tab-admin');
+        if (firstTab) firstTab.click();
+    } else {
+        const viewTab = document.getElementById('tab-view');
+        if (viewTab) viewTab.click();
+    }
+}
+
+// Cargar datos iniciales
+async function loadInitialData() {
+console.log('🔄 [DEBUG] Iniciando carga de datos iniciales...');
+console.log('🔄 [DEBUG] currentUser al inicio:', currentUser);
+console.log('🔄 [DEBUG] isAdmin al inicio:', isAdmin);
+
+await loadUserData();
+await loadPartNumbers('part-number-list-assignment');
+await loadPartNumbers('part-number-list');
+await loadPartNumbers('part-number-list-inventory-numbers');
+await loadAllRacks();
+
+console.log('🔄 [DEBUG] Antes de loadAssignments - currentUser:', currentUser);
+console.log('🔄 [DEBUG] Antes de loadAssignments - isAdmin:', isAdmin);
+currentAssignmentsPage = 1;
+totalAssignmentsRecords = 0;
+await loadAssignments(1);
+
+await loadInventoryData();
+await loadInventoryNumbers();
+await loadInventoryNumbersData(); // Cargar tabla de Registro
+await loadRacksFromDatabase(); // Cargar racks para inventory-rack
+setCurrentUserInInventoryForm(); // Autoseleccionar usuario en formulario de números de inventario
+
+console.log('✅ [DEBUG] Carga de datos iniciales completada');
+}
+
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Formulario de asignación
+    const assignmentForm = document.getElementById('assignment-form');
+    if (assignmentForm) {
+        assignmentForm.addEventListener('submit', handleAssignmentSubmit);
     }
     
-    // Inicializar Supabase cuando el DOM esté listo
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSupabase);
-    } else {
-        initSupabase();
+    // Formulario de registro de usuario
+    const userRegisterForm = document.getElementById('user-register-form');
+    if (userRegisterForm) {
+        userRegisterForm.addEventListener('submit', handleUserRegister);
     }
-
-       // Verificar si ya hay una sesión activa al cargar la página
-    document.addEventListener('DOMContentLoaded', async function() {
-        console.log('🔍 Verificando sesión existente...');
-
-        try {
-            const { data: { session }, error } = await window.supabase.auth.getSession();
-
-            if (session && !error) {
-                console.log('✅ Sesión activa encontrada, verificando rol...');
-                // Verificar rol del usuario
-                const { data: userData, error: userError } = await window.supabase
-                    .from('users')
-                    .select('role')
-                    .eq('email', session.user.email) // Usar el email del usuario autenticado
-                    .single();
-
-                if (userData && userData.role === 'admin') {
-                    console.log('✅ Usuario administrador, mostrando opciones de registro.');
-                    document.body.classList.add('is-admin'); // Agregar clase al body
-                    // Actualizar texto del encabezado para admins
-                     document.querySelector('.form-header p').textContent = 'Inicia sesión o administra usuarios';
-                     // Si se recarga la página y ya está en el tab de registro, mantenerlo
-                     const urlParams = new URLSearchParams(window.location.search);
-                     const tabParam = urlParams.get('tab');
-                     if (tabParam === 'register') {
-                         switchTab('register'); // Asegurarse de que switchTab esté definida antes o usar la lógica directamente
-                         // Activar el botón y panel de registro directamente
-                         document.getElementById('register-tab-button')?.classList.add('active');
-                         document.getElementById('login-panel')?.classList.remove('active');
-                         document.getElementById('register-panel')?.classList.add('active');
-                     }
-                } else {
-                     console.log('ℹ️ Usuario no administrador, redirigiendo...');
-                     window.location.href = 'index.html'; // Redirigir usuarios no admin
-                     return;
-                }
-                // Si es admin, no redirigir automáticamente, permitir usar el login o registro
-                // Opcionalmente, puedes redirigir si prefieres que admins también vayan a index
-                // y gestionen usuarios desde allí. Quitar el return de abajo si se redirige.
-                // return;
-            } else if(error) {
-                 console.error('Error obteniendo sesión:', error);
-            }
-
-            console.log('ℹ️ No hay sesión activa, mostrando login');
-            // Asegurarse de que las opciones de admin estén ocultas si no hay sesión
-            document.body.classList.remove('is-admin');
-        } catch (error) {
-            console.error('Error verificando sesión/rol:', error);
-             document.body.classList.remove('is-admin'); // Asegurar ocultamiento en caso de error
-        }
-    });
-
-      // Cambiar entre tabs
-// Cambiar entre tabs (MODIFICADO)
-function switchTab(tabName, buttonElement = null) {
-    // Actualizar botones de tab
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // Activar el botón correcto
-    let activeButton;
-    if (buttonElement) {
-        activeButton = buttonElement;
-    } else if (event && event.target) {
-        activeButton = event.target;
-    } else {
-         // Buscar el botón por ID si no se proporciona elemento ni evento
-         activeButton = document.querySelector(`[onclick*="switchTab('${tabName}')"]`);
+    
+    // Formulario de inventario
+    const inventoryForm = document.getElementById('inventory-form');
+    if (inventoryForm) {
+        inventoryForm.addEventListener('submit', handleInventorySubmit);
     }
-
-    if (activeButton) {
-         activeButton.classList.add('active');
+    
+    // Formulario de números de inventario
+    const inventoryNumbersForm = document.getElementById('inventory-numbers-form');
+    if (inventoryNumbersForm) {
+        inventoryNumbersForm.addEventListener('submit', handleInventoryNumbersSubmit);
     }
-
-    // Actualizar paneles
-    document.querySelectorAll('.form-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-    const targetPanel = document.getElementById(`${tabName}-panel`);
-    if (targetPanel) {
-        targetPanel.classList.add('active');
+    
+    // Formulario de carga masiva
+    const bulkUploadForm = document.getElementById('bulk-upload-form');
+    if (bulkUploadForm) {
+        bulkUploadForm.addEventListener('submit', handleBulkUploadSubmit);
     }
-
-    // Limpiar solo las alertas normales, manteniendo el mensaje de admin
-    // Ahora simplemente llamamos a clearAlerts, que ya es selectivo.
-    clearAlerts();
-}
-
-        // Llenar datos de prueba
-        function fillTestData(role) {
-            if (role === 'admin') {
-                document.getElementById('login-email').value = 'admin@almacen.com';
-                document.getElementById('login-password').value = 'admin123';
-            } else if (role === 'viewer') {
-                document.getElementById('login-email').value = 'viewer@almacen.com';
-                document.getElementById('login-password').value = 'admin123';
-            }
-        }
-
-        // Toggle password visibility
-        function togglePassword(inputId, icon) {
-            const input = document.getElementById(inputId);
-            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-            input.setAttribute('type', type);
-            
-            icon.classList.toggle('fa-eye');
-            icon.classList.toggle('fa-eye-slash');
-        }
-
-        // Verificar fortaleza de contraseña
-        function checkPasswordStrength(password) {
-            const strengthContainer = document.getElementById('password-strength');
-            const strengthFill = document.getElementById('strength-fill');
-            const strengthText = document.getElementById('strength-text');
-
-            if (password.length === 0) {
-                strengthContainer.style.display = 'none';
-                return;
-            }
-
-            strengthContainer.style.display = 'block';
-
-            let strength = 0;
-            let text = '';
-            let className = '';
-
-            if (password.length >= 6) strength++;
-            if (password.match(/[a-z]/)) strength++;
-            if (password.match(/[A-Z]/)) strength++;
-            if (password.match(/[0-9]/)) strength++;
-            if (password.match(/[^a-zA-Z0-9]/)) strength++;
-
-            switch (strength) {
-                case 0:
-                case 1:
-                    text = 'Muy débil';
-                    className = 'strength-weak';
-                    break;
-                case 2:
-                    text = 'Débil';
-                    className = 'strength-fair';
-                    break;
-                case 3:
-                    text = 'Buena';
-                    className = 'strength-good';
-                    break;
-                case 4:
-                case 5:
-                    text = 'Fuerte';
-                    className = 'strength-strong';
-                    break;
-            }
-
-            strengthFill.className = `strength-fill ${className}`;
-            strengthText.textContent = text;
-        }
-
-        // Mostrar alertas (sin cambios)
-function showAlert(message, type = 'error') {
-    const container = document.getElementById('alert-container');
-    // Crear el elemento de alerta
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert alert-${type} show`;
-    alertElement.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        ${message}
-    `;
-
-    // Agregar al contenedor
-    container.appendChild(alertElement);
-
-    // Configurar auto-eliminación solo para alertas normales (no para el mensaje de admin persistente)
-    // Verificamos si el mensaje NO es el de admin antes de programar el timeout
-    if (!message.includes('¡Login exitoso como administrador!')) {
-         setTimeout(() => {
-             if (alertElement.parentNode === container) { // Verificar si aún existe
-                 container.removeChild(alertElement);
-             }
-         }, 5000);
+    
+    // Botones de exportación
+    const exportExcelBtn = document.getElementById('export-excel-btn');
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', exportToExcel);
+    }
+    
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', exportToPDF);
+    }
+    
+    // Filtro de búsqueda
+    const searchFilter = document.getElementById('search-filter');
+    if (searchFilter) {
+        searchFilter.addEventListener('input', filterAssignments);
+    }
+    
+    
+    
+    // Botón de cerrar sesión
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    // Listener para cambios en rack (asignación)
+    const rackAssignment = document.getElementById('rack-assignment');
+    if (rackAssignment) {
+        rackAssignment.addEventListener('change', handleRackAssignmentChange);
+    }
+    
+    // Listener para cambios en rack (inventario)
+    const rack = document.getElementById('rack');
+    if (rack) {
+        rack.addEventListener('change', handleRackChange);
+    }
+    
+    // Listener para cambios en rack (números de inventario)
+    const inventoryRack = document.getElementById('inventory-rack');
+    if (inventoryRack) {
+        inventoryRack.addEventListener('change', handleInventoryRackChange);
+    }
+    
+    // Listener para número de parte en asignación
+    const partNumberAssignmentInput = document.getElementById('part-number-assignment');
+    if (partNumberAssignmentInput) {
+        partNumberAssignmentInput.addEventListener('blur', handlePartNumberAssignmentBlur);
+    }
+    
+    // Listener para número de parte en inventario manual
+    const partNumberInventoryInput = document.getElementById('part-number');
+    if (partNumberInventoryInput) {
+        partNumberInventoryInput.addEventListener('blur', handlePartNumberInventoryBlur);
+    }
+    
+    // Listener para número de parte en números de inventario
+    const partNumberInventoryNumbersInput = document.getElementById('inventory-part-number');
+    if (partNumberInventoryNumbersInput) {
+        partNumberInventoryNumbersInput.addEventListener('blur', handlePartNumberInventoryNumbersBlur);
+    }
+    
+    // Listeners para filtros de inventario
+    const filterUser = document.getElementById('filter-user');
+    const filterPart = document.getElementById('filter-part');
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    
+    if (filterUser) {
+        filterUser.addEventListener('input', applyInventoryFilters);
+    }
+    if (filterPart) {
+        filterPart.addEventListener('input', applyInventoryFilters);
+    }
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearInventoryFilters);
+    }
+    
+    // Listeners para botones de exportación de inventario
+    const exportInventoryExcelBtn = document.getElementById('export-inventory-excel-btn');
+    const exportInventoryPdfBtn = document.getElementById('export-inventory-pdf-btn');
+    
+    if (exportInventoryExcelBtn) {
+        exportInventoryExcelBtn.addEventListener('click', exportInventoryToExcel);
+    }
+    if (exportInventoryPdfBtn) {
+        exportInventoryPdfBtn.addEventListener('click', exportInventoryToPDF);
     }
 }
 
-       // Limpiar alertas (MODIFICADO)
-// Esta función ahora solo elimina alertas "normales", no el mensaje persistente de admin.
-function clearAlerts() {
-    const container = document.getElementById('alert-container');
-    // Recorrer los hijos del contenedor en orden inverso para evitar problemas al eliminar
-    for (let i = container.children.length - 1; i >= 0; i--) {
-        const child = container.children[i];
-        // Si el hijo NO es el mensaje de admin persistente, eliminarlo
-        if (child.id !== 'admin-success-message') {
-             container.removeChild(child);
-        }
-    }
-    // La versión anterior que simplemente vaciaba el contenedor se elimina:
-    // document.getElementById('alert-container').innerHTML = '';
-}
-
-// Mostrar/ocultar loading
-function showLoading(formType, show = true) {
-    const button = document.getElementById(`${formType}-btn`);
-    const loading = document.getElementById(`${formType}-loading`);
-
-    if (show) {
-        button.disabled = true;
-        button.style.display = 'none';
-        loading.classList.add('show');
-    } else {
-        button.disabled = false;
-        button.style.display = 'block';
-        loading.classList.remove('show');
-    }
-}
-
-// --- FUNCION DE CAMBIO DE PESTAÑA ---
-
-
-       // Manejar login
-document.getElementById('login-form').addEventListener('submit', async function(e) {
+// Funciones de manejo de eventos
+async function handleAssignmentSubmit(e) {
     e.preventDefault();
+const formData = new FormData(e.target);
+    
+    const partNumber = formData.get('part-number-assignment');
+    let descripcion = '';
 
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+    const userAssignmentValue = formData.get('user-assignment');
+    let usuarioAsignado = userAssignmentValue;
+    if (userAssignmentValue && userAssignmentValue.includes('(')) {
+        usuarioAsignado = userAssignmentValue.split('(')[0].trim();
+    }
+    
+    try {
+        // Primero, obtener la descripción del número de parte
+        console.log(`🔍 Obteniendo descripción para número de parte: ${partNumber}`);
+        
+        const { data: partData, error: partError } = await supabase
+            .from('numerosinventario')
+            .select('descripcion')
+            .eq('inventario_id', partNumber)
+            .limit(1);
+        
+        if (partError) {
+            console.warn('Error al obtener descripción:', partError);
+        } else if (partData && partData.length > 0) {
+            descripcion = partData[0].descripcion || '';
+            console.log(`✅ Descripción encontrada: \"${descripcion}\"`);
+        } else {
+            console.warn(`⚠️ No se encontró descripción para el número de parte: ${partNumber}`);
+        }
+        
+        // Crear la asignación con la descripción obtenida
+        const { error } = await supabase
+            .from('conteoinventario')
+            .insert([{
+                rack: formData.get('rack-assignment'),
+                ubicacion: formData.get('location-assignment'),
+                numero_parte: partNumber,
+                descripcion: descripcion,
+                usuario_asignado: usuarioAsignado,
+                cantidad: 0,
+                cantidad_contada: false,
+                es_asignacion: formData.get('es_asignacion') === 'true',
+                es_reconteo: false,
+                fecha_actualizacion: new Date().toISOString()
+            }]);
+        
+        if (error) throw error;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Asignación creada',
+            text: `Asignación creada correctamente${descripcion ? ` con descripción: "${descripcion}"` : ''}`,
+            timer: 3000,
+            showConfirmButton: false
+        });
+        
+        e.target.reset();
+        await loadAssignments();
+        
+    } catch (error) {
+        console.error('Error al crear asignación:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al crear la asignación: ' + error.message
+        });
+    }
+}
 
-    if (!email || !password) {
-        showAlert('Por favor completa todos los campos');
+async function handleUserRegister(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const { error } = await supabase
+            .from('usuarioconteo')
+            .insert([{
+                nombre: formData.get('new-user-name'),
+                correo: formData.get('new-user-email')
+            }]);
+        
+        if (error) throw error;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Usuario registrado',
+            text: 'El usuario se ha registrado correctamente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        
+        e.target.reset();
+        await loadUserData();
+        
+    } catch (error) {
+        console.error('Error al registrar usuario:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al registrar usuario: ' + error.message
+        });
+    }
+}
+
+async function handleInventorySubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const { error } = await supabase
+            .from('conteoinventario')
+            .insert([{
+                rack: formData.get('rack'),
+                ubicacion: formData.get('location'),
+                numero_parte: formData.get('part-number'),
+                descripcion: formData.get('description'),
+                usuario_asignado: formData.get('user'),
+                cantidad: parseInt(formData.get('quantity')),
+                cantidad_contada: true,
+                es_asignacion: false,
+                es_reconteo: false,
+                fecha_actualizacion: new Date().toISOString()
+            }]);
+        
+        if (error) throw error;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Inventario registrado',
+            text: 'El inventario se ha registrado correctamente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        
+        e.target.reset();
+        totalInventoryRecords = 0; // Forzar recálculo del total
+        await loadInventoryData();
+        
+    } catch (error) {
+        console.error('Error al registrar inventario:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al registrar inventario: ' + error.message
+        });
+    }
+}
+
+async function handleInventoryNumbersSubmit(e) {
+    e.preventDefault();
+    
+    // Obtener valores del formulario
+    const numeroParte = document.getElementById('inventory-numbers-part-number')?.value?.trim() || 'N/A';
+    const cantidad = document.getElementById('inventory-quantity')?.value?.trim() || '0';
+    const rack = document.getElementById('inventory-rack')?.value?.trim() || 'N/A';
+    const ubicacion = document.getElementById('inventory-location')?.value?.trim() || 'N/A';
+    const usuario = document.getElementById('inventory-user')?.value?.trim() || 'N/A';
+
+    // Validación básica
+    if (!numeroParte || numeroParte === 'N/A') {
+        Swal.fire('⚠️ Advertencia', 'Debe seleccionar un número de parte.', 'warning');
         return;
     }
 
-    showLoading('login', true);
-    clearAlerts();
+    // Mostrar SweetAlert de confirmación
+    const result = await Swal.fire({
+        title: '¿Confirmar registro?',
+        html: `
+            <div class="text-left text-sm">
+                <p><strong>Número de parte:</strong> ${numeroParte}</p>
+                <p><strong>Cantidad:</strong> ${cantidad}</p>
+                <p><strong>Rack:</strong> ${rack}</p>
+                <p><strong>Ubicación real:</strong> ${ubicacion}</p>
+                <p class="mt-3 text-gray-700">¿Estás seguro que deseas añadir este número de parte y que las locaciones son correctas?</p>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        confirmButtonColor: '#0a192f',
+        cancelButtonColor: '#6b7280'
+    });
+
+    if (!result.isConfirmed) {
+        return; // El usuario canceló
+    }
+
+    // Si confirma, continuar con el registro
+    const formData = new FormData(document.getElementById('inventory-numbers-form'));
+    
+    try {
+        const rack = formData.get('inventory-rack');
+        const ubicacion = formData.get('inventory-location');
+        const esVariacion = (rack === 'VARIACIONES' && ubicacion === 'VARIACIONES');
+        const { error } = await supabase
+            .from('conteoinventario')
+            .insert([{
+                rack: rack,
+                ubicacion: ubicacion,
+                ubicacion_real: ubicacion,
+                numero_parte: numeroParte,
+                descripcion: formData.get('inventory-description') || '',
+                usuario_asignado: formData.get('inventory-user'),
+                cantidad: parseInt(formData.get('inventory-quantity')) || 0,
+                cantidad_contada: true,
+                es_asignacion: false,
+                es_reconteo: false,
+                variaciones: esVariacion,
+                fecha_actualizacion: new Date().toISOString()
+            }]);
+        if (error) throw error;
+        Swal.fire({
+            icon: 'success',
+            title: 'Número de inventario registrado',
+            text: 'El número de inventario se ha registrado correctamente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        document.getElementById('inventory-numbers-form').reset();
+        totalInventoryRecords = 0;
+        await loadInventoryData();
+        await loadInventoryNumbersData();
+    } catch (error) {
+        console.error('Error al registrar número de inventario:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al registrar número de inventario: ' + (error.message || 'Desconocido')
+        });
+    }
+}
+
+// Función para manejar el submit del formulario de carga masiva (sin cambios)
+async function handleBulkUploadSubmit(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('excel-file');
+    
+    if (!fileInput || fileInput.files.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Archivo no seleccionado',
+            text: 'Por favor, selecciona un archivo Excel para subir.'
+        });
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    if (!['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Tipo de archivo no válido',
+            text: 'Por favor, selecciona un archivo Excel (.xlsx o .xls).'
+        });
+        return;
+    }
+    
+    await handleBulkUpload(file);
+}
+
+// Función para manejar carga masiva
+async function handleBulkUpload(file) {
+    const resultDiv = document.getElementById('upload-result');
+    const messagesDiv = document.getElementById('upload-messages');
+    const submitBtn = document.getElementById('upload-submit-btn');
+    let successCount = 0;
+    let errorCount = 0;
+    let messages = [];
+
+    if (resultDiv) resultDiv.classList.remove('hidden');
+    if (messagesDiv) messagesDiv.innerHTML = '<p class="text-blue-500">Procesando archivo...</p>';
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
-        console.log('🔐 Intentando login con:', email);
+        const data = await readFileAsArrayBuffer(file);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Intentar login con Supabase Auth
-        const { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-
-        if (authError) {
-            console.error('Error de autenticación:', authError);
-            throw new Error('Credenciales incorrectas');
+        if (jsonData.length === 0) {
+            messages.push('<p class="text-yellow-500">Advertencia: El archivo está vacío o no tiene filas de datos.</p>');
+            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            return;
         }
 
-        console.log('✅ Autenticación exitosa');
-  // Verificar usuario en la tabla users
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', email)
-                .single();
+        // Validar columnas - FORMATO MODIFICADO PARA VISTA DE ASIGNACIONES
+        const requiredHeaders = ['Usuario', 'Rack', 'Ubicación', 'Número de Parte', 'Descripción'];
+        const fileHeaders = Object.keys(jsonData[0]).map(h => h.trim());
+        console.log('Headers encontrados en el archivo:', fileHeaders);
 
-            if (userError || !userData) {
-                console.error('Error obteniendo datos del usuario:', userError);
-                await window.supabase.auth.signOut();
-                throw new Error('Usuario no encontrado en el sistema');
+        const missingHeaders = requiredHeaders.filter(header => !fileHeaders.includes(header));
+        if (missingHeaders.length > 0) {
+            messages.push(`<p class="text-red-500">Error: Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}</p>`);
+            messages.push(`<p class="text-blue-500">Formato esperado: Usuario, Rack, Ubicación, Número de Parte, Descripción</p>`);
+            if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+            return;
+        }
+
+        // Procesar filas
+        for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            let rowSuccess = true;
+            let errorMsg = '';
+
+            // Mapear columnas del Excel - ORDEN MODIFICADO
+            const usuarioAsignado = row['Usuario']?.toString().trim();
+            const rack = row['Rack']?.toString().trim();
+            const ubicacion = row['Ubicación']?.toString().trim();
+            const numeroParte = row['Número de Parte']?.toString().trim();
+            const descripcion = row['Descripción']?.toString().trim();
+
+            // Validaciones básicas
+            if (!usuarioAsignado || !rack || !ubicacion || !numeroParte || !descripcion) {
+                rowSuccess = false;
+                const camposFaltantes = [];
+                if (!usuarioAsignado) camposFaltantes.push('Usuario');
+                if (!rack) camposFaltantes.push('Rack');
+                if (!ubicacion) camposFaltantes.push('Ubicación');
+                if (!numeroParte) camposFaltantes.push('Número de Parte');
+                if (!descripcion) camposFaltantes.push('Descripción');
+                errorMsg = `Campos obligatorios faltantes: ${camposFaltantes.join(', ')}`;
             }
 
-            console.log('✅ Usuario encontrado:', userData);
-
-            // --- MODIFICADO: Verificar rol y mostrar/ocultar registro ---
-            if (userData.role === 'admin') {
-                console.log('✅ Usuario es administrador, mostrando opciones de registro.');
-                document.body.classList.add('is-admin'); // Mostrar elementos .admin-only
-                // Actualizar texto del encabezado para admins
-                document.querySelector('.form-header p').textContent = 'Accede como administrador. Puedes iniciar sesión o gestionar usuarios.';
-
-                // Mostrar mensaje de éxito
-                showAlert('¡Login exitoso como administrador! Opciones de registro habilitadas.', 'success');
-
-     // NO redirigir automáticamente.
-                // NO usar setTimeout para limpiar alertas automáticamente.
-
-                // --- CAMBIO AQUÍ: Crear y mostrar el mensaje persistente INMEDIATAMENTE ---
-                // Limpiar cualquier mensaje de alerta anterior primero
-                clearAlerts();
-
-                // Crear y mostrar el nuevo mensaje persistente con botones
-                const successMessage = document.createElement('div');
-                successMessage.id = 'admin-success-message';
-                successMessage.className = 'alert alert-success show mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between';
-                successMessage.innerHTML = `
-                    <span class="mb-2 sm:mb-0"><i class="fas fa-check-circle"></i> ¡Login exitoso como administrador!</span>
-                    <div>
-                        <button id="go-to-app-btn" class="btn btn-primary text-xs py-1 px-2 mr-2 mb-2 sm:mb-0">
-                            <i class="fas fa-arrow-right"></i> Ir al Sistema
-                        </button>
-                        <button id="logout-btn-login" class="btn text-xs py-1 px-2" style="background-color: #6c757d; color: white;">
-                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                        </button>
-                    </div>
-                `;
-                document.getElementById('alert-container').appendChild(successMessage);
-
-                // Agregar listeners a los nuevos botones
-                document.getElementById('go-to-app-btn')?.addEventListener('click', () => {
-                    window.location.href = 'index.html';
-                });
-                document.getElementById('logout-btn-login')?.addEventListener('click', async () => {
-                    try {
-                        await window.supabase.auth.signOut();
-                        console.log('✅ Sesión cerrada desde la página de login.');
-                        document.body.classList.remove('is-admin');
-                        document.getElementById('login-form').reset(); // Limpiar formulario
-                        document.getElementById('admin-success-message')?.remove(); // Eliminar mensaje
-                        // Asegurarse de que el panel de login esté activo
-                        switchTab('login');
-                        showAlert('Sesión cerrada correctamente.', 'success');
-                    } catch (err) {
-                        console.error('Error al cerrar sesión:', err);
-                        showAlert('Error al cerrar sesión.', 'error');
+            // VALIDACIÓN DE RACK MODIFICADA - Ahora acepta letras, números y AREA_KITEO
+            if (rack && rowSuccess) {
+                const rackUpper = rack.toUpperCase();
+                
+                // Validar que el rack sea:
+                // 1. Una letra (A-Z)
+                // 2. Un número (1-999)
+                // 3. AREA_KITEO
+                const esLetra = /^[A-Z]$/.test(rackUpper);
+                const esNumero = /^\d+$/.test(rack);
+                const esAreaKiteo = rackUpper === 'AREA_KITEO';
+                
+                if (!esLetra && !esNumero && !esAreaKiteo) {
+                    rowSuccess = false;
+                    errorMsg += (errorMsg ? '; ' : '') + `Rack inválido: ${rack}. Debe ser una letra (A-Z), un número (1-999) o AREA_KITEO`;
+                }
+                
+                // Validar que los números estén en un rango razonable (1-999)
+                if (esNumero) {
+                    const numeroRack = parseInt(rack);
+                    if (numeroRack < 1 || numeroRack > 999) {
+                        rowSuccess = false;
+                        errorMsg += (errorMsg ? '; ' : '') + `Rack numérico fuera de rango: ${rack}. Debe estar entre 1 y 999`;
                     }
-                });
-                // --- FIN DEL CAMBIO ---
-
-                // Salir del manejador para evitar la redirección general al final del try
-                return;
-
-            } else {
-                // Si no es admin, redirigir a index.html como antes
-                console.log('ℹ️ Usuario es visualizador, redirigiendo...');
-                document.body.classList.remove('is-admin'); // Asegurar que esté oculto para no admins
-                showAlert('¡Login exitoso! Redirigiendo...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-                return; // Salir para evitar el mensaje de redirección general de abajo
+                }
             }
-            // --- FIN MODIFICADO ---
-        showAlert('¡Login exitoso! Redirigiendo...', 'success');
 
-        // Redirigir al dashboard después de un breve delay
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1500);
+            if (rowSuccess) {
+                try {
+                    // Insertar en la base de datos
+                    const { error: insertError } = await supabase
+                        .from('conteoinventario')
+                        .insert([{
+                            usuario_asignado: usuarioAsignado,
+                            rack: rack, // Mantener el formato original (no convertir a mayúsculas los números)
+                            ubicacion: ubicacion,
+                            numero_parte: numeroParte,
+                            descripcion: descripcion,
+                            cantidad: 0,
+                            cantidad_contada: false,
+                            es_asignacion: true,
+                            es_reconteo: false,
+                            fecha_actualizacion: new Date().toISOString()
+                        }]);
+
+                    if (insertError) {
+                        throw insertError;
+                    }
+
+                    successCount++;
+                    console.log(`✅ Fila ${i + 1} procesada correctamente - Rack: ${rack}`);
+
+                } catch (dbError) {
+                    rowSuccess = false;
+                    errorCount++;
+                    errorMsg = `Error de base de datos: ${dbError.message}`;
+                    console.error(`❌ Error en fila ${i + 1}:`, dbError);
+                }
+            } else {
+                errorCount++;
+            }
+
+            // Agregar mensaje de resultado para esta fila
+            if (!rowSuccess) {
+                messages.push(`<p class="text-red-500">Fila ${i + 1}: ${errorMsg}</p>`);
+            }
+        }
+
+        // Mostrar resumen final
+        messages.unshift(`<p class="text-green-500">✅ Registros procesados exitosamente: ${successCount}</p>`);
+        if (errorCount > 0) {
+            messages.unshift(`<p class="text-red-500">❌ Registros con errores: ${errorCount}</p>`);
+        }
+        messages.unshift(`<p class="text-blue-500">📊 Total de filas procesadas: ${jsonData.length}</p>`);
+
+        if (messagesDiv) messagesDiv.innerHTML = messages.join('');
+
+        // Mostrar notificación de éxito
+        if (successCount > 0) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Carga masiva completada',
+                text: `Se procesaron ${successCount} registros correctamente${errorCount > 0 ? ` (${errorCount} errores)` : ''}`,
+                timer: 4000,
+                showConfirmButton: false
+            });
+
+            // Recargar datos
+            await loadAssignments();
+            totalInventoryRecords = 0; // Forzar recálculo del total
+            await loadInventoryData();
+        }
 
     } catch (error) {
-        console.error('Error en login:', error);
-        showAlert(error.message || 'Error al iniciar sesión');
-        showLoading('login', false);
-        // Asegurarse de ocultar elementos admin-only en caso de error de login
-        document.body.classList.remove('is-admin');
+        console.error('Error general al procesar el archivo:', error);
+        if (messagesDiv) messagesDiv.innerHTML = `<p class="text-red-500">Error general: ${error.message}</p>`;
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
-});
+}
 
-       // Manejar registro - VERSIÓN CORREGIDA
-document.getElementById('register-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+
+// Función auxiliar para leer archivo (sin cambios)
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+// Funciones de carga de datos
+async function loadUserData() {
+    try {
+        const { data, error } = await supabase
+            .from('usuarioconteo')
+            .select('*')
+            .order('nombre');
+        
+        if (error) throw error;
+        
+        // Actualizar tabla de usuarios
+        const userRegistry = document.getElementById('user-registry');
+        if (userRegistry) {
+            userRegistry.innerHTML = data.map(user => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.nombre}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.correo || 'Sin correo'}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Actualizar datalists
+        const userLists = ['user-list', 'user-list-inventory', 'user-list-inventory-numbers'];
+        userLists.forEach(listId => {
+            const userList = document.getElementById(listId);
+            if (userList) {
+                userList.innerHTML = data.map(user => 
+                    `<option value="${user.nombre} (${user.correo || 'Sin correo'})">`
+                ).join('');
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+    }
+}
+
+async function loadPartNumbers(datalistId) {
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('inventario_id')
+            .order('inventario_id');
+        
+        if (error) throw error;
+        
+        const datalist = document.getElementById(datalistId);
+        if (datalist) {
+            datalist.innerHTML = data.map(item => 
+                `<option value="${item.inventario_id}">`
+            ).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar números de parte:', error);
+    }
+}
+
+async function loadAllRacks() {
+    const rackSelects = ['rack-assignment', 'rack'];
     
-    const fullName = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const role = document.getElementById('register-role').value;
+    // Racks con letras
+    const racksLetras = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    
+    // Racks numéricos (puedes ajustar el rango según tus necesidades)
+    const racksNumericos = [];
+    for (let i = 1; i <= 20; i++) { // Ajusta el rango según tus racks
+        racksNumericos.push(i.toString());
+    }
+    
+    // Combinar todos los racks
+    const todosLosRacks = [...racksLetras, ...racksNumericos, 'AREA_KITEO'];
+    
+    rackSelects.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+            select.innerHTML = '<option value="">Seleccione un Rack</option>' +
+                todosLosRacks.map(rack => {
+                    if (rack === 'AREA_KITEO') {
+                        return `<option value="${rack}">AREA_KITEO</option>`;
+                    } else if (/^\d+$/.test(rack)) {
+                        return `<option value="${rack}">Rack ${rack}</option>`;
+                    } else {
+                        return `<option value="${rack}">Rack ${rack}</option>`;
+                    }
+                }).join('');
+        }
+    });
+}
 
-    if (!fullName || !email || !password || !role) {
-        showAlert('Por favor completa todos los campos');
+// Función para cargar racks únicos desde la base de datos para inventory-rack
+async function loadRacksFromDatabase() {
+    try {
+        console.log('📦 [DEBUG] Cargando racks desde numerosinventario...');
+        
+        // Obtener TODOS los racks sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('rack')
+                .range(from, from + pageSize - 1);
+            
+            if (error) {
+                console.error('❌ Error al consultar numerosinventario:', error);
+                throw error;
+            }
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    from += pageSize;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        // Obtener racks únicos y filtrar valores vacíos o null
+        const uniqueRacks = [...new Set(allData.map(item => item.rack).filter(rack => rack && rack.trim() !== ''))];
+        uniqueRacks.sort(); // Ordenar alfabéticamente
+        
+        console.log('📦 [DEBUG] Racks únicos encontrados:', uniqueRacks);
+        console.log('📦 [DEBUG] Total de racks:', uniqueRacks.length);
+        
+        // Cargar en el select de inventory-rack
+        const inventoryRackSelect = document.getElementById('inventory-rack');
+        if (inventoryRackSelect) {
+            inventoryRackSelect.innerHTML = '<option value="">Seleccione un Rack</option>' +
+                uniqueRacks.map(rack => `<option value="${rack}">${rack}</option>`).join('');
+            console.log('✅ [DEBUG] Racks cargados en inventory-rack');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error al cargar racks desde la base de datos:', error);
+    }
+}
+
+// Función para autoseleccionar el usuario logueado en el formulario de números de inventario
+function setCurrentUserInInventoryForm() {
+    const inventoryUserInput = document.getElementById('inventory-user');
+    
+    if (!inventoryUserInput) {
+        console.warn('⚠️ No se encontró el campo inventory-user');
+        return;
+    }
+    
+    if (currentUser) {
+        // Si el usuario tiene usuarioConteoVinculado, usar ese, sino usar full_name
+        const userName = currentUser.usuarioConteoVinculado || currentUser.full_name;
+        inventoryUserInput.value = userName;
+        console.log('✅ [DEBUG] Usuario autoseleccionado en inventory-user:', userName);
+    } else {
+        console.warn('⚠️ currentUser no está definido, no se puede autoseleccionar usuario');
+    }
+}
+
+async function loadAssignments(page = 1) {
+    try {
+        console.log('🔍 [DEBUG] Iniciando loadAssignments con paginación...');
+        console.log('🔍 [DEBUG] isAdmin:', isAdmin);
+        console.log('🔍 [DEBUG] currentUser:', currentUser);
+
+        // Obtener el total de asignaciones (solo si es la primera carga)
+        if (totalAssignmentsRecords === 0) {
+            let countQuery = supabase
+                .from('conteoinventario')
+                .select('*', { count: 'exact', head: true })
+                .eq('cantidad_contada', false);
+
+            if (!isAdmin && currentUser) {
+                const usuarioParaFiltrar = currentUser.usuarioConteoVinculado;
+                countQuery = countQuery.eq('usuario_asignado', usuarioParaFiltrar);
+            }
+
+            const { count, error: countError } = await countQuery;
+            if (countError) throw countError;
+            totalAssignmentsRecords = count || 0;
+        }
+
+        const from = (page - 1) * assignmentsPageSize;
+        const to = from + assignmentsPageSize - 1;
+
+        let query = supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('cantidad_contada', false)
+            .range(from, to);
+
+        if (!isAdmin && currentUser) {
+            const usuarioParaFiltrar = currentUser.usuarioConteoVinculado;
+            query = query.eq('usuario_asignado', usuarioParaFiltrar);
+        }
+
+        const { data, error } = await query.order('fecha_actualizacion', { ascending: false });
+        if (error) throw error;
+
+        currentAssignmentsPage = page;
+        assignmentsData = data || [];
+        renderAssignmentsTable();
+        renderAssignmentsPagination();
+    } catch (error) {
+        console.error('Error al cargar asignaciones:', error);
+        const assignmentsTable = document.getElementById('assignments-table');
+        if (assignmentsTable) {
+            assignmentsTable.innerHTML = `
+                <tr>
+                    <td colspan="9" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar asignaciones</td>
+                </tr>
+            `;
+        }
+        document.getElementById('assignments-pagination-controls').innerHTML = '';
+    }
+}
+
+// Función para cargar ubicaciones reales en los selectores
+async function loadRealLocationsForSelects() {
+    try {
+        console.log('📍 [DEBUG] Cargando ubicaciones reales...');
+        
+        // Obtener TODAS las ubicaciones sin límite de paginación
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('numerosinventario')
+                .select('location')
+                .range(from, from + pageSize - 1)
+                .order('location');
+            
+            if (error) {
+                console.error('❌ Error al consultar numerosinventario:', error);
+                throw error;
+            }
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                console.log(`📄 [DEBUG] Página cargada: ${data.length} registros (total acumulado: ${allData.length})`);
+                
+                // Si obtuvimos menos registros que el tamaño de página, ya no hay más
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    from += pageSize;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+
+
+
+  
+        console.log('📊 [DEBUG] Total de registros obtenidos de numerosinventario:', allData.length);
+        const data = allData;
+        
+        // Obtener ubicaciones únicas y filtrar valores vacíos o null
+        const uniqueLocations = [...new Set(allData.map(item => item.location).filter(loc => loc && loc.trim() !== ''))];
+        uniqueLocations.sort(); // Ordenar alfabéticamente
+        
+        console.log('📍 [DEBUG] Ubicaciones únicas encontradas:', uniqueLocations);
+        console.log('📍 [DEBUG] Total de ubicaciones:', uniqueLocations.length);
+        
+        // Agregar opciones a todos los selectores de ubicación real
+        const selects = document.querySelectorAll('[id^="real-location-"]');
+        console.log('📋 [DEBUG] Selectores encontrados:', selects.length);
+        
+        if (selects.length === 0) {
+            console.warn('⚠️ No se encontraron selectores de ubicación real');
+            return;
+        }
+        
+        selects.forEach((select, index) => {
+            // Mantener la opción por defecto
+            const defaultOption = '<option value="">Seleccionar ubicación</option>';
+            const options = uniqueLocations.map(location => 
+                `<option value="${location}">${location}</option>`
+            ).join('');
+            select.innerHTML = defaultOption + options;
+            console.log(`✅ [DEBUG] Selector ${index + 1} actualizado con ${uniqueLocations.length} opciones`);
+        });
+        
+        console.log('✅ [DEBUG] Ubicaciones reales cargadas exitosamente');
+        
+    } catch (error) {
+        console.error('❌ Error al cargar ubicaciones reales:', error);
+    }
+}
+
+// Función para cargar resumen por rack
+async function loadRackSummary() {
+    try {
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('rack, cantidad, fecha_actualizacion')
+            .eq('cantidad_contada', true);
+        
+        if (error) throw error;
+        
+        // Agrupar por rack
+        const rackSummary = {};
+        data.forEach(item => {
+            if (!rackSummary[item.rack]) {
+                rackSummary[item.rack] = {
+                    totalItems: 0,
+                    totalQuantity: 0,
+                    lastUpdate: item.fecha_actualizacion
+                };
+            }
+            rackSummary[item.rack].totalItems++;
+            rackSummary[item.rack].totalQuantity += item.cantidad;
+            
+            // Mantener la fecha más reciente
+            if (new Date(item.fecha_actualizacion) > new Date(rackSummary[item.rack].lastUpdate)) {
+                rackSummary[item.rack].lastUpdate = item.fecha_actualizacion;
+            }
+        });
+        
+        const rackSummaryBody = document.getElementById('rack-summary-body');
+        if (rackSummaryBody) {
+            if (Object.keys(rackSummary).length === 0) {
+                rackSummaryBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de inventario</td>
+                    </tr>
+                `;
+            } else {
+                rackSummaryBody.innerHTML = Object.entries(rackSummary).map(([rack, summary]) => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rack}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalItems}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalQuantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(summary.lastUpdate).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar resumen por rack:', error);
+        const rackSummaryBody = document.getElementById('rack-summary-body');
+        if (rackSummaryBody) {
+            rackSummaryBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar datos</td>
+                </tr>
+            `;
+        }
+    }
+}
+
+// Función para cargar resumen por usuario
+async function loadUserSummary() {
+    try {
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('usuario_asignado, rack, cantidad, fecha_actualizacion')
+            .eq('cantidad_contada', true);
+        
+        if (error) throw error;
+        
+        // Agrupar por usuario y rack
+        const userSummary = {};
+        data.forEach(item => {
+            const key = `${item.usuario_asignado}-${item.rack}`;
+            if (!userSummary[key]) {
+                userSummary[key] = {
+                    usuario: item.usuario_asignado,
+                    rack: item.rack,
+                    itemsCount: 0,
+                    totalQuantity: 0,
+                    lastCount: item.fecha_actualizacion
+                };
+            }
+            userSummary[key].itemsCount++;
+            userSummary[key].totalQuantity += item.cantidad;
+            
+            // Mantener la fecha más reciente
+            if (new Date(item.fecha_actualizacion) > new Date(userSummary[key].lastCount)) {
+                userSummary[key].lastCount = item.fecha_actualizacion;
+            }
+        });
+        
+        const userSummaryBody = document.getElementById('user-summary');
+        if (userSummaryBody) {
+            if (Object.keys(userSummary).length === 0) {
+                userSummaryBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos de conteo por usuario</td>
+                    </tr>
+                `;
+            } else {
+                userSummaryBody.innerHTML = Object.values(userSummary).map(summary => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${summary.usuario}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.rack}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.itemsCount}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalQuantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(summary.lastCount).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar resumen por usuario:', error);
+        const userSummaryBody = document.getElementById('user-summary');
+        if (userSummaryBody) {
+            userSummaryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar datos</td>
+                </tr>
+            `;
+        }
+    }
+}
+
+// Función para generar el badge de estado dinámico usando timestamps
+function getStatusBadge(item) {
+    // Detectar reconteos basándose en la diferencia entre fecha_creacion y fecha_actualizacion
+    const fechaCreacion = new Date(item.fecha_creacion || item.created_at);
+    const fechaActualizacion = new Date(item.fecha_actualizacion || item.updated_at);
+    
+    // Diferencia en minutos
+    const diferenciaMinutos = Math.abs(fechaActualizacion - fechaCreacion) / (1000 * 60);
+    
+    if (diferenciaMinutos < 2) {
+        // Si la diferencia es menor a 2 minutos, es conteo inicial
+        return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Contado
+                </span>`;
+    } else {
+        // Si hay diferencia significativa, es reconteo/modificación
+        return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    Recontado
+                </span>`;
+    }
+}
+
+
+function renderAssignmentsPagination() {
+    const totalPages = Math.ceil(totalAssignmentsRecords / assignmentsPageSize);
+    const container = document.getElementById('assignments-pagination-controls');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
         return;
     }
 
-    if (password.length < 6) {
-        showAlert('La contraseña debe tener al menos 6 caracteres');
+    let html = '';
+
+    // Botón anterior
+    if (currentAssignmentsPage > 1) {
+        html += `<button onclick="loadAssignments(${currentAssignmentsPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5)
+    let startPage = Math.max(1, currentAssignmentsPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentAssignmentsPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadAssignments(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentAssignmentsPage < totalPages) {
+        html += `<button onclick="loadAssignments(${currentAssignmentsPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+
+  
+
+function renderInventoryTable(data) {
+    const inventoryTableBody = document.getElementById('inventory-table-body');
+    if (!inventoryTableBody) return;
+
+    if (data.length === 0) {
+        inventoryTableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros de inventario</td>
+            </tr>
+        `;
         return;
     }
 
-    showLoading('register', true);
-    clearAlerts();
+    inventoryTableBody.innerHTML = data.map(item => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.fecha_actualizacion).toLocaleString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad}</td>
+           
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${getStatusBadge(item)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <button onclick="recountInventoryItem(${item.id})" class="text-orange-600 hover:text-orange-900 mr-2" title="Reconteo">
+                    <i class="fas fa-book"></i>
+                </button>
+                <button onclick="editInventoryItem(${item.id})" class="text-blue-600 hover:text-blue-900 mr-2" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteInventoryItem(${item.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+function renderPaginationControls() {
+    const totalPages = Math.ceil(totalInventoryRecords / pageSize);
+    const container = document.getElementById('pagination-controls');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botón anterior
+    if (currentPage > 1) {
+        html += `<button onclick="loadInventoryData(${currentPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5 a la vez)
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadInventoryData(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentPage < totalPages) {
+        html += `<button onclick="loadInventoryData(${currentPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+
+
+
+  
+
+// Función para cargar registros detallados de inventario
+let currentPage = 1;
+const pageSize = 50;
+let totalInventoryRecords = 0;
+
+async function loadInventoryData(page = 1) {
+    try {
+        // Obtener el total de registros (solo una vez al inicio o cuando cambie el filtro)
+        if (totalInventoryRecords === 0) {
+            const { count, error: countError } = await supabase
+                .from('conteoinventario')
+                .select('*', { count: 'exact', head: true })
+                .eq('cantidad_contada', true);
+            if (countError) throw countError;
+            totalInventoryRecords = count || 0;
+        }
+
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('cantidad_contada', true)
+            .order('fecha_actualizacion', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        currentPage = page;
+        renderInventoryTable(data);
+        renderPaginationControls();
+        await loadRackSummary();
+        await loadUserSummary();
+    } catch (error) {
+        console.error('Error al cargar datos de inventario:', error);
+        document.getElementById('inventory-table-body').innerHTML = `
+            <tr><td colspan="10" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td></tr>
+        `;
+        document.getElementById('pagination-controls').innerHTML = '';
+    }
+}
+
+async function loadInventoryNumbers() {
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('inventario_id')
+            .order('inventario_id');
+        
+        if (error) throw error;
+        
+        const inventoryNumberList = document.getElementById('inventory-number-list');
+        if (inventoryNumberList) {
+            inventoryNumberList.innerHTML = data.map(item => 
+                `<option value="${item.inventario_id}">`
+            ).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar números de inventario:', error);
+    }
+}
+
+// Funciones de manejo de cambios
+async function handleRackAssignmentChange() {
+    const rackSelect = document.getElementById('rack-assignment');
+    const locationSelect = document.getElementById('location-assignment');
+    
+    if (!rackSelect || !locationSelect) return;
+    
+    const selectedRack = rackSelect.value;
+    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+    
+    if (selectedRack) {
+        await loadLocationsForRack(selectedRack, 'location-assignment');
+    }
+}
+
+async function handleRackChange() {
+    const rackSelect = document.getElementById('rack');
+    const locationSelect = document.getElementById('location');
+    
+    if (!rackSelect || !locationSelect) return;
+    
+    const selectedRack = rackSelect.value;
+    locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+    
+    if (selectedRack) {
+        await loadLocationsForRack(selectedRack, 'location');
+    }
+}
+
+async function handleInventoryRackChange() {
+    const rackSelect = document.getElementById('inventory-rack');
+    const locationInput = document.getElementById('inventory-location');
+    const locationList = document.getElementById('inventory-location-list');
+
+    if (!rackSelect || !locationInput || !locationList) return;
+
+    const selectedRack = rackSelect.value;
+
+    if (selectedRack === 'VARIACIONES') {
+        locationInput.value = 'VARIACIONES';
+        locationList.innerHTML = '<option value="VARIACIONES">VARIACIONES</option>';
+    } else if (selectedRack) {
+        await loadLocationsForRack(selectedRack, 'inventory-location-list');
+    }
+}
+
+async function handlePartNumberAssignmentBlur() {
+    const partNumberInput = document.getElementById('part-number-assignment');
+    const rackSelect = document.getElementById('rack-assignment');
+    const locationSelect = document.getElementById('location-assignment');
+    
+    if (!partNumberInput || !rackSelect || !locationSelect) {
+        console.error('No se encontraron los elementos del DOM necesarios');
+        return;
+    }
+    
+    const partNumber = partNumberInput.value.trim();
+    
+    if (!partNumber) {
+        // Si se borra el número de parte, restaurar estado inicial
+        await loadAllRacks();
+        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        rackSelect.value = '';
+        return;
+    }
+    
+    console.log(`🔍 Buscando información para número de parte: ${partNumber}`);
+    
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('rack, location')
+            .eq('inventario_id', partNumber)
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            console.warn(`❌ Número de parte ${partNumber} no encontrado`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Número de parte no encontrado',
+                text: 'El número de parte ingresado no existe en la base de datos.',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            rackSelect.value = '';
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+            return;
+        }
+        
+        const defaultRecord = data[0];
+        console.log(`✅ Información encontrada:`, defaultRecord);
+        console.log(`📋 Rack de BD: "${defaultRecord.rack}" (tipo: ${typeof defaultRecord.rack})`);
+        console.log(`📋 Ubicación de BD: "${defaultRecord.location}" (tipo: ${typeof defaultRecord.location})`);
+        
+        // Cargar todos los racks primero
+        await loadAllRacks();
+        
+        // Función para forzar la selección del rack con múltiples estrategias
+        const forceRackSelection = () => {
+            console.log(`🎯 Intentando seleccionar rack: "${defaultRecord.rack}"`);
+            
+            // Estrategia 1: Selección directa
+            rackSelect.value = defaultRecord.rack;
+            console.log(`📝 Estrategia 1 - Valor después de asignación directa: "${rackSelect.value}"`);
+            
+            if (rackSelect.value === defaultRecord.rack) {
+                console.log(`✅ Estrategia 1 exitosa - Rack seleccionado: "${rackSelect.value}"`);
+                return true;
+            }
+            
+            // Estrategia 2: Buscar por texto y seleccionar
+            console.log(`🔄 Estrategia 1 falló, probando estrategia 2...`);
+            const options = Array.from(rackSelect.options);
+            console.log(`📋 Opciones disponibles:`, options.map(opt => `"${opt.value}" -> "${opt.text}"`));
+            
+            const matchingOption = options.find(option => 
+                option.value === defaultRecord.rack || 
+                option.text.includes(defaultRecord.rack) ||
+                option.value.toLowerCase() === defaultRecord.rack.toLowerCase()
+            );
+            
+            if (matchingOption) {
+                rackSelect.value = matchingOption.value;
+                console.log(`✅ Estrategia 2 exitosa - Opción encontrada: "${matchingOption.value}" -> "${matchingOption.text}"`);
+                return true;
+            }
+            
+            // Estrategia 3: Crear la opción si no existe
+            console.log(`🔄 Estrategia 2 falló, probando estrategia 3...`);
+            const newOption = document.createElement('option');
+            newOption.value = defaultRecord.rack;
+            newOption.textContent = defaultRecord.rack === 'AREA_KITEO' ? defaultRecord.rack : `Rack ${defaultRecord.rack}`;
+            rackSelect.appendChild(newOption);
+            rackSelect.value = defaultRecord.rack;
+            
+            if (rackSelect.value === defaultRecord.rack) {
+                console.log(`✅ Estrategia 3 exitosa - Opción creada y seleccionada: "${defaultRecord.rack}"`);
+                return true;
+            }
+            
+            console.error(`❌ Todas las estrategias fallaron para seleccionar rack: "${defaultRecord.rack}"`);
+            return false;
+        };
+        
+        // Función para forzar la selección de ubicación
+        const forceLocationSelection = async () => {
+            console.log(`🎯 Cargando ubicaciones para rack: "${defaultRecord.rack}"`);
+            await loadLocationsForRack(defaultRecord.rack, 'location-assignment');
+            
+            setTimeout(() => {
+                console.log(`🎯 Intentando seleccionar ubicación: "${defaultRecord.location}"`);
+                locationSelect.value = defaultRecord.location;
+                
+                if (locationSelect.value === defaultRecord.location) {
+                    console.log(`✅ Ubicación seleccionada exitosamente: "${defaultRecord.location}"`);
+                } else {
+                    console.warn(`❌ No se pudo seleccionar ubicación: "${defaultRecord.location}"`);
+                    console.log(`📋 Opciones de ubicación disponibles:`, 
+                        Array.from(locationSelect.options).map(opt => `"${opt.value}"`));
+                    
+                    // Intentar crear la opción de ubicación si no existe
+                    const newLocationOption = document.createElement('option');
+                    newLocationOption.value = defaultRecord.location;
+                    newLocationOption.textContent = defaultRecord.location;
+                    locationSelect.appendChild(newLocationOption);
+                    locationSelect.value = defaultRecord.location;
+                    
+                    if (locationSelect.value === defaultRecord.location) {
+                        console.log(`✅ Ubicación creada y seleccionada: "${defaultRecord.location}"`);
+                    }
+                }
+            }, 200);
+        };
+        
+        // Ejecutar selección con delay
+        setTimeout(async () => {
+            const rackSuccess = forceRackSelection();
+            if (rackSuccess) {
+                await forceLocationSelection();
+            }
+            
+            // Mostrar mensaje de éxito
+            setTimeout(() => {
+                const finalRack = rackSelect.value;
+                const finalLocation = locationSelect.value;
+                
+                console.log(`🏁 Resultado final - Rack: "${finalRack}", Ubicación: "${finalLocation}"`);
+                
+                Swal.fire({
+                    icon: finalRack && finalLocation ? 'success' : 'warning',
+                    title: finalRack && finalLocation ? 'Información cargada' : 'Carga parcial',
+                    text: `Rack: ${finalRack || 'No seleccionado'}, Ubicación: ${finalLocation || 'No seleccionada'}`,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }, 300);
+        }, 150);
+        
+    } catch (error) {
+        console.error('❌ Error al buscar información del número de parte:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Búsqueda',
+            text: 'Ocurrió un problema al buscar la información del número de parte.'
+        });
+        rackSelect.value = '';
+        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+    }
+}
+
+// Función para autocompletar en inventario manual
+async function handlePartNumberInventoryBlur() {
+    const partNumberInput = document.getElementById('part-number');
+    const rackSelect = document.getElementById('rack');
+    const locationSelect = document.getElementById('location');
+    const descriptionInput = document.getElementById('description');
+    
+    if (!partNumberInput || !rackSelect || !locationSelect || !descriptionInput) {
+        console.error('No se encontraron los elementos del DOM necesarios para inventario manual');
+        return;
+    }
+    
+    const partNumber = partNumberInput.value.trim();
+    
+    if (!partNumber) {
+        // Si se borra el número de parte, restaurar estado inicial
+        await loadAllRacks();
+        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        rackSelect.value = '';
+        descriptionInput.value = '';
+        return;
+    }
+    
+    console.log(`🔍 [Inventario Manual] Buscando información para número de parte: ${partNumber}`);
+    
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('rack, location, descripcion')
+            .eq('inventario_id', partNumber)
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            console.warn(`❌ [Inventario Manual] Número de parte ${partNumber} no encontrado`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Número de parte no encontrado',
+                text: 'El número de parte ingresado no existe en la base de datos.',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            rackSelect.value = '';
+            locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+            descriptionInput.value = '';
+            return;
+        }
+        
+        const defaultRecord = data[0];
+        console.log(`✅ [Inventario Manual] Información encontrada:`, defaultRecord);
+        console.log(`📋 [Inventario Manual] Rack: "${defaultRecord.rack}", Ubicación: "${defaultRecord.location}", Descripción: "${defaultRecord.descripcion}"`);
+        
+        // Cargar todos los racks primero
+        await loadAllRacks();
+        
+        // Función para forzar la selección con múltiples estrategias
+        const forceInventorySelection = () => {
+            console.log(`🎯 [Inventario Manual] Intentando seleccionar rack: "${defaultRecord.rack}"`);
+            
+            // Seleccionar rack
+            rackSelect.value = defaultRecord.rack;
+            
+            if (rackSelect.value === defaultRecord.rack) {
+                console.log(`✅ [Inventario Manual] Rack seleccionado: "${rackSelect.value}"`);
+            } else {
+                // Crear opción si no existe
+                console.log(`🔧 [Inventario Manual] Creando opción para rack: "${defaultRecord.rack}"`);
+                const newOption = document.createElement('option');
+                newOption.value = defaultRecord.rack;
+                newOption.textContent = defaultRecord.rack === 'AREA_KITEO' ? defaultRecord.rack : `Rack ${defaultRecord.rack}`;
+                rackSelect.appendChild(newOption);
+                rackSelect.value = defaultRecord.rack;
+            }
+            
+            // Llenar descripción inmediatamente
+            descriptionInput.value = defaultRecord.descripcion || '';
+            console.log(`✅ [Inventario Manual] Descripción establecida: "${descriptionInput.value}"`);
+        };
+        
+        // Función para cargar y seleccionar ubicación
+        const forceLocationSelection = async () => {
+            console.log(`🎯 [Inventario Manual] Cargando ubicaciones para rack: "${defaultRecord.rack}"`);
+            await loadLocationsForRack(defaultRecord.rack, 'location');
+            
+            setTimeout(() => {
+                console.log(`🎯 [Inventario Manual] Intentando seleccionar ubicación: "${defaultRecord.location}"`);
+                locationSelect.value = defaultRecord.location;
+                
+                if (locationSelect.value === defaultRecord.location) {
+                    console.log(`✅ [Inventario Manual] Ubicación seleccionada: "${defaultRecord.location}"`);
+                } else {
+                    // Crear opción si no existe
+                    const newLocationOption = document.createElement('option');
+                    newLocationOption.value = defaultRecord.location;
+                    newLocationOption.textContent = defaultRecord.location;
+                    locationSelect.appendChild(newLocationOption);
+                    locationSelect.value = defaultRecord.location;
+                    
+                    if (locationSelect.value === defaultRecord.location) {
+                        console.log(`✅ [Inventario Manual] Ubicación creada y seleccionada: "${defaultRecord.location}"`);
+                    }
+                }
+            }, 200);
+        };
+        
+        // Ejecutar selección con delay
+        setTimeout(async () => {
+            forceInventorySelection();
+            await forceLocationSelection();
+            
+            // Mostrar mensaje de éxito
+            setTimeout(() => {
+                const finalRack = rackSelect.value;
+                const finalLocation = locationSelect.value;
+                const finalDescription = descriptionInput.value;
+                
+                console.log(`🏁 [Inventario Manual] Resultado final - Rack: "${finalRack}", Ubicación: "${finalLocation}", Descripción: "${finalDescription}"`);
+                
+                Swal.fire({
+                    icon: finalRack && finalLocation && finalDescription ? 'success' : 'warning',
+                    title: finalRack && finalLocation && finalDescription ? 'Información cargada' : 'Carga parcial',
+                    text: `Rack: ${finalRack || 'No seleccionado'}, Ubicación: ${finalLocation || 'No seleccionada'}, Descripción: ${finalDescription || 'No encontrada'}`,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }, 300);
+        }, 150);
+        
+    } catch (error) {
+        console.error('❌ [Inventario Manual] Error al buscar información del número de parte:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Búsqueda',
+            text: 'Ocurrió un problema al buscar la información del número de parte.'
+        });
+        rackSelect.value = '';
+        locationSelect.innerHTML = '<option value="">Seleccione ubicación</option>';
+        descriptionInput.value = '';
+    }
+}
+
+// Función para autocompletar descripción en números de inventario
+async function handlePartNumberInventoryNumbersBlur() {
+    const partNumberInput = document.getElementById('inventory-part-number');
+    const descriptionInput = document.getElementById('inventory-description');
+    
+    if (!partNumberInput || !descriptionInput) {
+        console.error('No se encontraron los elementos del DOM necesarios para números de inventario');
+        return;
+    }
+    
+    const partNumber = partNumberInput.value.trim();
+    
+    if (!partNumber) {
+        descriptionInput.value = '';
+        return;
+    }
+    
+    console.log(`🔍 [Números Inventario] Buscando descripción para: ${partNumber}`);
+    
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('descripcion')
+            .eq('inventario_id', partNumber)
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            console.warn(`⚠️ [Números Inventario] Número de parte ${partNumber} no encontrado`);
+            descriptionInput.value = 'No encontrado';
+            return;
+        }
+        
+        const description = data[0].descripcion || 'Sin descripción';
+        descriptionInput.value = description;
+        console.log(`✅ [Números Inventario] Descripción cargada: ${description}`);
+        
+    } catch (error) {
+        console.error('❌ [Números Inventario] Error al buscar descripción:', error);
+        descriptionInput.value = 'Error al cargar';
+    }
+}
+
+// Función para cargar ubicaciones por rack
+async function loadLocationsForRack(rack, datalistId) {
+    try {
+        const { data, error } = await supabase
+            .from('numerosinventario')
+            .select('location')
+            .eq('rack', rack)
+            .order('location');
+
+        if (error) throw error;
+
+        const datalist = document.getElementById(datalistId);
+        if (datalist) {
+            const uniqueLocations = [...new Set(data.map(item => item.location))];
+            datalist.innerHTML = uniqueLocations.map(location =>
+                `<option value="${location}">${location}</option>`
+            ).join('');
+        }
+
+    } catch (error) {
+        console.error('Error al cargar ubicaciones:', error);
+    }
+}
+// Funciones de filtros para inventario
+function applyInventoryFilters() {
+    const userFilter = document.getElementById('filter-user').value.toLowerCase();
+    const partFilter = document.getElementById('filter-part').value.toLowerCase();
+    const rows = document.querySelectorAll('#inventory-table-body tr');
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 1) { // Evitar la fila de "cargando" o "sin datos"
+            const usuario = cells[6].textContent.toLowerCase(); // Columna Usuario
+            const numeroParte = cells[3].textContent.toLowerCase(); // Columna Número de Parte
+            
+            const matchUser = !userFilter || usuario.includes(userFilter);
+            const matchPart = !partFilter || numeroParte.includes(partFilter);
+            
+            row.style.display = (matchUser && matchPart) ? '' : 'none';
+        }
+    });
+}
+
+function clearInventoryFilters() {
+    document.getElementById('filter-user').value = '';
+    document.getElementById('filter-part').value = '';
+    applyInventoryFilters();
+}
+
+// Funciones de exportación para inventario
+async function exportInventoryToExcel() {
+    try {
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('cantidad_contada', true)
+            .order('fecha_actualizacion', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Preparar datos para Excel
+        const excelData = data.map(item => ({
+            'Fecha/Hora': new Date(item.fecha_actualizacion).toLocaleString(),
+            'Rack': item.rack,
+            'Ubicación': item.ubicacion,
+            'Número de Parte': item.numero_parte,
+            'Descripción': item.descripcion || 'N/A',
+            'Cantidad': item.cantidad,
+            'Usuario': item.usuario_asignado
+        }));
+        
+        // Crear workbook y worksheet
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+        
+        // Descargar archivo
+        const fileName = `inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Exportación exitosa',
+            text: `Archivo ${fileName} descargado correctamente`,
+            timer: 3000,
+            showConfirmButton: false
+        });
+        
+    } catch (error) {
+        console.error('Error al exportar a Excel:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de exportación',
+            text: 'No se pudo exportar el archivo Excel'
+        });
+    }
+}
+
+async function exportInventoryToPDF() {
+    try {
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('cantidad_contada', true)
+            .order('fecha_actualizacion', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Crear contenido HTML para PDF
+        let htmlContent = `
+            <html>
+            <head>
+                <title>Reporte de Inventario</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    h1 { color: #1e3a8a; text-align: center; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f3f4f6; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #f9fafb; }
+                </style>
+            </head>
+            <body>
+                <h1>Reporte de Inventario</h1>
+                <p><strong>Fecha de generación:</strong> ${new Date().toLocaleString()}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Rack</th>
+                            <th>Ubicación</th>
+                            <th>Número de Parte</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.forEach(item => {
+            htmlContent += `
+                <tr>
+                    <td>${new Date(item.fecha_actualizacion).toLocaleString()}</td>
+                    <td>${item.rack}</td>
+                    <td>${item.ubicacion}</td>
+                    <td>${item.numero_parte}</td>
+                    <td>${item.descripcion || 'N/A'}</td>
+                    <td>${item.cantidad}</td>
+                    <td>${item.usuario_asignado}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        
+        // Abrir ventana para imprimir/guardar como PDF
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.print();
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'PDF generado',
+            text: 'Se abrió una ventana para imprimir o guardar como PDF',
+            timer: 3000,
+            showConfirmButton: false
+        });
+        
+    } catch (error) {
+        console.error('Error al exportar a PDF:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de exportación',
+            text: 'No se pudo generar el archivo PDF'
+        });
+    }
+}
+
+// Funciones de acciones para registros de inventario
+async function editInventoryItem(id) {
+    try {
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error) throw error;
+        
+        const { value: formValues } = await Swal.fire({
+            title: 'Editar Registro de Inventario',
+            html: `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Cantidad:</label>
+                        <input id="edit-quantity" type="number" value="${data.cantidad}" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Descripción:</label>
+                        <input id="edit-description" type="text" value="${data.descripcion || ''}" class="w-full px-3 py-2 border rounded">
+                    </div>
+                </div>
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    cantidad: document.getElementById('edit-quantity').value,
+                    descripcion: document.getElementById('edit-description').value
+                }
+            }
+        });
+        
+        if (formValues) {
+            const { error: updateError } = await supabase
+                .from('conteoinventario')
+                .update({
+                    cantidad: parseInt(formValues.cantidad),
+                    descripcion: formValues.descripcion,
+                    fecha_actualizacion: new Date().toISOString()
+                })
+                .eq('id', id);
+            
+            if (updateError) throw updateError;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Registro actualizado',
+                text: 'El registro se ha actualizado correctamente',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            totalInventoryRecords = 0; // Forzar recálculo del total
+            await loadInventoryData();
+        }
+        
+    } catch (error) {
+        console.error('Error al editar registro:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo editar el registro'
+        });
+    }
+}
+
+async function deleteInventoryItem(id) {
+    const result = await Swal.fire({
+        title: '¿Eliminar registro?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const { error } = await supabase
+                .from('conteoinventario')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Registro eliminado',
+                text: 'El registro se ha eliminado correctamente',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            totalInventoryRecords = 0; // Forzar recálculo del total
+            await loadInventoryData();
+            
+        } catch (error) {
+            console.error('Error al eliminar registro:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo eliminar el registro'
+            });
+        }
+    }
+}
+
+// Funciones de exportación originales
+function exportToExcel() {
+    // Implementar exportación a Excel
+    console.log('Exportando a Excel...');
+}
+
+function exportToPDF() {
+    // Implementar exportación a PDF
+    console.log('Exportando a PDF...');
+}
+
+// Función de filtrado
+function filterAssignments() {
+    const searchTerm = document.getElementById('search-filter').value.toLowerCase();
+    const rows = document.querySelectorAll('#assignments-table tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+
+    
+  
+
+// Función para reconteo de inventario - Mover de vuelta a Vista de Asignaciones
+async function recountInventoryItem(id) {
+    try {
+        // Obtener datos actuales del registro
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error) throw error;
+        
+        const result = await Swal.fire({
+            title: '📖 Solicitar Reconteo',
+            html: `
+                <div class="text-left space-y-4">
+                    <div class="bg-gray-50 p-3 rounded">
+                        <p><strong>Número de Parte:</strong> ${data.numero_parte}</p>
+                        <p><strong>Descripción:</strong> ${data.descripcion || 'N/A'}</p>
+                        <p><strong>Ubicación:</strong> ${data.rack} - ${data.ubicacion}</p>
+                        <p><strong>Usuario Asignado:</strong> ${data.usuario_asignado}</p>
+                        <p><strong>Cantidad Actual:</strong> ${data.cantidad}</p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
+                        <p class="text-sm text-yellow-800">
+                            <strong>¿Solicitar reconteo?</strong><br>
+                            Este registro se moverá de vuelta a "Vista de Asignaciones" 
+                            para que el usuario asignado pueda volver a contarlo.
+                        </p>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, solicitar reconteo',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#f97316',
+            icon: 'question'
+        });
+        
+        if (result.isConfirmed) {
+            // Marcar el registro como pendiente de reconteo
+            const { error: updateError } = await supabase
+                .from('conteoinventario')
+                .update({
+                    cantidad_contada: false, // Mover de vuelta a pendientes
+                    fecha_actualizacion: new Date().toISOString()
+                })
+                .eq('id', id);
+            
+            if (updateError) throw updateError;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Reconteo solicitado',
+                html: `
+                    <div class="text-left">
+                        <p>El registro se ha movido a "Vista de Asignaciones"</p>
+                        <p><strong>Usuario:</strong> ${data.usuario_asignado}</p>
+                        <p><strong>Número de Parte:</strong> ${data.numero_parte}</p>
+                        <p class="text-sm text-gray-600 mt-2">
+                            El usuario podrá recontar desde la pestaña "Vista de Asignaciones"
+                        </p>
+                    </div>
+                `,
+                timer: 4000,
+                showConfirmButton: false
+            });
+            
+            // Recargar ambas tablas
+            totalInventoryRecords = 0; // Forzar recálculo del total
+            await loadInventoryData(); // Recargar registros de inventario
+            await loadAssignments(); // Recargar asignaciones pendientes
+        }
+        
+    } catch (error) {
+        console.error('Error al solicitar reconteo:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo solicitar el reconteo: ' + error.message
+        });
+    }
+}
+
+async function registerQuantity(assignmentId) {
+    const quantityInput = document.getElementById(`quantity-${assignmentId}`);
+    const quantity = parseInt(quantityInput.value);
+
+    // Validar cantidad
+    if (quantityInput.value === '' || isNaN(quantity) || quantity < 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cantidad requerida',
+            text: 'Por favor ingresa una cantidad válida (0 o mayor)',
+            timer: 3000,
+            showConfirmButton: false
+        });
+        quantityInput.focus();
+        return;
+    }
+
+    // Buscar el registro completo en assignmentsData
+    const assignment = assignmentsData.find(item => item.id === assignmentId);
+    if (!assignment) {
+        Swal.fire('Error', 'No se encontró el registro seleccionado.', 'error');
+        return;
+    }
+
+    // Mostrar confirmación con todos los datos relevantes
+    const result = await Swal.fire({
+        title: '¿Confirmar registro?',
+        html: `
+            <div class="text-left text-sm">
+                <p><strong>Número de parte:</strong> ${assignment.numero_parte || 'N/A'}</p>
+                <p><strong>Cantidad:</strong> ${quantity}</p>
+                <p><strong>Rack:</strong> ${assignment.rack || 'N/A'}</p>
+                <p><strong>Ubicación teórica:</strong> ${assignment.ubicacion || 'N/A'}</p>
+                <p class="mt-3 text-gray-700">¿Estás seguro que deseas registrar esta cantidad y que las locaciones son correctas?</p>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        confirmButtonColor: '#0a192f',
+        cancelButtonColor: '#6b7280'
+    });
+
+    if (!result.isConfirmed) {
+        return; // Cancelado por el usuario
+    }
 
     try {
-        console.log('📝 Registrando usuario:', email);
+        const { error } = await supabase
+            .from('conteoinventario')
+            .update({
+                cantidad: quantity,
+                cantidad_contada: true,
+                fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id', assignmentId);
 
-        // PRIMERO crear el registro en la tabla users
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .insert([
-                {
-                    email: email,
-                    full_name: fullName,
-                    role: role,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single();
+        if (error) throw error;
 
-        if (userError) {
-            console.error('Error creando registro de usuario:', userError);
-            throw new Error('Error creando el perfil de usuario: ' + userError.message);
-        }
-
-        console.log('✅ Registro en tabla users exitoso:', userData);
-
-        // LUEGO crear usuario en Supabase Auth
-        const { data: authData, error: authError } = await window.supabase.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    role: role
-                }
-            }
+        Swal.fire({
+            icon: 'success',
+            title: 'Cantidad registrada',
+            text: `Se registró la cantidad ${quantity} correctamente`,
+            timer: 2000,
+            showConfirmButton: false
         });
 
-        if (authError) {
-            console.error('Error creando usuario en Auth:', authError);
-            // Revertir: eliminar el registro de la tabla users
-            await window.supabase.from('users').delete().eq('email', email);
-            throw new Error(authError.message);
-        }
+        // Eliminar fila de la vista
+        const row = document.getElementById(`assignment-row-${assignmentId}`);
+        if (row) row.remove();
 
-        console.log('✅ Usuario creado en Auth:', authData);
-
-        showAlert('¡Cuenta creada exitosamente! Por favor verifica tu email antes de iniciar sesión.', 'success');
-
-        // Limpiar formulario
-        document.getElementById('register-form').reset();
+        // Actualizar contadores
+        totalAssignmentsRecords--;
+        renderAssignmentsPagination();
+        totalInventoryRecords = 0;
+        await loadInventoryData();
 
     } catch (error) {
-        console.error('Error en registro:', error);
-        showAlert(error.message || 'Error al crear la cuenta');
-    } finally {
-        showLoading('register', false);
+        console.error('Error al registrar cantidad:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo registrar la cantidad: ' + (error.message || 'Desconocido')
+        });
+    }
+}
+
+// Variables para controlar el ordenamiento
+let currentSortColumn = null;
+let currentSortDirection = 'asc'; // 'asc' o 'desc'
+let assignmentsData = []; // Array para almacenar los datos de las asignaciones
+
+// Función para ordenar la tabla de asignaciones
+function sortAssignmentsTable(column) {
+    console.log('🔄 Ordenando por:', column);
+    
+    // Si es la misma columna, cambiar dirección
+    if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        // Si es una columna diferente, empezar en ascendente
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
+    }
+    
+    // Actualizar iconos
+    updateSortIcons(column, currentSortDirection);
+    
+    // Ordenar los datos
+    assignmentsData.sort((a, b) => {
+        let valueA = a[column] || '';
+        let valueB = b[column] || '';
+        
+        // Convertir a string para comparación
+        valueA = valueA.toString().toLowerCase();
+        valueB = valueB.toString().toLowerCase();
+        
+        if (currentSortDirection === 'asc') {
+            return valueA.localeCompare(valueB, 'es', { numeric: true });
+        } else {
+            return valueB.localeCompare(valueA, 'es', { numeric: true });
+        }
+    });
+    
+    // Renderizar la tabla con los datos ordenados
+    renderAssignmentsTable();
+}
+
+// Función para actualizar los iconos de ordenamiento
+function updateSortIcons(column, direction) {
+    // Resetear todos los iconos
+    const allIcons = ['sort-icon-rack', 'sort-icon-ubicacion'];
+    allIcons.forEach(iconId => {
+        const icon = document.getElementById(iconId);
+        if (icon) {
+            icon.className = 'fas fa-sort ml-1';
+        }
+    });
+    
+    // Actualizar el icono de la columna activa
+    const activeIcon = document.getElementById(`sort-icon-${column}`);
+    if (activeIcon) {
+        if (direction === 'asc') {
+            activeIcon.className = 'fas fa-sort-up ml-1';
+        } else {
+            activeIcon.className = 'fas fa-sort-down ml-1';
+        }
+    }
+}
+
+// Función para renderizar la tabla de asignaciones
+function renderAssignmentsTable() {
+    const assignmentsTable = document.getElementById('assignments-table');
+    if (!assignmentsTable) return;
+    
+    if (assignmentsData.length === 0) {
+    assignmentsTable.innerHTML = `
+        <tr>
+            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No hay asignaciones pendientes</td>
+            </tr>
+        `;
+        return;
+    }
+    
+   assignmentsTable.innerHTML = assignmentsData.map(item => `
+    <tr id="assignment-row-${item.id}">
+        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${item.rack}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${item.ubicacion}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${item.numero_parte}</td>
+        <td class="px-3 py-2 whitespace-nowrap">
+            <input type="number"
+                   id="quantity-${item.id}"
+                   min="0"
+                   step="1"
+                   placeholder="Cantidad"
+                   class="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </td>
+        <td class="px-3 py-2 whitespace-nowrap">
+            <button onclick="registerQuantity(${item.id})"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-all">
+                Registrar
+            </button>
+        </td>
+        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${item.descripcion || 'N/A'}</td>
+    </tr>
+`).join('');
+    
+    // Cargar las ubicaciones en los selectores después de que el DOM se actualice
+    setTimeout(async () => {
+        await loadRealLocationsForSelects();
+    }, 100);
+}
+
+async function handleLogout() {
+    try {
+        console.log('🚺 Cerrando sesión...');
+        
+        // Cerrar sesión en Supabase
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error('Error al cerrar sesión:', error);
+            throw error;
+        }
+        
+        console.log('✅ Sesión cerrada correctamente');
+        
+        // Limpiar variables globales
+        currentUser = null;
+        isAdmin = false;
+        
+        // Redirigir al login
+        window.location.href = 'login_completo.html';
+        
+    } catch (error) {
+        console.error('Error en logout:', error);
+        // En caso de error, forzar redirección al login
+        window.location.href = 'login_completo.html';
+    }
+}
+
+    console.log("Script cargado correctamente");
+
+    let allPartNumbers = []; // Variable global para almacenar todos los números de parte
+
+    // Función para abrir el modal
+    async function openPartNumberModal() {
+        console.log("🔍 Abriendo modal de números de parte...");
+        const modal = document.getElementById("part-number-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            // Cargar los datos si aún no se han cargado
+            if (allPartNumbers.length === 0) {
+                await loadAllPartNumbersForModal();
+            }
+        }
+    }
+
+    // Función para cerrar el modal
+    function closePartNumberModal() {
+        console.log("❌ Cerrando modal de números de parte...");
+        const modal = document.getElementById("part-number-modal");
+        if (modal) {
+            modal.classList.add("hidden");
+            // Limpiar el buscador
+            const searchInput = document.getElementById("part-number-search");
+            if (searchInput) searchInput.value = "";
+        }
+    }
+
+    // Función para cargar todos los números de parte para el modal
+    async function loadAllPartNumbersForModal() {
+        try {
+            console.log("📊 Cargando números de parte para el modal...");
+            
+            const gridContainer = document.getElementById("part-number-grid-container");
+            if (gridContainer) {
+                gridContainer.innerHTML = '<div class="col-span-full px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando números de parte...</div>';
+            }
+            
+            // Obtener TODOS los registros sin límite de paginación
+            let allData = [];
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
+            
+            while (hasMore) {
+                const { data, error } = await supabase
+                    .from("numerosinventario")
+                    .select("inventario_id")
+                    .order("inventario_id")
+                    .range(from, from + pageSize - 1);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    allData = allData.concat(data);
+                    console.log(`✅ Cargados ${data.length} registros (total: ${allData.length})`);
+                    from += pageSize;
+                    
+                    if (data.length < pageSize) {
+                        hasMore = false;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
+            
+            // Eliminar duplicados y ordenar
+            const uniqueIds = Array.from(new Set(allData.map(item => item.inventario_id)));
+            allPartNumbers = uniqueIds.sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+            
+            console.log(`📊 Total de números de parte únicos: ${allPartNumbers.length}`);
+            
+            // Renderizar la tabla
+            renderPartNumberTable(allPartNumbers);
+            
+        } catch (error) {
+            console.error("Error al cargar números de parte:", error);
+            const gridContainer = document.getElementById("part-number-grid-container");
+            if (gridContainer) {
+                gridContainer.innerHTML = '<div class="col-span-full px-6 py-4 text-center text-sm text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar los datos</div>';
+            }
+        }
+    }
+
+    // Función para renderizar la tabla de números de parte
+    function renderPartNumberTable(partNumbers) {
+        const gridContainer = document.getElementById("part-number-grid-container");
+        const countElement = document.getElementById("part-number-count");
+        
+        if (!gridContainer) return;
+        
+        // Actualizar contador
+        if (countElement) {
+            countElement.textContent = partNumbers.length;
+        }
+        
+        if (partNumbers.length === 0) {
+            gridContainer.innerHTML = '<div class="col-span-full px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-search mr-2"></i>No se encontraron números de parte</div>';
+            return;
+        }
+        
+        // Renderizar elementos del grid (limitado a 500 por rendimiento, se puede ajustar)
+        const maxItems = 500; // Mostrar hasta 500 resultados
+        const displayPartNumbers = partNumbers.slice(0, maxItems);
+        
+        gridContainer.innerHTML = displayPartNumbers.map(partNumber => 
+            `<button onclick="selectPartNumber(\'${partNumber}\')" class="part-number-grid-item flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150 ease-in-out">
+                ${partNumber}
+            </button>`
+        ).join("");
+
+        // Mostrar mensaje si hay más resultados
+        if (partNumbers.length > maxItems) {
+            const infoDiv = document.createElement("div");
+            infoDiv.className = "col-span-full px-6 py-4 text-center text-sm text-gray-500 bg-yellow-50 rounded-md";
+            infoDiv.innerHTML = `<i class="fas fa-info-circle mr-2"></i>Mostrando ${maxItems} de ${partNumbers.length} resultados. Usa el buscador para filtrar.`;
+            gridContainer.appendChild(infoDiv);
+        }
+    }
+
+    // Función para filtrar números de parte
+    function filterPartNumbers() {
+        const searchInput = document.getElementById("part-number-search");
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
+        if (searchTerm === "") {
+            // Si no hay término de búsqueda, mostrar todos
+            renderPartNumberTable(allPartNumbers);
+        } else {
+            // Filtrar los números de parte que contengan el término de búsqueda
+            const filtered = allPartNumbers.filter(partNumber => 
+                partNumber.toLowerCase().includes(searchTerm)
+            );
+            renderPartNumberTable(filtered);
+        }
+    }
+
+  // Función para seleccionar un número de parte
+   async function selectPartNumber(partNumber) {
+    console.log("Número de parte seleccionado:", partNumber);
+
+    // Solo afecta al input de "Registro de Números de Inventario"
+    const partNumberInput = document.getElementById("inventory-numbers-part-number");
+    if (partNumberInput) {
+        partNumberInput.value = partNumber;
+    }
+
+    // Buscar la descripción del número de parte
+    try {
+        const { data, error } = await supabase
+            .from("numerosinventario")
+            .select("descripcion")
+            .eq("inventario_id", partNumber)
+            .limit(1);
+
+        if (error) throw error;
+
+        const descriptionInput = document.getElementById("inventory-description");
+        if (descriptionInput && data && data.length > 0) {
+            descriptionInput.value = data[0].descripcion || "";
+        }
+    } catch (error) {
+        console.error("Error al obtener la descripción del número de parte:", error);
+        const descriptionInput = document.getElementById("inventory-description");
+        if (descriptionInput) {
+            descriptionInput.value = "Descripción no encontrada";
+        }
+    }
+
+    // Cerrar el modal
+    closePartNumberModal();
+}
+
+
+  async function handlePartNumberChange() {
+    // Solo afectar si estamos en la pestaña de inventario manual (visible)
+    const inventoryContent = document.getElementById('content-inventory');
+    if (!inventoryContent || inventoryContent.classList.contains('hidden')) {
+        return; // No hacer nada si la pestaña no está activa
+    }
+
+    const partNumberInput = document.getElementById("inventory-part-number");
+    const descriptionInput = document.getElementById("description");
+    
+    if (!partNumberInput || !descriptionInput) {
+        console.warn("Campos de inventario manual no encontrados");
+        return;
+    }
+
+    const partNumber = partNumberInput.value.trim();
+    if (partNumber === "") {
+        descriptionInput.value = "";
+        return;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from("numerosinventario")
+            .select("descripcion")
+            .eq("inventario_id", partNumber)
+            .limit(1);
+        if (error) throw error;
+        descriptionInput.value = (data && data.length > 0) ? (data[0].descripcion || "") : "Descripción no encontrada";
+    } catch (error) {
+        console.error("Error al obtener la descripción:", error);
+        descriptionInput.value = "Error al cargar descripción";
+    }
+}
+
+// ============================================
+// FUNCIONES PARA LA PESTAÑA DE REGISTRO
+// ============================================
+
+let currentInventoryNumbersPage = 1;
+const inventoryNumbersPageSize = 50;
+let totalInventoryNumbersRecords = 0;
+let allInventoryNumbersData = []; // Para filtrado local
+
+async function loadInventoryNumbersData(page = 1) {
+    try {
+        // Obtener el total de registros
+        const { count, error: countError } = await supabase
+            .from('conteoinventario')
+            .select('*', { count: 'exact', head: true })
+            .eq('es_asignacion', false);
+        
+        if (countError) throw countError;
+        totalInventoryNumbersRecords = count || 0;
+
+        const from = (page - 1) * inventoryNumbersPageSize;
+        const to = from + inventoryNumbersPageSize - 1;
+
+        const { data, error } = await supabase
+            .from('conteoinventario')
+            .select('*')
+            .eq('es_asignacion', false)
+            .order('fecha_actualizacion', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        currentInventoryNumbersPage = page;
+        allInventoryNumbersData = data || [];
+        renderInventoryNumbersTable(data);
+        renderInventoryNumbersPagination();
+    } catch (error) {
+        console.error('Error al cargar datos de registro:', error);
+        document.getElementById('inventory-numbers-table-body').innerHTML = `
+            <tr><td colspan="7" class="px-6 py-4 text-center text-sm text-red-500">Error al cargar registros</td></tr>
+        `;
+        document.getElementById('pagination-controls-inventory-numbers').innerHTML = '';
+    }
+}
+
+function renderInventoryNumbersTable(data) {
+    const tbody = document.getElementById('inventory-numbers-table-body');
+    if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No hay registros disponibles</td></tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = data.map(item => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.rack || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.ubicacion_real || item.ubicacion || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.numero_parte || '-'}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${item.descripcion || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usuario_asignado || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cantidad || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.fecha_actualizacion ? new Date(item.fecha_actualizacion).toLocaleString('es-MX') : '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderInventoryNumbersPagination() {
+    const totalPages = Math.ceil(totalInventoryNumbersRecords / inventoryNumbersPageSize);
+    const container = document.getElementById('pagination-controls-inventory-numbers');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Botón anterior
+    if (currentInventoryNumbersPage > 1) {
+        html += `<button onclick="loadInventoryNumbersData(${currentInventoryNumbersPage - 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Anterior</button>`;
+    }
+
+    // Mostrar páginas (máximo 5)
+    let startPage = Math.max(1, currentInventoryNumbersPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentInventoryNumbersPage) {
+            html += `<span class="px-3 py-1 bg-navy text-white rounded">${i}</span>`;
+        } else {
+            html += `<button onclick="loadInventoryNumbersData(${i})" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+        }
+    }
+
+    // Botón siguiente
+    if (currentInventoryNumbersPage < totalPages) {
+        html += `<button onclick="loadInventoryNumbersData(${currentInventoryNumbersPage + 1})" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Siguiente</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// Filtro de búsqueda para la tabla de Registro
+function filterInventoryNumbersTable() {
+    const searchInput = document.getElementById('search-filter-inventory-numbers');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderInventoryNumbersTable(allInventoryNumbersData);
+        return;
+    }
+    
+    const filteredData = allInventoryNumbersData.filter(item => {
+        return (
+            (item.rack && item.rack.toLowerCase().includes(searchTerm)) ||
+            (item.ubicacion_real && item.ubicacion_real.toLowerCase().includes(searchTerm)) ||
+            (item.ubicacion && item.ubicacion.toLowerCase().includes(searchTerm)) ||
+            (item.numero_parte && item.numero_parte.toLowerCase().includes(searchTerm)) ||
+            (item.usuario_asignado && item.usuario_asignado.toLowerCase().includes(searchTerm))
+        );
+    });
+    
+    renderInventoryNumbersTable(filteredData);
+}
+
+// Event listener para el filtro de búsqueda
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-filter-inventory-numbers');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterInventoryNumbersTable);
     }
 });
 
-        // Modal de recuperación de contraseña
-        function showForgotPassword() {
-            document.getElementById('forgot-modal').classList.add('show');
+    // Cerrar modal al hacer clic fuera de él
+    document.addEventListener("click", function(event) {
+        const modal = document.getElementById("part-number-modal");
+        if (modal && event.target === modal) {
+            closePartNumberModal();
         }
+    });
 
-        function closeForgotModal() {
-            document.getElementById('forgot-modal').classList.remove('show');
+    // Cerrar modal con tecla ESC
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            const modal = document.getElementById("part-number-modal");
+            if (modal && !modal.classList.contains("hidden")) {
+                closePartNumberModal();
+            }
         }
-
-        // Manejar recuperación de contraseña
-        document.getElementById('forgot-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('forgot-email').value;
-
-            if (!email) {
-                showAlert('Por favor ingresa tu email');
-                return;
-            }
-
-            try {
-                const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin + '/reset-password.html'
-                });
-
-                if (error) throw error;
-
-                showAlert('Se han enviado las instrucciones a tu email', 'success');
-                closeForgotModal();
-
-            } catch (error) {
-                console.error('Error enviando email de recuperación:', error);
-                showAlert('Error enviando email de recuperación');
-            }
-        });
-
-        // Cerrar modal al hacer clic fuera
-        document.getElementById('forgot-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeForgotModal();
-            }
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
