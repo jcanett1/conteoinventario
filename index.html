@@ -664,7 +664,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM cargado, iniciando aplicación...');
     
     // Inicializar Supabase primero
-    const supabaseReady = await initSupabaseClient();
+    //const supabaseReady = await initSupabaseClient();
+  const supabaseReady = await supabaseClient;
     if (!supabaseReady) {
         console.error('❌ No se pudo inicializar Supabase. Redirigiendo al login...');
         setTimeout(() => {
