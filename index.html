@@ -666,7 +666,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Inicializar Supabase primero
     //const supabaseReady = await initSupabaseClient();
-  const supabaseReady = await supabaseClient;
+  const supabaseReady = supabaseClient;
     if (!supabaseReady) {
         console.error('❌ No se pudo inicializar Supabase. Redirigiendo al login...');
         setTimeout(() => {
@@ -713,7 +713,7 @@ async function checkAuthentication() {
         console.log('✅ Sesión activa encontrada para:', session.user.email);
         
         // Obtener datos del usuario desde la tabla users
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseClient
             .from('users')
             .select('*')
             .eq('email', session.user.email)
@@ -739,7 +739,7 @@ async function checkAuthentication() {
         updateUIForUser();
         
         // Configurar listener para cambios de autenticación
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
                 redirectToLogin();
             }
@@ -1007,7 +1007,7 @@ const formData = new FormData(e.target);
         // Primero, obtener la descripción del número de parte
         console.log(`🔍 Obteniendo descripción para número de parte: ${partNumber}`);
         
-        const { data: partData, error: partError } = await supabase
+        const { data: partData, error: partError } = await supabaseClient
             .from('numerosinventario')
             .select('descripcion')
             .eq('inventario_id', partNumber)
@@ -1023,7 +1023,7 @@ const formData = new FormData(e.target);
         }
         
         // Crear la asignación con la descripción obtenida
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('conteoinventario')
             .insert([{
                 rack: formData.get('rack-assignment'),
@@ -1066,7 +1066,7 @@ async function handleUserRegister(e) {
     const formData = new FormData(e.target);
     
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('usuarioconteo')
             .insert([{
                 nombre: formData.get('new-user-name'),
@@ -1101,7 +1101,7 @@ async function handleInventorySubmit(e) {
     const formData = new FormData(e.target);
     
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('conteoinventario')
             .insert([{
                 rack: formData.get('rack'),
@@ -1188,7 +1188,7 @@ async function handleInventoryNumbersSubmit(e) {
         const rack = formData.get('inventory-rack');
         const ubicacion = formData.get('inventory-location');
         const esVariacion = (rack === 'VARIACIONES' && ubicacion === 'VARIACIONES');
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('conteoinventario')
             .insert([{
                 rack: rack,
@@ -1347,7 +1347,7 @@ async function handleBulkUpload(file) {
             if (rowSuccess) {
                 try {
                     // Insertar en la base de datos
-                    const { error: insertError } = await supabase
+                    const { error: insertError } = await supabaseClient
                         .from('conteoinventario')
                         .insert([{
                             usuario_asignado: usuarioAsignado,
@@ -1432,7 +1432,7 @@ function readFileAsArrayBuffer(file) {
 // Funciones de carga de datos
 async function loadUserData() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('usuarioconteo')
             .select('*')
             .order('nombre');
@@ -1468,7 +1468,7 @@ async function loadUserData() {
 
 async function loadPartNumbers(datalistId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('inventario_id')
             .order('inventario_id');
@@ -1531,7 +1531,7 @@ async function loadRacksFromDatabase() {
         let hasMore = true;
         
         while (hasMore) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('numerosinventario')
                 .select('rack')
                 .range(from, from + pageSize - 1);
@@ -1662,7 +1662,7 @@ async function loadRealLocationsForSelects() {
         let hasMore = true;
         
         while (hasMore) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('numerosinventario')
                 .select('location')
                 .range(from, from + pageSize - 1)
@@ -1730,7 +1730,7 @@ async function loadRealLocationsForSelects() {
 // Función para cargar resumen por rack
 async function loadRackSummary() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('rack, cantidad, fecha_actualizacion')
             .eq('cantidad_contada', true);
@@ -1792,7 +1792,7 @@ async function loadRackSummary() {
 // Función para cargar resumen por usuario
 async function loadUserSummary() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('usuario_asignado, rack, cantidad, fecha_actualizacion')
             .eq('cantidad_contada', true);
@@ -2011,7 +2011,7 @@ async function loadInventoryData(page = 1) {
     try {
         // Obtener el total de registros (solo una vez al inicio o cuando cambie el filtro)
         if (totalInventoryRecords === 0) {
-            const { count, error: countError } = await supabase
+            const { count, error: countError } = await supabaseClient
                 .from('conteoinventario')
                 .select('*', { count: 'exact', head: true })
                 .eq('cantidad_contada', true);
@@ -2022,7 +2022,7 @@ async function loadInventoryData(page = 1) {
         const from = (page - 1) * pageSize;
         const to = from + pageSize - 1;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('cantidad_contada', true)
@@ -2047,7 +2047,7 @@ async function loadInventoryData(page = 1) {
 
 async function loadInventoryNumbers() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('inventario_id')
             .order('inventario_id');
@@ -2135,7 +2135,7 @@ async function handlePartNumberAssignmentBlur() {
     console.log(`🔍 Buscando información para número de parte: ${partNumber}`);
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('rack, location')
             .eq('inventario_id', partNumber)
@@ -2306,7 +2306,7 @@ async function handlePartNumberInventoryBlur() {
     console.log(`🔍 [Inventario Manual] Buscando información para número de parte: ${partNumber}`);
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('rack, location, descripcion')
             .eq('inventario_id', partNumber)
@@ -2444,7 +2444,7 @@ async function handlePartNumberInventoryNumbersBlur() {
     console.log(`🔍 [Números Inventario] Buscando descripción para: ${partNumber}`);
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('descripcion')
             .eq('inventario_id', partNumber)
@@ -2471,7 +2471,7 @@ async function handlePartNumberInventoryNumbersBlur() {
 // Función para cargar ubicaciones por rack
 async function loadLocationsForRack(rack, datalistId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('numerosinventario')
             .select('location')
             .eq('rack', rack)
@@ -2520,7 +2520,7 @@ function clearInventoryFilters() {
 // Funciones de exportación para inventario
 async function exportInventoryToExcel() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('cantidad_contada', true)
@@ -2568,7 +2568,7 @@ async function exportInventoryToExcel() {
 
 async function exportInventoryToPDF() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('cantidad_contada', true)
@@ -2656,7 +2656,7 @@ async function exportInventoryToPDF() {
 // Funciones de acciones para registros de inventario
 async function editInventoryItem(id) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('id', id)
@@ -2688,7 +2688,7 @@ async function editInventoryItem(id) {
         });
         
         if (formValues) {
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('conteoinventario')
                 .update({
                     cantidad: parseInt(formValues.cantidad),
@@ -2735,7 +2735,7 @@ async function deleteInventoryItem(id) {
     
     if (result.isConfirmed) {
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('conteoinventario')
                 .delete()
                 .eq('id', id);
@@ -2794,7 +2794,7 @@ function filterAssignments() {
 async function recountInventoryItem(id) {
     try {
         // Obtener datos actuales del registro
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('id', id)
@@ -2831,7 +2831,7 @@ async function recountInventoryItem(id) {
         
         if (result.isConfirmed) {
             // Marcar el registro como pendiente de reconteo
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('conteoinventario')
                 .update({
                     cantidad_contada: false, // Mover de vuelta a pendientes
@@ -2924,7 +2924,7 @@ async function registerQuantity(assignmentId) {
     }
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('conteoinventario')
             .update({
                 cantidad: quantity,
@@ -3074,7 +3074,7 @@ async function handleLogout() {
         console.log('🚺 Cerrando sesión...');
         
         // Cerrar sesión en Supabase
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
         
         if (error) {
             console.error('Error al cerrar sesión:', error);
@@ -3143,7 +3143,7 @@ async function handleLogout() {
             let hasMore = true;
             
             while (hasMore) {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from("numerosinventario")
                     .select("inventario_id")
                     .order("inventario_id")
@@ -3249,7 +3249,7 @@ async function handleLogout() {
 
     // Buscar la descripción del número de parte
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from("numerosinventario")
             .select("descripcion")
             .eq("inventario_id", partNumber)
@@ -3296,7 +3296,7 @@ async function handleLogout() {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from("numerosinventario")
             .select("descripcion")
             .eq("inventario_id", partNumber)
@@ -3321,7 +3321,7 @@ let allInventoryNumbersData = []; // Para filtrado local
 async function loadInventoryNumbersData(page = 1) {
     try {
         // Obtener el total de registros
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await supabaseClient
             .from('conteoinventario')
             .select('*', { count: 'exact', head: true })
             .eq('es_asignacion', false);
@@ -3332,7 +3332,7 @@ async function loadInventoryNumbersData(page = 1) {
         const from = (page - 1) * inventoryNumbersPageSize;
         const to = from + inventoryNumbersPageSize - 1;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('es_asignacion', false)
