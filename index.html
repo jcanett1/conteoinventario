@@ -643,7 +643,38 @@
 // Configuración de Supabase
 const supabaseUrl = 'https://bdrxcilsuxbkpmolfbgu.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Variable global para Supabase - será inicializada después
+let supabase = null;
+
+// Función para inicializar Supabase de forma segura
+async function initSupabaseClient() {
+    return new Promise((resolve) => {
+        const maxRetries = 50; // 50 intentos = 5 segundos máximo
+        let retries = 0;
+        
+        const tryInit = () => {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                try {
+                    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                    console.log('✅ Supabase inicializado correctamente');
+                    resolve(true);
+                } catch (error) {
+                    console.error('❌ Error al crear cliente de Supabase:', error);
+                    resolve(false);
+                }
+            } else if (retries < maxRetries) {
+                retries++;
+                setTimeout(tryInit, 100);
+            } else {
+                console.error('❌ Supabase no se pudo cargar después de 5 segundos');
+                resolve(false);
+            }
+        };
+        
+        tryInit();
+    });
+}
 
 // Variables globales
 let currentUser = null;
@@ -655,6 +686,16 @@ let totalAssignmentsRecords = 0;
 // Inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM cargado, iniciando aplicación...');
+    
+    // Inicializar Supabase primero
+    const supabaseReady = await initSupabaseClient();
+    if (!supabaseReady) {
+        console.error('❌ No se pudo inicializar Supabase. Redirigiendo al login...');
+        setTimeout(() => {
+            window.location.href = 'login_completo.html';
+        }, 2000);
+        return;
+    }
     
     // Verificar autenticación
     await checkAuthentication();
