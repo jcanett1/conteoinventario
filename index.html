@@ -1618,7 +1618,7 @@ async function loadAssignments(page = 1) {
         const from = (page - 1) * assignmentsPageSize;
         const to = from + assignmentsPageSize - 1;
 
-        let query = supabase
+        let query = supabaseClient
             .from('conteoinventario')
             .select('*')
             .eq('cantidad_contada', false)
