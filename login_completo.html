@@ -1088,7 +1088,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         console.log('📝 Registrando usuario:', email);
 
         // PRIMERO crear el registro en la tabla users
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await window.supabase
             .from('users')
             .insert([
                 {
@@ -1122,7 +1122,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
 
         if (authError) {
             console.error('Error creando usuario en Auth:', authError);
-            // Revertir: eliminar el registro de la tabla users
+                // Revertir: eliminar el registro de la tabla users
             await window.supabase.from('users').delete().eq('email', email);
             throw new Error(authError.message);
         }
