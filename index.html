@@ -1600,7 +1600,7 @@ async function loadAssignments(page = 1) {
 
         // Obtener el total de asignaciones (solo si es la primera carga)
         if (totalAssignmentsRecords === 0) {
-            let countQuery = supabase
+            let countQuery = supabaseClient
                 .from('conteoinventario')
                 .select('*', { count: 'exact', head: true })
                 .eq('cantidad_contada', false);
