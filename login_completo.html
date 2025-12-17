@@ -684,7 +684,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcnhjaWxzdXhia3Btb2xmYmd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ0NTcsImV4cCI6MjA2OTgzMDQ1N30.iSO9EoOMEoi_VARxPqMd2yMUvQvTmKJntxJvwAl-TVs';
 
        // ✅ Esperar a que Supabase esté disponible antes de usarlo
-    let supabase;
+    // NO declarar supabase aquí para evitar redeclaración
     
     function initSupabase() {
         if (!window.supabase) {
@@ -701,7 +701,8 @@
                 }
             });
         }
-        supabase = window.supabaseClient;
+        // Asignar a variable global para acceso desde cualquier lugar
+        window.supabase = window.supabaseClient;
         console.log('✅ Supabase inicializado correctamente');
     }
     
@@ -717,12 +718,12 @@
         console.log('🔍 Verificando sesión existente...');
 
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const { data: { session }, error } = await window.supabase.auth.getSession();
 
             if (session && !error) {
                 console.log('✅ Sesión activa encontrada, verificando rol...');
                 // Verificar rol del usuario
-                const { data: userData, error: userError } = await supabase
+                const { data: userData, error: userError } = await window.supabase
                     .from('users')
                     .select('role')
                     .eq('email', session.user.email) // Usar el email del usuario autenticado
@@ -950,7 +951,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
         console.log('🔐 Intentando login con:', email);
 
         // Intentar login con Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -970,7 +971,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
 
             if (userError || !userData) {
                 console.error('Error obteniendo datos del usuario:', userError);
-                await supabase.auth.signOut();
+                await window.supabase.auth.signOut();
                 throw new Error('Usuario no encontrado en el sistema');
             }
 
@@ -1016,7 +1017,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
                 });
                 document.getElementById('logout-btn-login')?.addEventListener('click', async () => {
                     try {
-                        await supabase.auth.signOut();
+                        await window.supabase.auth.signOut();
                         console.log('✅ Sesión cerrada desde la página de login.');
                         document.body.classList.remove('is-admin');
                         document.getElementById('login-form').reset(); // Limpiar formulario
@@ -1108,7 +1109,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         console.log('✅ Registro en tabla users exitoso:', userData);
 
         // LUEGO crear usuario en Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { data: authData, error: authError } = await window.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -1122,7 +1123,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         if (authError) {
             console.error('Error creando usuario en Auth:', authError);
             // Revertir: eliminar el registro de la tabla users
-            await supabase.from('users').delete().eq('email', email);
+            await window.supabase.from('users').delete().eq('email', email);
             throw new Error(authError.message);
         }
 
@@ -1162,7 +1163,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
             }
 
             try {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin + '/reset-password.html'
                 });
 
